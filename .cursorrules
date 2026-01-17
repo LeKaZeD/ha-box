@@ -1,0 +1,88 @@
+# HA Box - Règles de développement pour Cursor
+
+## Contexte du projet
+
+**HA Box** est un add-on Home Assistant OS pour Raspberry Pi.
+
+### Objectif principal
+Créer une interface physique pour afficher et interagir avec Home Assistant via :
+- Écran SPI avec interface tactile I2C
+- Capteurs I2C (NFC, température)
+- Sorties (bande LED, ventilateur PWM)
+
+### Stack technique
+- **Conteneur** : Docker basé sur les images Home Assistant
+- **Init system** : s6-overlay
+- **Scripts** : Bash avec bashio
+- **Application** : Python 3.9+
+- **Hardware** : Raspberry Pi 4/5 avec Home Assistant OS
+
+## Documentation à consulter
+
+Avant de modifier le code, consulte :
+1. `docs/PROJECT.md` - Vision du projet
+2. `docs/FEATURES.md` - Cahier des fonctionnalités et statuts
+3. `docs/ARCHITECTURE.md` - Architecture technique détaillée
+4. `CONTRIBUTING.md` - Règles de contribution
+
+## Conventions de code
+
+### Bash (scripts s6)
+- Shebang : `#!/usr/bin/with-contenv bashio`
+- Indentation : 2 espaces
+- Variables : `"${variable}"` toujours quotées
+- Logging : `bashio::log.info`, `bashio::log.warning`, `bashio::log.error`
+
+### Python
+- Python 3.9+ minimum
+- Style PEP 8
+- Type hints obligatoires
+- Docstrings Google style
+- Logging via module `logging`
+
+### YAML
+- Indentation : 2 espaces
+- Commentaires pour les options complexes
+
+## Structure de l'add-on
+
+```
+ha-box/
+├── config.yaml        # Configuration add-on (NE PAS confondre avec example/)
+├── build.yaml         # Build multi-arch
+├── Dockerfile
+├── rootfs/
+│   ├── etc/services.d/ha-box/
+│   │   ├── run        # Point d'entrée
+│   │   └── finish     # Cleanup
+│   └── usr/bin/ha-box/
+│       ├── main.py    # Application principale
+│       ├── display/   # Gestion écran
+│       ├── sensors/   # Capteurs I2C
+│       ├── control/   # LED, ventilateur
+│       └── hal/       # Abstraction matérielle
+```
+
+## Périphériques matériels
+
+| Périphérique | Interface | Adresse/Pin |
+|--------------|-----------|-------------|
+| Écran | SPI | /dev/spidev0.0 |
+| Tactile | I2C | 0x38 |
+| NFC | I2C | 0x24 |
+| Température | I2C | 0x76 |
+| Ventilateur | PWM | GPIO 18 |
+| LED | GPIO | GPIO 21 |
+
+## Points d'attention
+
+1. **Démarrage** : L'add-on peut démarrer avant que HA soit prêt → gérer le fallback
+2. **Permissions** : Accès matériel via `devices` dans config.yaml
+3. **AppArmor** : Profil restrictif, déclarer les accès nécessaires
+4. **Tests** : Tester sur matériel réel quand possible
+
+## Liens utiles
+
+- [Doc Add-ons HA](https://developers.home-assistant.io/docs/add-ons)
+- [API Supervisor](https://developers.home-assistant.io/docs/api/supervisor/endpoints)
+- [s6-overlay](https://github.com/just-containers/s6-overlay)
