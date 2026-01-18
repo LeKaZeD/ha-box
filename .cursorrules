@@ -12,18 +12,31 @@ Créer une interface physique pour afficher et interagir avec Home Assistant via
 
 ### Stack technique
 - **Conteneur** : Docker basé sur les images Home Assistant
-- **Init system** : s6-overlay
-- **Scripts** : Bash avec bashio
-- **Application** : Python 3.9+
+- **Init system** : s6-overlay v3
+- **Scripts** : Bash 5.x avec bashio
+- **Application** : Python 3.9+ (principal)
+- **Configuration** : YAML (config.yaml, build.yaml)
 - **Hardware** : Raspberry Pi 4/5 avec Home Assistant OS
+
+### Bibliothèques Python principales
+- `bashio` : API Supervisor (inclus)
+- `requests` : HTTP client pour API HA
+- `Pillow` : Rendu graphique E-Paper
+- `adafruit-circuitpython-bme280` : Capteur BME280
+- `adafruit-circuitpython-pn532` : Module NFC PN532
+- `RPi.GPIO` ou `gpiozero` : Accès GPIO
+- `spidev` : Accès SPI
+- `smbus2` : Accès I2C
 
 ## Documentation à consulter
 
 Avant de modifier le code, consulte :
-1. `docs/PROJECT.md` - Vision du projet
-2. `docs/FEATURES.md` - Cahier des fonctionnalités et statuts
-3. `docs/ARCHITECTURE.md` - Architecture technique détaillée
-4. `CONTRIBUTING.md` - Règles de contribution
+1. `ROADMAP.md` - **FEUILLE DE ROUTE** (état actuel, prochaines étapes)
+2. `docs/PROJECT.md` - Vision du projet
+3. `docs/FEATURES.md` - Cahier des fonctionnalités et statuts
+4. `docs/ARCHITECTURE.md` - Architecture technique détaillée
+5. `docs/HARDWARE.md` - Spécifications matérielles
+6. `CONTRIBUTING.md` - Règles de contribution
 
 ## Conventions de code
 
@@ -65,14 +78,15 @@ ha-box/
 
 ## Périphériques matériels
 
-| Périphérique | Interface | Adresse/Pin |
-|--------------|-----------|-------------|
-| Écran | SPI | /dev/spidev0.0 |
-| Tactile | I2C | 0x38 |
-| NFC | I2C | 0x24 |
-| Température | I2C | 0x76 |
-| Ventilateur | PWM | GPIO 18 |
-| LED | GPIO | GPIO 21 |
+| Périphérique | Interface | Adresse/Pin | Modèle |
+|--------------|-----------|-------------|--------|
+| Écran E-Paper | SPI 4-wire | /dev/spidev0.0 | GDEY037T03-FT21 (UC8253) |
+| Tactile | I2C | 0x38 | FT6336U (intégré) |
+| NFC | I2C | 0x24 | PN532 |
+| BME280 | I2C | 0x76 ou 0x77 | Température/Humidité/Pression |
+| Ventilateur | PWM | GPIO 18 | 5V PWM |
+| LED | GPIO | GPIO 21 | WS2812B (optionnel) |
+| Front-light | GPIO PWM | TBD | 9 LEDs intégrées (2.8V), MOSFET PWM |
 
 ## Points d'attention
 
@@ -80,6 +94,16 @@ ha-box/
 2. **Permissions** : Accès matériel via `devices` dans config.yaml
 3. **AppArmor** : Profil restrictif, déclarer les accès nécessaires
 4. **Tests** : Tester sur matériel réel quand possible
+5. **E-Paper** : Rafraîchissement lent (~2-3s) → optimiser les mises à jour
+6. **I2C** : Tous les périphériques partagent le même bus → vérifier adresses
+
+## Feuille de route
+
+Consulter `ROADMAP.md` pour :
+- État actuel du projet
+- Prochaines étapes de développement
+- Timeline estimée
+- Phases de développement détaillées
 
 ## Liens utiles
 

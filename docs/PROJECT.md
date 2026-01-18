@@ -4,10 +4,10 @@
 
 **HA Box** est un add-on Home Assistant OS pour Raspberry Pi permettant de contrôler un ensemble de périphériques matériels :
 
-- 🖥️ **Écran SPI** - Affichage d'informations Home Assistant
-- 👆 **Tactile I2C** - Interface de navigation
+- 🖥️ **Écran E-Paper 3.7"** (GDEY037T03-FT21) - Affichage d'informations Home Assistant avec front-light intégré
+- 👆 **Tactile I2C** (FT6336U intégré) - Interface de navigation
 - 📡 **Capteur NFC I2C** - Lecture de tags NFC
-- 🌡️ **Capteur de température I2C** - Mesure de température ambiante
+- 🌡️ **Capteur BME280 I2C** - Température, humidité et pression atmosphérique
 - 💡 **Bande LED** - Effets visuels et notifications
 - 🌀 **Ventilateur PWM** - Régulation thermique
 

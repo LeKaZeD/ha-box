@@ -1,0 +1,30 @@
+# AppArmor profile for HA Box add-on
+# https://developers.home-assistant.io/docs/add-ons/apparmor
+
+# Allow access to I2C bus
+/dev/i2c-1 rw,
+/dev/i2c-* rw,
+
+# Allow access to SPI bus
+/dev/spidev0.0 rw,
+/dev/spidev* rw,
+
+# Allow access to GPIO
+/dev/gpiomem rw,
+
+# Allow access to supervisor API
+@{PROC}/sys/kernel/random/uuid r,
+/etc/machine-id r,
+
+# Allow network access to supervisor
+network,
+
+# Allow reading configuration
+/usr/bin/ha-box/** r,
+/etc/services.d/** r,
+
+# Allow writing logs
+/var/log/** w,
+
+# Allow reading options
+/data/options.json r,

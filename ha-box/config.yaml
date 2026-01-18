@@ -1,0 +1,97 @@
+# https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
+name: HA Box
+version: "0.1.0"
+slug: ha-box
+description: Interface physique pour Home Assistant avec écran E-Paper, capteurs et contrôleurs
+url: "https://github.com/VOTRE_USERNAME/ha-box"
+arch:
+  - aarch64
+init: false
+startup: services
+boot: auto
+map:
+  - share:rw
+devices:
+  - /dev/i2c-1
+  - /dev/spidev0.0
+  - /dev/gpiomem
+gpio: true
+kernel_modules: true
+options:
+  # Configuration écran E-Paper
+  display:
+    enabled: true
+    rotation: 0
+    refresh_mode: "full"
+    front_light:
+      enabled: true
+      brightness: 50
+  
+  # Configuration capteurs
+  sensors:
+    bme280:
+      enabled: true
+      address: "auto"
+      update_interval: 30
+    nfc:
+      enabled: true
+      address: "0x24"
+      polling_interval: 1
+    touch:
+      enabled: true
+  
+  # Configuration contrôleurs
+  control:
+    fan:
+      enabled: false
+      pin: 18
+      auto_control: true
+      min_temp: 40
+      max_temp: 60
+    led:
+      enabled: false
+      pin: 21
+      count: 10
+  
+  # Configuration Home Assistant
+  home_assistant:
+    entities:
+      - sensor.temperature_salon
+      - sensor.humidity_salon
+    update_interval: 60
+
+schema:
+  display:
+    enabled: "bool"
+    rotation: "int(0,3)?"
+    refresh_mode: "list(full|partial)?"
+    front_light:
+      enabled: "bool"
+      brightness: "int(0,100)?"
+  sensors:
+    bme280:
+      enabled: "bool"
+      address: "match(^(auto|0x76|0x77)$)?"
+      update_interval: "int(10,300)?"
+    nfc:
+      enabled: "bool"
+      address: "match(^(0x24|0x48)$)?"
+      polling_interval: "int(1,10)?"
+    touch:
+      enabled: "bool"
+  control:
+    fan:
+      enabled: "bool"
+      pin: "int(1,40)?"
+      auto_control: "bool"
+      min_temp: "int(0,100)?"
+      max_temp: "int(0,100)?"
+    led:
+      enabled: "bool"
+      pin: "int(1,40)?"
+      count: "int(1,100)?"
+  home_assistant:
+    entities: "list(str)?"
+    update_interval: "int(10,300)?"
+
+image: "ghcr.io/VOTRE_USERNAME/{arch}-addon-ha-box"

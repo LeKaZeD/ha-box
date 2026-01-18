@@ -11,14 +11,14 @@ Afficher et interagir avec les informations de Home Assistant via un écran tact
 
 ## ✨ Fonctionnalités
 
-| Fonctionnalité | Interface | Statut |
-|----------------|-----------|--------|
-| 🖥️ Écran d'affichage | SPI | 📋 À définir |
-| 👆 Interface tactile | I2C | 📋 À définir |
-| 📡 Lecteur NFC | I2C | 📋 À définir |
-| 🌡️ Capteur température | I2C | 📋 À définir |
-| 💡 Bande LED | GPIO/PWM | 📋 À définir |
-| 🌀 Ventilateur | PWM | 📋 À définir |
+| Fonctionnalité | Interface | Matériel | Statut |
+|----------------|-----------|----------|--------|
+| 🖥️ Écran E-Paper | SPI | GDEY037T03-FT21 | 🔜 Planifié |
+| 👆 Interface tactile | I2C | FT6336U (intégré) | 🔜 Planifié |
+| 📡 Lecteur NFC | I2C | PN532 | 🔜 Planifié |
+| 🌡️ Capteur BME280 | I2C | Température/Humidité/Pression | 🔜 Planifié |
+| 💡 Bande LED | GPIO | WS2812B | 📋 À définir |
+| 🌀 Ventilateur | PWM | 5V PWM | 📋 À définir |
 
 ## 📋 Prérequis
 
@@ -26,12 +26,13 @@ Afficher et interagir avec les informations de Home Assistant via un écran tact
 
 - Raspberry Pi 4 ou 5
 - Home Assistant OS installé
-- Écran SPI (modèle à définir)
-- Contrôleur tactile I2C
-- Capteur NFC I2C (ex: PN532)
-- Capteur de température I2C (ex: BME280)
+- **Écran E-Paper** : GDEY037T03-FT21 (3.7", 240×416, tactile intégré)
+- **Capteur environnemental** : BME280 (température, humidité, pression)
+- **Module NFC** : PN532 (I2C)
 - Bande LED WS2812B (optionnel)
 - Ventilateur PWM 5V (optionnel)
+
+📖 **Voir [docs/HARDWARE.md](docs/HARDWARE.md) pour les spécifications détaillées**
 
 ### Configuration du Raspberry Pi
 
@@ -81,9 +82,12 @@ entities:
 
 | Document | Description |
 |----------|-------------|
+| [ROADMAP.md](ROADMAP.md) | **Feuille de route** - État actuel et prochaines étapes |
 | [PROJECT.md](docs/PROJECT.md) | Vision et objectifs du projet |
 | [FEATURES.md](docs/FEATURES.md) | Cahier des fonctionnalités |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique |
+| [HARDWARE.md](docs/HARDWARE.md) | Spécifications matérielles détaillées |
+| [TECH_STACK.md](docs/TECH_STACK.md) | Stack technique détaillée |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Guide de contribution |
 
 ## 🤝 Contribuer

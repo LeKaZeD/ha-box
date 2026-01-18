@@ -56,9 +56,17 @@ Responsable de l'affichage sur l'écran SPI.
 - Rafraîchissement optimisé
 
 **Technologies envisagées :**
-- Python + Pillow pour le rendu
-- Framebuffer Linux
-- Ou bibliothèque dédiée (luma.lcd, etc.)
+- Python + Pillow pour le rendu (conversion en 1-bit)
+- Bibliothèque E-Paper dédiée (waveshare-epd ou driver personnalisé)
+- Driver UC8253 basé sur datasheet
+- Gestion du front-light via PWM (MOSFET)
+
+**Spécificités E-Paper :**
+- Rendu en 1-bit (noir/blanc)
+- Rafraîchissement complet : ~2-3 secondes
+- Rafraîchissement partiel : ~1 seconde (si supporté)
+- Stratégie : Rafraîchir uniquement lors de changements significatifs
+- Mode deep sleep pour économie d'énergie
 
 ### 2. Sensors Manager
 
@@ -71,9 +79,9 @@ Gère la lecture des capteurs.
 - Gestion des erreurs de lecture
 
 **Capteurs gérés :**
-- Température (I2C)
-- NFC (I2C)
-- Tactile (I2C)
+- BME280 : Température, Humidité, Pression (I2C)
+- NFC : PN532 (I2C)
+- Tactile FT6336U : Intégré à l'écran (I2C)
 
 ### 3. Control Manager
 
@@ -197,7 +205,7 @@ dtparam=spi=on
 # PWM pour ventilateur (GPIO 18)
 dtoverlay=pwm,pin=18,func=2
 
-# Selon l'écran utilisé
+# SPI pour écran E-Paper (si nécessaire)
 # dtoverlay=spi0-1cs
 ```
 
@@ -205,23 +213,27 @@ dtoverlay=pwm,pin=18,func=2
 
 | Périphérique | Adresse | Notes |
 |--------------|---------|-------|
-| Tactile | 0x38 | FT6236 typique |
-| NFC | 0x24 | PN532 en mode I2C |
-| Température | 0x76/0x77 | BME280 |
+| Tactile (FT6336U) | 0x38 | Intégré dans GDEY037T03-FT21 |
+| NFC (PN532) | 0x24 | PN532 en mode I2C |
+| BME280 | 0x76 ou 0x77 | Selon configuration du module |
 
 ### Pins GPIO utilisées
 
-| Pin | Fonction | Périphérique |
-|-----|----------|--------------|
-| GPIO 10 (SPI MOSI) | Data | Écran |
-| GPIO 11 (SPI SCLK) | Clock | Écran |
-| GPIO 8 (SPI CE0) | Chip Select | Écran |
-| GPIO 25 | DC | Écran |
-| GPIO 24 | Reset | Écran |
-| GPIO 2 (SDA) | I2C Data | Tactile, NFC, Temp |
-| GPIO 3 (SCL) | I2C Clock | Tactile, NFC, Temp |
-| GPIO 18 | PWM | Ventilateur |
-| GPIO 21 | Data | LED WS2812 |
+| Pin | Fonction | Périphérique | Notes |
+|-----|----------|--------------|-------|
+| GPIO 10 (SPI MOSI) | Data | Écran E-Paper | SPI 4-wire |
+| GPIO 11 (SPI SCLK) | Clock | Écran E-Paper | SPI |
+| GPIO 8 (SPI CE0) | Chip Select | Écran E-Paper | SPI |
+| GPIO (TBD) | DC | Écran E-Paper | Data/Command |
+| GPIO (TBD) | Reset | Écran E-Paper | Reset |
+| GPIO (TBD) | BUSY | Écran E-Paper | Status (lecture) |
+| GPIO 2 (SDA) | I2C Data | Tactile, NFC, BME280 | Bus I2C partagé |
+| GPIO 3 (SCL) | I2C Clock | Tactile, NFC, BME280 | Bus I2C partagé |
+| GPIO 18 | PWM | Ventilateur | Hardware PWM |
+| GPIO 21 | Data | LED WS2812 | Optionnel |
+| GPIO (TBD) | Front-light PWM | Écran E-Paper | Contrôle MOSFET front-light (PWM) |
+
+**Note** : Les pins exactes pour l'écran E-Paper (DC, Reset, BUSY) dépendent du breakout board utilisé. À vérifier lors de l'intégration matérielle.
 
 ## Séquence de démarrage
 

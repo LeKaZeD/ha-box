@@ -1,0 +1,32 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start HA Box service
+# s6-overlay docs: https://github.com/just-containers/s6-overlay
+# ==============================================================================
+
+bashio::log.info "Starting HA Box..."
+
+# Wait for Home Assistant to be ready (with timeout)
+bashio::log.info "Waiting for Home Assistant to be ready..."
+timeout=60
+counter=0
+while ! bashio::api.supervisor GET /core/info &>/dev/null; do
+    if [ $counter -ge $timeout ]; then
+        bashio::log.warning "Home Assistant not ready after ${timeout}s, continuing anyway..."
+        break
+    fi
+    sleep 1
+    counter=$((counter + 1))
+done
+
+# Check hardware access
+if [ ! -c /dev/i2c-1 ]; then
+    bashio::log.warning "I2C device /dev/i2c-1 not found"
+fi
+
+if [ ! -c /dev/spidev0.0 ]; then
+    bashio::log.warning "SPI device /dev/spidev0.0 not found"
+fi
+
+# Run the main application
+exec python3 /usr/bin/ha-box/main.py
