@@ -97,6 +97,14 @@ ha-box/
 5. **E-Paper** : Rafraîchissement lent (~2-3s) → optimiser les mises à jour
 6. **I2C** : Tous les périphériques partagent le même bus → vérifier adresses
 
+## Principes de documentation
+
+1. **Concis** : Documentation brève et factuelle, pas de code d'exemple non implémenté
+2. **Évolutif** : Documenter ce qui existe, compléter au fur et à mesure de l'implémentation
+3. **Factuel** : Indiquer clairement ce qui est planifié vs implémenté
+4. **Auto-suffisant** : Les fichiers bien structurés (YAML, config) s'auto-documentent
+5. **Exemples réels** : Utiliser le code réel comme référence, pas d'exemples fictifs
+
 ## Feuille de route
 
 Consulter `ROADMAP.md` pour :

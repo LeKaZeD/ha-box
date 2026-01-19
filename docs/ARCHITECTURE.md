@@ -325,12 +325,31 @@ Profil AppArmor personnalisé pour limiter les accès :
 
 ---
 
+## Support multilingue (i18n)
+
+HA Box supporte plusieurs langues pour l'interface de configuration et les messages utilisateur.
+
+### Structure
+
+- **Fichiers de traduction** : `translations/{langue}.yaml` (fr, en, etc.)
+- **Module Python** : `ha-box/i18n.py` pour charger et utiliser les traductions
+- **Détection automatique** : Langue détectée depuis Home Assistant ou variable d'environnement
+
+### Utilisation
+
+- **Configuration** : Labels et descriptions dans `config.yaml` traduits automatiquement par HA
+- **Code Python** : `translator.get("common.temperature")` pour récupérer les traductions
+- **Écran E-Paper** : Textes affichés traduits selon la langue configurée
+
+📖 **Voir [docs/I18N.md](I18N.md) pour les détails complets**
+
 ## Évolutions futures
 
 - [ ] Support de plusieurs types d'écrans
 - [ ] Plugin système pour drivers additionnels
 - [ ] Mode simulation pour développement sans matériel
 - [ ] Interface web de configuration avancée
+- [ ] Support de langues additionnelles (DE, ES, etc.)
 
 ---
 

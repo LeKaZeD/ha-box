@@ -78,6 +78,17 @@ Ce document décrit l'état actuel du projet et les prochaines étapes de dével
 
 **Résultat** : Infrastructure complète créée, prête pour Phase 3 (support matériel)
 
+#### 2.1 Support multilingue (Priorité moyenne)
+
+| Tâche | Statut | Notes |
+|-------|--------|-------|
+| Créer structure `translations/` | ⏳ À faire | Fichiers YAML par langue (fr, en) |
+| Implémenter module `i18n.py` | ⏳ À faire | Chargement YAML, détection langue |
+| Traduire interface configuration | ⏳ À faire | Labels/descriptions dans config.yaml |
+| Traduire textes écran E-Paper | ⏳ À faire | Phase 5 - Messages UI |
+
+**Note** : Les fichiers YAML de traduction s'auto-documentent par leur structure. Voir `docs/I18N.md` pour le fonctionnement général.
+
 ---
 
 ### Phase 3 : Support matériel de base (EN COURS)
@@ -150,7 +161,7 @@ Ce document décrit l'état actuel du projet et les prochaines étapes de dével
 
 ### Phase 5 : Interface utilisateur et intégration
 
-**Objectif** : Créer l'interface utilisateur sur l'écran E-Paper.
+**Objectif** : Créer l'interface utilisateur sur l'écran E-Paper et finaliser le support multilingue.
 
 | Tâche | Statut | Notes |
 |-------|--------|-------|
@@ -160,6 +171,7 @@ Ce document décrit l'état actuel du projet et les prochaines étapes de dével
 | Affichage entités HA | ⏳ À faire | Sélection configurable |
 | Widgets | ⏳ À faire | Température, horloge, etc. |
 | Configuration UI | ⏳ À faire | Options dans add-on |
+| Intégration traductions UI | ⏳ À faire | Textes affichés sur écran E-Paper |
 
 **Durée estimée** : 2-3 semaines
 
@@ -203,14 +215,17 @@ Ce document décrit l'état actuel du projet et les prochaines étapes de dével
 | Phase | Durée | Dépendances |
 |-------|-------|-------------|
 | Phase 1 : Documentation | ✅ Terminée | - |
-| Phase 2 : Infrastructure | 1-2 semaines | Phase 1 |
+| Phase 2 : Infrastructure | ✅ Terminée | Phase 1 |
+| Phase 2.1 : Support multilingue | 2-3 jours | Phase 2 |
 | Phase 3 : Matériel de base | 3-4 semaines | Phase 2 |
 | Phase 4 : Fonctionnalités avancées | 2-3 semaines | Phase 3 |
-| Phase 5 : Interface utilisateur | 2-3 semaines | Phase 3 |
+| Phase 5 : Interface utilisateur | 2-3 semaines | Phase 3, Phase 2.1 |
 | Phase 6 : Tests | 1-2 semaines | Phase 4, 5 |
 | Phase 7 : Release | 1 semaine | Phase 6 |
 
 **Total estimé** : 10-15 semaines (2.5-4 mois)
+
+**Note** : Le support multilingue (Phase 2.1) peut être fait en parallèle avec la Phase 3.
 
 ---
 

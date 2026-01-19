@@ -88,6 +88,7 @@ entities:
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique |
 | [HARDWARE.md](docs/HARDWARE.md) | Spécifications matérielles détaillées |
 | [TECH_STACK.md](docs/TECH_STACK.md) | Stack technique détaillée |
+| [I18N.md](docs/I18N.md) | Support multilingue (i18n) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Guide de contribution |
 
 ## 🤝 Contribuer
