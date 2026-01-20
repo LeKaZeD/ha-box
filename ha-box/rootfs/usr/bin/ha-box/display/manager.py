@@ -32,7 +32,7 @@ class DisplayManager:
         self._busy_pin: Optional[int] = None
         self._front_light_pin: Optional[int] = None
     
-    def start(self):
+    def start(self) -> None:
         """Start display manager."""
         if not self.config.display.enabled:
             logger.info("Display disabled in configuration")
@@ -48,7 +48,7 @@ class DisplayManager:
         self._initialized = True
         logger.info("Display initialized")
     
-    def stop(self):
+    def stop(self) -> None:
         """Stop display manager."""
         if not self._initialized:
             return
@@ -62,7 +62,7 @@ class DisplayManager:
         self._initialized = False
         logger.info("Display stopped")
     
-    def update(self, sensors_data: Dict, ha_entities: Dict[str, Dict]):
+    def update(self, sensors_data: Dict, ha_entities: Dict[str, Dict]) -> None:
         """
         Update display with new data.
         

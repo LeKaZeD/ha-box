@@ -1,8 +1,8 @@
-# Architecture technique - HA Box
+# Technical Architecture - HA Box
 
-Ce document décrit l'architecture technique de l'add-on HA Box.
+This document describes the technical architecture of the HA Box add-on.
 
-## Vue d'ensemble
+## Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -33,81 +33,81 @@ Ce document décrit l'architecture technique de l'add-on HA Box.
     ┌─────────────────────┼─────────────────────┐
     │              Raspberry Pi                  │
     │  ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ │
-    │  │ Écran │ │  NFC  │ │ Temp  │ │  LED  │ │
+    │  │Display│ │  NFC  │ │ Temp  │ │  LED  │ │
     │  │  SPI  │ │  I2C  │ │  I2C  │ │  PWM  │ │
     │  └───────┘ └───────┘ └───────┘ └───────┘ │
     │  ┌───────┐ ┌───────┐                     │
-    │  │Tactile│ │ Vent. │                     │
+    │  │Touch  │ │ Fan   │                     │
     │  │  I2C  │ │  PWM  │                     │
     │  └───────┘ └───────┘                     │
     └───────────────────────────────────────────┘
 ```
 
-## Composants principaux
+## Main Components
 
 ### 1. Display Manager
 
-Responsable de l'affichage sur l'écran SPI.
+Responsible for display on the SPI screen.
 
-**Responsabilités :**
-- Initialisation de l'écran
-- Rendu graphique (texte, images, icônes)
-- Gestion des pages/écrans
-- Rafraîchissement optimisé
+**Responsibilities:**
+- Screen initialization
+- Graphic rendering (text, images, icons)
+- Page/screen management
+- Optimized refresh
 
-**Technologies envisagées :**
-- Python + Pillow pour le rendu (conversion en 1-bit)
-- Bibliothèque E-Paper dédiée (waveshare-epd ou driver personnalisé)
-- Driver UC8253 basé sur datasheet
-- Gestion du front-light via PWM (MOSFET)
+**Technologies considered:**
+- Python + Pillow for rendering (1-bit conversion)
+- Dedicated E-Paper library (waveshare-epd or custom driver)
+- UC8253 driver based on datasheet
+- Front-light management via PWM (MOSFET)
 
-**Spécificités E-Paper :**
-- Rendu en 1-bit (noir/blanc)
-- Rafraîchissement complet : ~2-3 secondes
-- Rafraîchissement partiel : ~1 seconde (si supporté)
-- Stratégie : Rafraîchir uniquement lors de changements significatifs
-- Mode deep sleep pour économie d'énergie
+**E-Paper specifics:**
+- 1-bit rendering (black/white)
+- Full refresh: ~2-3 seconds
+- Partial refresh: ~1 second (if supported)
+- Strategy: Refresh only on significant changes
+- Deep sleep mode for energy saving
 
 ### 2. Sensors Manager
 
-Gère la lecture des capteurs.
+Manages sensor reading.
 
-**Responsabilités :**
-- Lecture périodique des capteurs I2C
-- Mise en cache des valeurs
-- Publication vers Home Assistant
-- Gestion des erreurs de lecture
+**Responsibilities:**
+- Periodic reading of I2C sensors
+- Value caching
+- Publication to Home Assistant
+- Reading error handling
 
-**Capteurs gérés :**
-- BME280 : Température, Humidité, Pression (I2C)
-- NFC : PN532 (I2C)
-- Tactile FT6336U : Intégré à l'écran (I2C)
+**Sensors managed:**
+- BME280: Temperature, Humidity, Pressure (I2C)
+- NFC: PN532 (I2C)
+- Touch FT6336U: Integrated in display (I2C)
 
 ### 3. Control Manager
 
-Gère les sorties et actuateurs.
+Manages outputs and actuators.
 
-**Responsabilités :**
-- Contrôle du ventilateur PWM
-- Contrôle de la bande LED
-- Régulation automatique
-- Réponse aux commandes HA
+**Responsibilities:**
+- PWM fan control
+- LED strip control
+- Automatic regulation
+- Response to HA commands
 
 ### 4. Hardware Abstraction Layer (HAL)
 
-Couche d'abstraction pour l'accès matériel.
+Abstraction layer for hardware access.
 
-**Responsabilités :**
-- Abstraction des bus (I2C, SPI, GPIO)
-- Gestion des permissions
-- Détection du matériel
-- Fallback et gestion d'erreurs
+**Responsibilities:**
+- Bus abstraction (I2C, SPI, GPIO)
+- Permission management
+- Hardware detection
+- Fallback and error handling
 
-## Communication avec Home Assistant
+## Communication with Home Assistant
 
-### API Supervisor
+### Supervisor API
 
-L'add-on communique avec Home Assistant via l'API Supervisor :
+The add-on communicates with Home Assistant via the Supervisor API:
 
 ```
 ┌─────────────┐     HTTP/REST      ┌─────────────┐
@@ -121,52 +121,52 @@ L'add-on communique avec Home Assistant via l'API Supervisor :
                                    └─────────────┘
 ```
 
-### Endpoints utilisés
+### Endpoints Used
 
 | Endpoint | Usage |
 |----------|-------|
-| `/core/api/states` | Lecture des états des entités |
-| `/core/api/services` | Appel de services |
-| `/core/api/events` | Envoi d'événements (NFC) |
-| `/addons/self/options` | Lecture de la configuration |
+| `/core/api/states` | Reading entity states |
+| `/core/api/services` | Calling services |
+| `/core/api/events` | Sending events (NFC) |
+| `/addons/self/options` | Reading configuration |
 
-### Authentification
+### Authentication
 
-- Token Supervisor via variable d'environnement `SUPERVISOR_TOKEN`
-- Accès automatique depuis le conteneur add-on
+- Supervisor token via `SUPERVISOR_TOKEN` environment variable
+- Automatic access from add-on container
 
-## Structure des fichiers
+## File Structure
 
 ```
 ha-box/
-├── config.yaml           # Configuration de l'add-on
-├── build.yaml            # Configuration de build
-├── Dockerfile            # Image Docker
-├── apparmor.txt          # Profil AppArmor
-├── CHANGELOG.md          # Historique des versions
-├── DOCS.md               # Documentation utilisateur
-├── README.md             # Présentation
-├── icon.png              # Icône 256x256
-├── logo.png              # Logo 256x256
+├── config.yaml           # Add-on configuration
+├── build.yaml            # Build configuration
+├── Dockerfile            # Docker image
+├── apparmor.txt          # AppArmor profile
+├── CHANGELOG.md          # Version history
+├── DOCS.md               # User documentation
+├── README.md             # Presentation
+├── icon.png              # 256x256 icon
+├── logo.png              # 256x256 logo
 ├── translations/
-│   ├── en.yaml           # Traductions anglais
-│   └── fr.yaml           # Traductions français
+│   ├── en.yaml           # English translations
+│   └── fr.yaml           # French translations
 └── rootfs/
     ├── etc/
     │   └── services.d/
     │       └── ha-box/
-    │           ├── run       # Script de démarrage
-    │           └── finish    # Script de fin
+    │           ├── run       # Startup script
+    │           └── finish    # Shutdown script
     └── usr/
         └── bin/
             └── ha-box/
-                ├── main.py           # Point d'entrée
-                ├── config.py         # Gestion configuration
+                ├── main.py           # Entry point
+                ├── config.py         # Configuration management
                 ├── display/
                 │   ├── __init__.py
                 │   ├── manager.py    # Display Manager
-                │   ├── screens/      # Écrans/pages
-                │   └── drivers/      # Drivers d'écran
+                │   ├── screens/      # Screens/pages
+                │   └── drivers/      # Display drivers
                 ├── sensors/
                 │   ├── __init__.py
                 │   ├── manager.py    # Sensors Manager
@@ -185,109 +185,109 @@ ha-box/
                 │   └── gpio.py
                 └── ha/
                     ├── __init__.py
-                    └── client.py     # Client API HA
+                    └── client.py     # HA API client
 ```
 
-## Configuration matérielle requise
+## Required Hardware Configuration
 
 ### Raspberry Pi config.txt
 
-L'utilisateur devra ajouter dans `/mnt/boot/config.txt` :
+The user must add to `/mnt/boot/config.txt`:
 
 ```ini
-# Activer I2C
+# Enable I2C
 dtparam=i2c_arm=on
 dtparam=i2c1=on
 
-# Activer SPI
+# Enable SPI
 dtparam=spi=on
 
-# PWM pour ventilateur (GPIO 18)
+# PWM for fan (GPIO 18)
 dtoverlay=pwm,pin=18,func=2
 
-# SPI pour écran E-Paper (si nécessaire)
+# SPI for E-Paper display (if necessary)
 # dtoverlay=spi0-1cs
 ```
 
-### Adresses I2C prévues
+### Planned I2C Addresses
 
-| Périphérique | Adresse | Notes |
-|--------------|---------|-------|
-| Tactile (FT6336U) | 0x38 | Intégré dans GDEY037T03-FT21 |
-| NFC (PN532) | 0x24 | PN532 en mode I2C |
-| BME280 | 0x76 ou 0x77 | Selon configuration du module |
+| Device | Address | Notes |
+|--------|---------|-------|
+| Touch (FT6336U) | 0x38 | Integrated in GDEY037T03-FT21 |
+| NFC (PN532) | 0x24 | PN532 in I2C mode |
+| BME280 | 0x76 or 0x77 | Depending on module configuration |
 
-### Pins GPIO utilisées
+### GPIO Pins Used
 
-| Pin | Fonction | Périphérique | Notes |
-|-----|----------|--------------|-------|
-| GPIO 10 (SPI MOSI) | Data | Écran E-Paper | SPI 4-wire |
-| GPIO 11 (SPI SCLK) | Clock | Écran E-Paper | SPI |
-| GPIO 8 (SPI CE0) | Chip Select | Écran E-Paper | SPI |
-| GPIO (TBD) | DC | Écran E-Paper | Data/Command |
-| GPIO (TBD) | Reset | Écran E-Paper | Reset |
-| GPIO (TBD) | BUSY | Écran E-Paper | Status (lecture) |
-| GPIO 2 (SDA) | I2C Data | Tactile, NFC, BME280 | Bus I2C partagé |
-| GPIO 3 (SCL) | I2C Clock | Tactile, NFC, BME280 | Bus I2C partagé |
-| GPIO 18 | PWM | Ventilateur | Hardware PWM |
-| GPIO 21 | Data | LED WS2812 | Optionnel |
-| GPIO (TBD) | Front-light PWM | Écran E-Paper | Contrôle MOSFET front-light (PWM) |
+| Pin | Function | Device | Notes |
+|-----|----------|--------|-------|
+| GPIO 10 (SPI MOSI) | Data | E-Paper Display | SPI 4-wire |
+| GPIO 11 (SPI SCLK) | Clock | E-Paper Display | SPI |
+| GPIO 8 (SPI CE0) | Chip Select | E-Paper Display | SPI |
+| GPIO (TBD) | DC | E-Paper Display | Data/Command |
+| GPIO (TBD) | Reset | E-Paper Display | Reset |
+| GPIO (TBD) | BUSY | E-Paper Display | Status (read) |
+| GPIO 2 (SDA) | I2C Data | Touch, NFC, BME280 | Shared I2C bus |
+| GPIO 3 (SCL) | I2C Clock | Touch, NFC, BME280 | Shared I2C bus |
+| GPIO 18 | PWM | Fan | Hardware PWM |
+| GPIO 21 | Data | WS2812 LED | Optional |
+| GPIO (TBD) | Front-light PWM | E-Paper Display | MOSFET front-light control (PWM) |
 
-**Note** : Les pins exactes pour l'écran E-Paper (DC, Reset, BUSY) dépendent du breakout board utilisé. À vérifier lors de l'intégration matérielle.
+**Note**: The exact pins for the E-Paper display (DC, Reset, BUSY) depend on the breakout board used. To be verified during hardware integration.
 
-## Séquence de démarrage
+## Startup Sequence
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│ 1. Supervisor démarre le conteneur                             │
+│ 1. Supervisor starts the container                             │
 ├────────────────────────────────────────────────────────────────┤
-│ 2. s6-overlay initialise les services                          │
+│ 2. s6-overlay initializes services                             │
 ├────────────────────────────────────────────────────────────────┤
-│ 3. Script 'run' exécute main.py                                │
+│ 3. 'run' script executes main.py                              │
 ├────────────────────────────────────────────────────────────────┤
-│ 4. HAL : Détection et initialisation du matériel               │
-│    - Vérification I2C disponible                               │
-│    - Vérification SPI disponible                               │
-│    - Scan des périphériques                                    │
+│ 4. HAL: Hardware detection and initialization                  │
+│    - Check I2C available                                       │
+│    - Check SPI available                                       │
+│    - Scan devices                                              │
 ├────────────────────────────────────────────────────────────────┤
-│ 5. Display Manager : Initialisation écran                      │
-│    - Affichage écran de boot                                   │
+│ 5. Display Manager: Display initialization                    │
+│    - Display boot screen                                       │
 ├────────────────────────────────────────────────────────────────┤
-│ 6. Sensors Manager : Démarrage lectures                        │
-│    - Premier relevé température                                │
-│    - Initialisation NFC                                        │
-│    - Calibration tactile                                       │
+│ 6. Sensors Manager: Start readings                             │
+│    - First temperature reading                                 │
+│    - NFC initialization                                        │
+│    - Touch calibration                                         │
 ├────────────────────────────────────────────────────────────────┤
-│ 7. Control Manager : Initialisation sorties                    │
-│    - Configuration PWM ventilateur                             │
-│    - Initialisation LED                                        │
+│ 7. Control Manager: Output initialization                     │
+│    - PWM fan configuration                                     │
+│    - LED initialization                                        │
 ├────────────────────────────────────────────────────────────────┤
-│ 8. Connexion à Home Assistant API                              │
-│    - Attente si HA pas encore prêt                             │
-│    - Récupération des entités configurées                      │
+│ 8. Connect to Home Assistant API                               │
+│    - Wait if HA not ready yet                                  │
+│    - Retrieve configured entities                              │
 ├────────────────────────────────────────────────────────────────┤
-│ 9. Boucle principale                                           │
-│    - Mise à jour affichage                                     │
-│    - Lecture capteurs                                          │
-│    - Traitement événements tactile/NFC                         │
-│    - Régulation ventilateur                                    │
+│ 9. Main loop                                                   │
+│    - Update display                                            │
+│    - Read sensors                                              │
+│    - Process touch/NFC events                                  │
+│    - Fan regulation                                            │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-## Gestion des erreurs
+## Error Handling
 
-### Stratégie de fallback
+### Fallback Strategy
 
-| Erreur | Comportement |
-|--------|--------------|
-| Écran non détecté | Log warning, mode headless |
-| I2C indisponible | Log erreur, désactivation capteurs I2C |
-| HA non accessible | Retry avec backoff, affichage mode dégradé |
-| Capteur en erreur | Skip lecture, utiliser dernière valeur |
+| Error | Behavior |
+|-------|----------|
+| Display not detected | Log warning, headless mode |
+| I2C unavailable | Log error, disable I2C sensors |
+| HA not accessible | Retry with backoff, degraded display mode |
+| Sensor error | Skip reading, use last value |
 
 ### Logging
 
-Utilisation de `bashio::log.*` pour les scripts bash et module `logging` Python :
+Use `bashio::log.*` for bash scripts and Python `logging` module:
 
 ```python
 import logging
@@ -295,16 +295,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ha-box")
 ```
 
-Niveaux :
-- `DEBUG` : Détails techniques
-- `INFO` : Événements normaux
-- `WARNING` : Problèmes non bloquants
-- `ERROR` : Erreurs récupérables
-- `CRITICAL` : Erreurs fatales
+Levels:
+- `DEBUG`: Technical details
+- `INFO`: Normal events
+- `WARNING`: Non-blocking issues
+- `ERROR`: Recoverable errors
+- `CRITICAL`: Fatal errors
 
-## Sécurité
+## Security
 
-### Permissions requises
+### Required Permissions
 
 ```yaml
 # config.yaml
@@ -318,39 +318,39 @@ kernel_modules: true
 
 ### AppArmor
 
-Profil AppArmor personnalisé pour limiter les accès :
-- Accès en lecture/écriture aux périphériques déclarés
-- Accès réseau limité à l'API Supervisor
-- Pas d'accès au système de fichiers host
+Custom AppArmor profile to limit access:
+- Read/write access to declared devices
+- Network access limited to Supervisor API
+- No access to host filesystem
 
 ---
 
-## Support multilingue (i18n)
+## Multilingual Support (i18n)
 
-HA Box supporte plusieurs langues pour l'interface de configuration et les messages utilisateur.
+HA Box supports multiple languages for the configuration interface and user messages.
 
 ### Structure
 
-- **Fichiers de traduction** : `translations/{langue}.yaml` (fr, en, etc.)
-- **Module Python** : `ha-box/i18n.py` pour charger et utiliser les traductions
-- **Détection automatique** : Langue détectée depuis Home Assistant ou variable d'environnement
+- **Translation files**: `translations/{language}.yaml` (fr, en, etc.)
+- **Python module**: `ha-box/i18n.py` to load and use translations
+- **Automatic detection**: Language detected from Home Assistant or environment variable
 
-### Utilisation
+### Usage
 
-- **Configuration** : Labels et descriptions dans `config.yaml` traduits automatiquement par HA
-- **Code Python** : `translator.get("common.temperature")` pour récupérer les traductions
-- **Écran E-Paper** : Textes affichés traduits selon la langue configurée
+- **Configuration**: Labels and descriptions in `config.yaml` automatically translated by HA
+- **Python code**: `translator.get("common.temperature")` to retrieve translations
+- **E-Paper display**: Displayed texts translated according to configured language
 
-📖 **Voir [docs/I18N.md](I18N.md) pour les détails complets**
+**See [docs/I18N.md](I18N.md) for complete details**
 
-## Évolutions futures
+## Future Evolutions
 
-- [ ] Support de plusieurs types d'écrans
-- [ ] Plugin système pour drivers additionnels
-- [ ] Mode simulation pour développement sans matériel
-- [ ] Interface web de configuration avancée
-- [ ] Support de langues additionnelles (DE, ES, etc.)
+- [ ] Support for multiple display types
+- [ ] Plugin system for additional drivers
+- [ ] Simulation mode for development without hardware
+- [ ] Advanced web configuration interface
+- [ ] Support for additional languages (DE, ES, etc.)
 
 ---
 
-*Dernière mise à jour : 2026-01-17*
+*Last updated: 2026-01-17*

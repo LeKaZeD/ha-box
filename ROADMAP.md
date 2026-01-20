@@ -1,251 +1,251 @@
-# Feuille de route - HA Box
+# Roadmap - HA Box
 
-Ce document décrit l'état actuel du projet et les prochaines étapes de développement.
+This document describes the current state of the project and the next development steps.
 
-## 📊 État actuel du projet
+## Current Project Status
 
-### ✅ Phase 1 : Conception et documentation (TERMINÉE)
+### Phase 1: Design and Documentation (COMPLETED)
 
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Documentation du projet | ✅ | `docs/PROJECT.md` |
-| Cahier des fonctionnalités | ✅ | `docs/FEATURES.md` (8 features définies) |
-| Architecture technique | ✅ | `docs/ARCHITECTURE.md` |
-| Spécifications matérielles | ✅ | `docs/HARDWARE.md` |
-| Guide de contribution | ✅ | `CONTRIBUTING.md` |
-| Règles de développement | ✅ | `.cursorrules` |
-| README principal | ✅ | `README.md` |
+| Task | Status | Notes |
+|------|--------|-------|
+| Project documentation | Completed | `docs/PROJECT.md` |
+| Features specification | Completed | `docs/FEATURES.md` (8 features defined) |
+| Technical architecture | Completed | `docs/ARCHITECTURE.md` |
+| Hardware specifications | Completed | `docs/HARDWARE.md` |
+| Contribution guide | Completed | `CONTRIBUTING.md` |
+| Development rules | Completed | `.cursorrules` |
+| Main README | Completed | `README.md` |
 
-**Résultat** : Documentation complète, matériel identifié, architecture définie.
-
----
-
-## 🛠️ Stack technique
-
-### Langages et technologies
-
-| Composant | Technologie | Version | Usage |
-|-----------|-------------|---------|-------|
-| **Conteneur** | Docker | Latest | Basé sur images Home Assistant |
-| **Init system** | s6-overlay | v3 | Gestion des services |
-| **Scripts système** | Bash | 5.x | Scripts de démarrage/arrêt |
-| **Application principale** | Python | 3.9+ | Application métier |
-| **Configuration** | YAML | - | Config add-on, build |
-| **Build** | Docker Buildx | - | Build multi-arch (aarch64) |
-
-### Bibliothèques Python prévues
-
-| Bibliothèque | Usage | Installation |
-|--------------|-------|--------------|
-| `bashio` | Accès API Supervisor | Inclus dans images HA |
-| `requests` | Communication HTTP avec HA | `pip install requests` |
-| `Pillow` | Rendu graphique E-Paper | `pip install Pillow` |
-| `adafruit-circuitpython-bme280` | Capteur BME280 | `pip install adafruit-circuitpython-bme280` |
-| `adafruit-circuitpython-pn532` | Module NFC PN532 | `pip install adafruit-circuitpython-pn532` |
-| `RPi.GPIO` ou `gpiozero` | Accès GPIO | `pip install RPi.GPIO` |
-| `spidev` | Accès SPI | `pip install spidev` |
-| `smbus2` | Accès I2C | `pip install smbus2` |
-
-### Outils de développement
-
-- **Linting** : `pylint`, `flake8`, `shellcheck`
-- **Formatage** : `black` (Python), formatage automatique Bash
-- **Tests** : `pytest` (si tests unitaires ajoutés)
-- **Versioning** : Git avec Gitflow
+**Result**: Complete documentation, hardware identified, architecture defined.
 
 ---
 
-## 🎯 Phases de développement
+## Technical Stack
 
-### Phase 2 : Infrastructure de base (✅ TERMINÉE)
+### Languages and Technologies
 
-**Objectif** : Créer la structure de base de l'add-on et l'infrastructure minimale.
+| Component | Technology | Version | Usage |
+|-----------|------------|---------|-------|
+| **Container** | Docker | Latest | Based on Home Assistant images |
+| **Init system** | s6-overlay | v3 | Service management |
+| **System scripts** | Bash | 5.x | Startup/shutdown scripts |
+| **Main application** | Python | 3.9+ | Business application |
+| **Configuration** | YAML | - | Add-on config, build |
+| **Build** | Docker Buildx | - | Multi-arch build (aarch64) |
 
-| Tâche | Priorité | Statut | Notes |
-|-------|----------|--------|-------|
-| Créer structure `ha-box/` | 🔴 Critique | ✅ Terminé | Structure de base créée |
-| Configurer `config.yaml` | 🔴 Critique | ✅ Terminé | Permissions, devices, options configurés |
-| Configurer `build.yaml` | 🔴 Critique | ✅ Terminé | Build multi-arch configuré |
-| Créer `Dockerfile` | 🔴 Critique | ✅ Terminé | Image avec dépendances Python |
-| Scripts s6 (`run`, `finish`) | 🔴 Critique | ✅ Terminé | Démarrage/arrêt implémentés |
-| Structure Python de base | 🔴 Critique | ✅ Terminé | `main.py`, modules de base créés |
-| HAL (Hardware Abstraction Layer) | 🟠 Haute | ✅ Terminé | `hal/i2c.py`, `hal/spi.py`, `hal/gpio.py` |
-| Client API Home Assistant | 🟠 Haute | ✅ Terminé | `ha/client.py` implémenté |
-| Gestion de configuration | 🟠 Haute | ✅ Terminé | `config.py` avec chargement options |
-| Logging et gestion d'erreurs | 🟠 Haute | ✅ Terminé | Infrastructure de logging créée |
+### Planned Python Libraries
 
-**Durée réelle** : Terminée
+| Library | Usage | Installation |
+|---------|-------|--------------|
+| `bashio` | Supervisor API access | Included in HA images |
+| `requests` | HTTP communication with HA | `pip install requests` |
+| `Pillow` | E-Paper graphic rendering | `pip install Pillow` |
+| `adafruit-circuitpython-bme280` | BME280 sensor | `pip install adafruit-circuitpython-bme280` |
+| `adafruit-circuitpython-pn532` | PN532 NFC module | `pip install adafruit-circuitpython-pn532` |
+| `RPi.GPIO` or `gpiozero` | GPIO access | `pip install RPi.GPIO` |
+| `spidev` | SPI access | `pip install spidev` |
+| `smbus2` | I2C access | `pip install smbus2` |
 
-**Résultat** : Infrastructure complète créée, prête pour Phase 3 (support matériel)
+### Development Tools
 
-#### 2.1 Support multilingue (Priorité moyenne)
-
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Créer structure `translations/` | ⏳ À faire | Fichiers YAML par langue (fr, en) |
-| Implémenter module `i18n.py` | ⏳ À faire | Chargement YAML, détection langue |
-| Traduire interface configuration | ⏳ À faire | Labels/descriptions dans config.yaml |
-| Traduire textes écran E-Paper | ⏳ À faire | Phase 5 - Messages UI |
-
-**Note** : Les fichiers YAML de traduction s'auto-documentent par leur structure. Voir `docs/I18N.md` pour le fonctionnement général.
-
----
-
-### Phase 3 : Support matériel de base (EN COURS)
-
-**Objectif** : Implémenter le support des périphériques matériels essentiels.
-
-#### 3.1 Capteur BME280 (Priorité haute)
-
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Driver BME280 | ⏳ À faire | Lecture température, humidité, pression |
-| Détection automatique adresse I2C | ⏳ À faire | 0x76 ou 0x77 |
-| Exposition comme sensors HA | ⏳ À faire | 3 entités HA |
-| Gestion erreurs | ⏳ À faire | Timeout, déconnexion |
-
-#### 3.2 Écran E-Paper (Priorité haute)
-
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Driver UC8253 | ⏳ À faire | Communication SPI, initialisation |
-| Rendu graphique | ⏳ À faire | Conversion image → 1-bit |
-| Gestion rafraîchissement | ⏳ À faire | Complet/partiel, optimisation |
-| Front-light PWM | ⏳ À faire | Contrôle MOSFET via PWM |
-| Écran de boot | ⏳ À faire | Affichage au démarrage |
-
-#### 3.3 Tactile FT6336U (Priorité moyenne)
-
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Driver FT6336U | ⏳ À faire | Lecture touches I2C |
-| Calibration | ⏳ À faire | Mapping 240×416 |
-| Gestion gestes | ⏳ À faire | Tap, long press, swipe |
-
-**Durée estimée** : 3-4 semaines
+- **Linting**: `pylint`, `flake8`, `shellcheck`
+- **Formatting**: `black` (Python), automatic Bash formatting
+- **Tests**: `pytest` (if unit tests added)
+- **Versioning**: Git with Gitflow
 
 ---
 
-### Phase 4 : Fonctionnalités avancées
+## Development Phases
 
-**Objectif** : Ajouter les fonctionnalités complémentaires.
+### Phase 2: Base Infrastructure (COMPLETED)
+
+**Objective**: Create the base structure of the add-on and minimal infrastructure.
+
+| Task | Priority | Status | Notes |
+|------|----------|--------|-------|
+| Create `ha-box/` structure | Critical | Completed | Base structure created |
+| Configure `config.yaml` | Critical | Completed | Permissions, devices, options configured |
+| Configure `build.yaml` | Critical | Completed | Multi-arch build configured |
+| Create `Dockerfile` | Critical | Completed | Image with Python dependencies |
+| s6 scripts (`run`, `finish`) | Critical | Completed | Startup/shutdown implemented |
+| Base Python structure | Critical | Completed | `main.py`, base modules created |
+| HAL (Hardware Abstraction Layer) | High | Completed | `hal/i2c.py`, `hal/spi.py`, `hal/gpio.py` |
+| Home Assistant API client | High | Completed | `ha/client.py` implemented |
+| Configuration management | High | Completed | `config.py` with options loading |
+| Logging and error handling | High | Completed | Logging infrastructure created |
+
+**Actual duration**: Completed
+
+**Result**: Complete infrastructure created, ready for Phase 3 (hardware support)
+
+#### 2.1 Multilingual Support (Medium priority)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Create `translations/` structure | To do | YAML files by language (fr, en) |
+| Implement `i18n.py` module | To do | YAML loading, language detection |
+| Translate configuration interface | To do | Labels/descriptions in config.yaml |
+| Translate E-Paper screen texts | To do | Phase 5 - UI messages |
+
+**Note**: YAML translation files are self-documenting by their structure. See `docs/I18N.md` for general operation.
+
+---
+
+### Phase 3: Base Hardware Support (IN PROGRESS)
+
+**Objective**: Implement support for essential hardware devices.
+
+#### 3.1 BME280 Sensor (High priority)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| BME280 driver | To do | Temperature, humidity, pressure reading |
+| Automatic I2C address detection | To do | 0x76 or 0x77 |
+| Exposure as HA sensors | To do | 3 HA entities |
+| Error handling | To do | Timeout, disconnection |
+
+#### 3.2 E-Paper Display (High priority)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| UC8253 driver | To do | SPI communication, initialization |
+| Graphic rendering | To do | Image → 1-bit conversion |
+| Refresh management | To do | Full/partial, optimization |
+| Front-light PWM | To do | MOSFET control via PWM |
+| Boot screen | To do | Display at startup |
+
+#### 3.3 FT6336U Touch (Medium priority)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| FT6336U driver | To do | I2C touch reading |
+| Calibration | To do | 240×416 mapping |
+| Gesture handling | To do | Tap, long press, swipe |
+
+**Estimated duration**: 3-4 weeks
+
+---
+
+### Phase 4: Advanced Features
+
+**Objective**: Add complementary features.
 
 #### 4.1 NFC PN532
 
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Driver PN532 | ⏳ À faire | Communication I2C |
-| Détection tags | ⏳ À faire | Polling continu |
-| Intégration HA | ⏳ À faire | Événements HA |
-| Support protocoles | ⏳ À faire | MIFARE, NTAG |
+| Task | Status | Notes |
+|------|--------|-------|
+| PN532 driver | To do | I2C communication |
+| Tag detection | To do | Continuous polling |
+| HA integration | To do | HA events |
+| Protocol support | To do | MIFARE, NTAG |
 
-#### 4.2 Ventilateur PWM
+#### 4.2 PWM Fan
 
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Contrôle PWM | ⏳ À faire | GPIO 18, hardware PWM |
-| Régulation automatique | ⏳ À faire | Basée sur température |
-| Exposition comme fan HA | ⏳ À faire | Entité fan |
+| Task | Status | Notes |
+|------|--------|-------|
+| PWM control | To do | GPIO 18, hardware PWM |
+| Automatic regulation | To do | Based on temperature |
+| Exposure as HA fan | To do | Fan entity |
 
-#### 4.3 Bande LED (Optionnel)
+#### 4.3 LED Strip (Optional)
 
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Driver WS2812B | ⏳ À faire | Timing critique |
-| Effets | ⏳ À faire | Fixe, fade, rainbow |
-| Exposition comme light HA | ⏳ À faire | Entité light |
+| Task | Status | Notes |
+|------|--------|-------|
+| WS2812B driver | To do | Critical timing |
+| Effects | To do | Fixed, fade, rainbow |
+| Exposure as HA light | To do | Light entity |
 
-**Durée estimée** : 2-3 semaines
-
----
-
-### Phase 5 : Interface utilisateur et intégration
-
-**Objectif** : Créer l'interface utilisateur sur l'écran E-Paper et finaliser le support multilingue.
-
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Système d'écrans | ⏳ À faire | Pages multiples |
-| Écran principal | ⏳ À faire | Dashboard HA |
-| Navigation tactile | ⏳ À faire | Swipe entre écrans |
-| Affichage entités HA | ⏳ À faire | Sélection configurable |
-| Widgets | ⏳ À faire | Température, horloge, etc. |
-| Configuration UI | ⏳ À faire | Options dans add-on |
-| Intégration traductions UI | ⏳ À faire | Textes affichés sur écran E-Paper |
-
-**Durée estimée** : 2-3 semaines
+**Estimated duration**: 2-3 weeks
 
 ---
 
-### Phase 6 : Tests et optimisation
+### Phase 5: User Interface and Integration
 
-**Objectif** : Tester sur matériel réel et optimiser.
+**Objective**: Create the user interface on the E-Paper display and finalize multilingual support.
 
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Tests matériel réel | ⏳ À faire | Raspberry Pi 4/5 |
-| Tests d'intégration | ⏳ À faire | Tous les périphériques |
-| Optimisation performance | ⏳ À faire | Rafraîchissement E-Paper |
-| Gestion erreurs robuste | ⏳ À faire | Fallbacks, retry |
-| Documentation utilisateur | ⏳ À faire | Guide d'installation |
-| Tests de charge | ⏳ À faire | Stabilité long terme |
+| Task | Status | Notes |
+|------|--------|-------|
+| Screen system | To do | Multiple pages |
+| Main screen | To do | HA dashboard |
+| Touch navigation | To do | Swipe between screens |
+| HA entity display | To do | Configurable selection |
+| Widgets | To do | Temperature, clock, etc. |
+| Configuration UI | To do | Options in add-on |
+| UI translation integration | To do | Texts displayed on E-Paper screen |
 
-**Durée estimée** : 1-2 semaines
-
----
-
-### Phase 7 : Release
-
-**Objectif** : Préparer la première release.
-
-| Tâche | Statut | Notes |
-|-------|--------|-------|
-| Version 0.1.0 alpha | ⏳ À faire | Version test |
-| Version 1.0.0 | ⏳ À faire | Version stable |
-| Documentation complète | ⏳ À faire | README, guides |
-| CI/CD | ⏳ À faire | Build automatique |
-| Changelog | ⏳ À faire | Historique versions |
-
-**Durée estimée** : 1 semaine
+**Estimated duration**: 2-3 weeks
 
 ---
 
-## 📅 Timeline estimée
+### Phase 6: Testing and Optimization
 
-| Phase | Durée | Dépendances |
-|-------|-------|-------------|
-| Phase 1 : Documentation | ✅ Terminée | - |
-| Phase 2 : Infrastructure | ✅ Terminée | Phase 1 |
-| Phase 2.1 : Support multilingue | 2-3 jours | Phase 2 |
-| Phase 3 : Matériel de base | 3-4 semaines | Phase 2 |
-| Phase 4 : Fonctionnalités avancées | 2-3 semaines | Phase 3 |
-| Phase 5 : Interface utilisateur | 2-3 semaines | Phase 3, Phase 2.1 |
-| Phase 6 : Tests | 1-2 semaines | Phase 4, 5 |
-| Phase 7 : Release | 1 semaine | Phase 6 |
+**Objective**: Test on real hardware and optimize.
 
-**Total estimé** : 10-15 semaines (2.5-4 mois)
+| Task | Status | Notes |
+|------|--------|-------|
+| Real hardware tests | To do | Raspberry Pi 4/5 |
+| Integration tests | To do | All devices |
+| Performance optimization | To do | E-Paper refresh |
+| Robust error handling | To do | Fallbacks, retry |
+| User documentation | To do | Installation guide |
+| Load tests | To do | Long-term stability |
 
-**Note** : Le support multilingue (Phase 2.1) peut être fait en parallèle avec la Phase 3.
+**Estimated duration**: 1-2 weeks
 
 ---
 
-## 🎯 Prochaines actions immédiates
+### Phase 7: Release
 
-1. **Renommer `example/` en `ha-box/`** et adapter la structure
-2. **Configurer `config.yaml`** avec les permissions matérielles
-3. **Créer le `Dockerfile`** avec les dépendances Python
-4. **Implémenter la HAL** (Hardware Abstraction Layer) de base
-5. **Créer `main.py`** avec la boucle principale
+**Objective**: Prepare the first release.
 
----
+| Task | Status | Notes |
+|------|--------|-------|
+| Version 0.1.0 alpha | To do | Test version |
+| Version 1.0.0 | To do | Stable version |
+| Complete documentation | To do | README, guides |
+| CI/CD | To do | Automatic build |
+| Changelog | To do | Version history |
 
-## 📝 Notes importantes
-
-- **Matériel requis** : Tester sur Raspberry Pi réel dès que possible
-- **E-Paper** : Le rafraîchissement lent nécessite une interface adaptée
-- **Priorités** : BME280 et Écran E-Paper en premier (fonctionnalités critiques)
-- **Tests** : Tester chaque composant individuellement avant intégration
+**Estimated duration**: 1 week
 
 ---
 
-*Dernière mise à jour : 2026-01-17*
+## Estimated Timeline
+
+| Phase | Duration | Dependencies |
+|-------|----------|--------------|
+| Phase 1: Documentation | Completed | - |
+| Phase 2: Infrastructure | Completed | Phase 1 |
+| Phase 2.1: Multilingual support | 2-3 days | Phase 2 |
+| Phase 3: Base hardware | 3-4 weeks | Phase 2 |
+| Phase 4: Advanced features | 2-3 weeks | Phase 3 |
+| Phase 5: User interface | 2-3 weeks | Phase 3, Phase 2.1 |
+| Phase 6: Testing | 1-2 weeks | Phase 4, 5 |
+| Phase 7: Release | 1 week | Phase 6 |
+
+**Total estimated**: 10-15 weeks (2.5-4 months)
+
+**Note**: Multilingual support (Phase 2.1) can be done in parallel with Phase 3.
+
+---
+
+## Immediate Next Actions
+
+1. **Rename `example/` to `ha-box/`** and adapt structure
+2. **Configure `config.yaml`** with hardware permissions
+3. **Create `Dockerfile`** with Python dependencies
+4. **Implement HAL** (Hardware Abstraction Layer) base
+5. **Create `main.py`** with main loop
+
+---
+
+## Important Notes
+
+- **Required hardware**: Test on real Raspberry Pi as soon as possible
+- **E-Paper**: Slow refresh requires adapted interface
+- **Priorities**: BME280 and E-Paper Display first (critical features)
+- **Tests**: Test each component individually before integration
+
+---
+
+*Last updated: 2026-01-17*

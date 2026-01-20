@@ -1,49 +1,49 @@
-# HA Box - Add-on Home Assistant pour Raspberry Pi
+# HA Box - Home Assistant Add-on for Raspberry Pi
 
-## Vision du projet
+## Project Vision
 
-**HA Box** est un add-on Home Assistant OS pour Raspberry Pi permettant de contrôler un ensemble de périphériques matériels :
+**HA Box** is a Home Assistant OS add-on for Raspberry Pi that allows controlling a set of hardware devices:
 
-- 🖥️ **Écran E-Paper 3.7"** (GDEY037T03-FT21) - Affichage d'informations Home Assistant avec front-light intégré
-- 👆 **Tactile I2C** (FT6336U intégré) - Interface de navigation
-- 📡 **Capteur NFC I2C** - Lecture de tags NFC
-- 🌡️ **Capteur BME280 I2C** - Température, humidité et pression atmosphérique
-- 💡 **Bande LED** - Effets visuels et notifications
-- 🌀 **Ventilateur PWM** - Régulation thermique
+- **3.7" E-Paper Display** (GDEY037T03-FT21) - Display Home Assistant information with integrated front-light
+- **I2C Touch** (FT6336U integrated) - Navigation interface
+- **I2C NFC Sensor** - NFC tag reading
+- **I2C BME280 Sensor** - Temperature, humidity and atmospheric pressure
+- **LED Strip** - Visual effects and notifications
+- **PWM Fan** - Thermal regulation
 
-## Objectif principal
+## Main Objective
 
-Fournir une interface physique simple et élégante pour afficher et interagir avec certaines informations de Home Assistant, directement sur un écran connecté au Raspberry Pi.
+Provide a simple and elegant physical interface to display and interact with certain Home Assistant information, directly on a screen connected to the Raspberry Pi.
 
-## Contraintes techniques identifiées
+## Identified Technical Constraints
 
-### Ordre de démarrage
+### Startup Order
 
-L'add-on peut utiliser le paramètre `startup` dans `config.yaml` :
-- `initialize` : Démarre très tôt, avant les autres services
-- `system` : Démarre avec les services système
-- `services` : Démarre après les services système
-- `application` : Démarre après Home Assistant (défaut)
+The add-on can use the `startup` parameter in `config.yaml`:
+- `initialize`: Starts very early, before other services
+- `system`: Starts with system services
+- `services`: Starts after system services
+- `application`: Starts after Home Assistant (default)
 
-⚠️ **Important** : Les add-ons sont gérés par le Supervisor, qui démarre après le boot de l'OS. Un add-on ne peut pas démarrer avant le système lui-même.
+**Important**: Add-ons are managed by the Supervisor, which starts after OS boot. An add-on cannot start before the system itself.
 
-### Accès matériel
+### Hardware Access
 
-Pour accéder aux bus SPI/I2C/GPIO, il faut :
-1. Activer les interfaces dans `config.txt` du Raspberry Pi
-2. Déclarer les périphériques dans le `config.yaml` de l'add-on
-3. Potentiellement désactiver le "Protection Mode"
+To access SPI/I2C/GPIO buses, you need to:
+1. Enable interfaces in Raspberry Pi `config.txt`
+2. Declare devices in add-on `config.yaml`
+3. Potentially disable "Protection Mode"
 
-### Add-ons existants de référence
+### Reference Existing Add-ons
 
-- [ha-rpi_gpio](https://github.com/thecode/ha-rpi_gpio) - Accès GPIO
-- [Pironman](https://github.com/sunfounder/home-assistant-addon) - Gestion écran/LED/ventilo
-- [HassOS I2C Configurator](https://community.home-assistant.io/t/add-on-hassos-i2c-configurator/264167) - Configuration I2C
+- [ha-rpi_gpio](https://github.com/thecode/ha-rpi_gpio) - GPIO access
+- [Pironman](https://github.com/sunfounder/home-assistant-addon) - Display/LED/fan management
+- [HassOS I2C Configurator](https://community.home-assistant.io/t/add-on-hassos-i2c-configurator/264167) - I2C configuration
 
-## Statut du projet
+## Project Status
 
-🚧 **En cours de définition** - Phase de conception et documentation
+**In definition** - Design and documentation phase
 
 ---
 
-*Dernière mise à jour : 2026-01-17*
+*Last updated: 2026-01-17*

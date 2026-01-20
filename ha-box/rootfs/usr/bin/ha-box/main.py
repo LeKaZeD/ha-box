@@ -7,6 +7,7 @@ This is the main entry point for the HA Box add-on.
 
 import logging
 import sys
+import time
 from pathlib import Path
 
 # Add the ha-box package to the path
@@ -81,7 +82,6 @@ def main() -> None:
                 display_manager.update(sensors_data, ha_entities)
                 
                 # Sleep for update interval
-                import time
                 time.sleep(config.home_assistant.update_interval)
                 
         except KeyboardInterrupt:

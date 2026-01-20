@@ -30,7 +30,7 @@ class ControlManager:
         self._fan = None
         self._led = None
     
-    def start(self):
+    def start(self) -> None:
         """Start control manager."""
         logger.info("Starting control manager...")
         
@@ -41,7 +41,7 @@ class ControlManager:
         self._running = True
         logger.info("Control manager started")
     
-    def stop(self):
+    def stop(self) -> None:
         """Stop control manager."""
         if not self._running:
             return
@@ -55,7 +55,7 @@ class ControlManager:
         self._running = False
         logger.info("Control manager stopped")
     
-    def update_fan(self, temperature: Optional[float]):
+    def update_fan(self, temperature: Optional[float]) -> None:
         """
         Update fan speed based on temperature.
         

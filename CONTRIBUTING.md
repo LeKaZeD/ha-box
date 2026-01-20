@@ -1,113 +1,113 @@
-# Guide de contribution - HA Box
+# Contribution Guide - HA Box
 
-Bienvenue ! Ce document décrit les règles et processus pour contribuer au projet HA Box.
+Welcome! This document describes the rules and process for contributing to the HA Box project.
 
-## 📋 Prérequis
+## Prerequisites
 
-### Connaissances requises
+### Required Knowledge
 
-- **Home Assistant OS** : Compréhension des add-ons et de leur configuration
-- **Linux embarqué** : Notions de base sur les bus I2C, SPI, GPIO
-- **Docker** : Bases de la conteneurisation
-- **Bash/Python** : Selon les composants à développer
+- **Home Assistant OS**: Understanding of add-ons and their configuration
+- **Embedded Linux**: Basic knowledge of I2C, SPI, GPIO buses
+- **Docker**: Containerization basics
+- **Bash/Python**: Depending on components to develop
 
-### Matériel recommandé
+### Recommended Hardware
 
-- Raspberry Pi 4 ou 5 avec Home Assistant OS
-- Écran SPI compatible (modèle à définir)
-- Contrôleur tactile I2C
-- Capteur NFC I2C (ex: PN532)
-- Capteur de température I2C (ex: BME280, DS18B20)
-- Bande LED adressable (WS2812B ou similaire)
-- Ventilateur PWM 5V
+- Raspberry Pi 4 or 5 with Home Assistant OS
+- Compatible SPI display (model to be defined)
+- I2C touch controller
+- I2C NFC sensor (ex: PN532)
+- I2C temperature sensor (ex: BME280, DS18B20)
+- Addressable LED strip (WS2812B or similar)
+- 5V PWM fan
 
-### Environnement de développement
+### Development Environment
 
-- Git configuré
-- Accès SSH à votre instance Home Assistant
-- IDE de votre choix (VSCode recommandé)
-- Docker pour tests locaux (optionnel)
+- Git configured
+- SSH access to your Home Assistant instance
+- IDE of your choice (VSCode recommended)
+- Docker for local tests (optional)
 
-## 🌿 Workflow Git
+## Git Workflow
 
 ### Branches
 
-| Branche | Usage |
-|---------|-------|
-| `main` | Version stable, releases uniquement |
-| `develop` | Développement actif, intégration |
-| `feature/*` | Nouvelles fonctionnalités |
-| `fix/*` | Corrections de bugs |
-| `docs/*` | Documentation uniquement |
+| Branch | Usage |
+|--------|-------|
+| `main` | Stable version, releases only |
+| `develop` | Active development, integration |
+| `feature/*` | New features |
+| `fix/*` | Bug fixes |
+| `docs/*` | Documentation only |
 
-### Processus de contribution
+### Contribution Process
 
-1. **Fork** le dépôt (contributeurs externes)
-2. **Créer une branche** depuis `develop` :
+1. **Fork** the repository (external contributors)
+2. **Create a branch** from `develop`:
    ```bash
    git checkout develop
    git pull origin develop
    git checkout -b feature/ma-fonctionnalite
    ```
-3. **Développer** en suivant les conventions
-4. **Tester** sur matériel réel si possible
-5. **Commit** avec des messages clairs
-6. **Push** et créer une **Pull Request** vers `develop`
+3. **Develop** following conventions
+4. **Test** on real hardware if possible
+5. **Commit** with clear messages
+6. **Push** and create a **Pull Request** to `develop`
 
-### Messages de commit
+### Commit Messages
 
-Format : `type(scope): description`
+Format: `type(scope): description`
 
-Types :
-- `feat` : Nouvelle fonctionnalité
-- `fix` : Correction de bug
-- `docs` : Documentation
-- `refactor` : Refactoring
-- `test` : Ajout/modification de tests
-- `chore` : Maintenance
+Types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation
+- `refactor`: Refactoring
+- `test`: Test addition/modification
+- `chore`: Maintenance
 
-Exemples :
+Examples:
 ```
-feat(display): ajout support écran ILI9341
-fix(i2c): correction timeout lecture NFC
-docs(readme): mise à jour installation
+feat(display): add ILI9341 display support
+fix(i2c): fix NFC read timeout
+docs(readme): update installation
 ```
 
-## 📝 Conventions de code
+## Code Conventions
 
 ### Bash
 
-- Utiliser `#!/usr/bin/with-contenv bashio` pour les scripts s6
-- Indentation : 2 espaces
-- Noms de variables : `UPPER_SNAKE_CASE` pour les constantes, `lower_snake_case` pour les variables
-- Toujours quoter les variables : `"${variable}"`
-- Utiliser `shellcheck` pour la validation
+- Use `#!/usr/bin/with-contenv bashio` for s6 scripts
+- Indentation: 2 spaces
+- Variable names: `UPPER_SNAKE_CASE` for constants, `lower_snake_case` for variables
+- Always quote variables: `"${variable}"`
+- Use `shellcheck` for validation
 
 ### Python
 
 - Python 3.9+ minimum
-- Style : PEP 8
-- Utiliser `black` pour le formatage
-- Utiliser `pylint` ou `flake8` pour la validation
-- Type hints recommandés
+- Style: PEP 8
+- Use `black` for formatting
+- Use `pylint` or `flake8` for validation
+- Type hints recommended
 
 ### YAML
 
-- Indentation : 2 espaces
-- Pas de tabulations
-- Commentaires explicatifs pour les options complexes
+- Indentation: 2 spaces
+- No tabs
+- Explanatory comments for complex options
 
-## 🔒 Sécurité et permissions
+## Security and Permissions
 
-### Principe du moindre privilège
+### Principle of Least Privilege
 
-- Demander uniquement les permissions nécessaires
-- Documenter chaque permission requise et pourquoi
-- Utiliser AppArmor quand possible
+- Request only necessary permissions
+- Document each required permission and why
+- Use AppArmor when possible
 
-### Périphériques matériels
+### Hardware Devices
 
-Dans `config.yaml`, déclarer explicitement :
+In `config.yaml`, explicitly declare:
 ```yaml
 devices:
   - /dev/i2c-1
@@ -116,71 +116,71 @@ devices:
 
 ### Protection Mode
 
-- Par défaut, garder le Protection Mode activé
-- Si désactivation nécessaire, documenter les raisons
+- By default, keep Protection Mode enabled
+- If deactivation necessary, document reasons
 
-## 🧪 Tests
+## Tests
 
-### Tests requis
+### Required Tests
 
-1. **Tests unitaires** : Pour toute logique métier
-2. **Tests d'intégration** : Communication avec les périphériques
-3. **Tests manuels** : Sur matériel réel avant PR
+1. **Unit tests**: For any business logic
+2. **Integration tests**: Communication with devices
+3. **Manual tests**: On real hardware before PR
 
-### Checklist avant PR
+### Checklist Before PR
 
-- [ ] Code respecte les conventions
-- [ ] Tests passent
-- [ ] Documentation mise à jour
-- [ ] Testé sur matériel (si applicable)
-- [ ] Pas de credentials/secrets dans le code
-- [ ] CHANGELOG.md mis à jour
+- [ ] Code follows conventions
+- [ ] Tests pass
+- [ ] Documentation updated
+- [ ] Tested on hardware (if applicable)
+- [ ] No credentials/secrets in code
+- [ ] CHANGELOG.md updated
 
-## 📚 Documentation
+## Documentation
 
-### Fichiers à maintenir
+### Files to Maintain
 
-| Fichier | Contenu |
-|---------|---------|
-| `README.md` | Vue d'ensemble du projet |
-| `docs/PROJECT.md` | Vision et objectifs |
-| `docs/FEATURES.md` | Cahier des fonctionnalités |
-| `docs/ARCHITECTURE.md` | Architecture technique |
-| `CONTRIBUTING.md` | Ce fichier |
-| `CHANGELOG.md` | Historique des versions |
+| File | Content |
+|------|---------|
+| `README.md` | Project overview |
+| `docs/PROJECT.md` | Vision and objectives |
+| `docs/FEATURES.md` | Features specification |
+| `docs/ARCHITECTURE.md` | Technical architecture |
+| `CONTRIBUTING.md` | This file |
+| `CHANGELOG.md` | Version history |
 
-### Standards de documentation
+### Documentation Standards
 
-- Markdown pour tous les documents
-- Français pour la documentation principale
-- Anglais pour les commentaires de code
-- Diagrammes en Mermaid ou ASCII si nécessaire
+- Markdown for all documents
+- English for main documentation
+- English for code comments
+- Mermaid or ASCII diagrams if necessary
 
-## 🐛 Signaler un bug
+## Reporting Bugs
 
-Utiliser le template d'issue avec :
-1. Description du problème
-2. Étapes pour reproduire
-3. Comportement attendu vs observé
-4. Environnement (version HA, Pi, etc.)
-5. Logs pertinents
+Use the issue template with:
+1. Problem description
+2. Steps to reproduce
+3. Expected vs observed behavior
+4. Environment (HA version, Pi, etc.)
+5. Relevant logs
 
-## 💡 Proposer une fonctionnalité
+## Proposing a Feature
 
-1. Vérifier qu'elle n'existe pas déjà dans `docs/FEATURES.md`
-2. Créer une issue avec le template "Feature Request"
-3. Attendre validation avant de commencer le développement
+1. Verify it doesn't already exist in `docs/FEATURES.md`
+2. Create an issue with "Feature Request" template
+3. Wait for validation before starting development
 
-## 📞 Communication
+## Communication
 
-- **Issues GitHub** : Bugs et features
-- **Discussions GitHub** : Questions générales
-- **Pull Requests** : Revue de code
+- **GitHub Issues**: Bugs and features
+- **GitHub Discussions**: General questions
+- **Pull Requests**: Code review
 
-## 📜 Licence
+## License
 
-En contribuant, vous acceptez que vos contributions soient sous licence Apache 2.0.
+By contributing, you agree that your contributions are licensed under Apache 2.0.
 
 ---
 
-Merci de contribuer à HA Box ! 🎉
+Thank you for contributing to HA Box!

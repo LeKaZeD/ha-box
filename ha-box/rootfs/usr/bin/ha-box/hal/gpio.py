@@ -117,7 +117,7 @@ class GPIOManager:
             logger.error(f"Error reading input pin {pin}: {e}")
             return None
     
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Cleanup GPIO resources."""
         if self._gpio:
             try:

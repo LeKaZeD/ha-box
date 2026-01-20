@@ -101,7 +101,7 @@ class SPIManager:
             logger.error(f"Error transferring SPI data: {e}")
             return None
     
-    def close(self):
+    def close(self) -> None:
         """Close SPI bus connection."""
         if self._spi:
             try:

@@ -145,7 +145,7 @@ class I2CManager:
             logger.error(f"Error writing block to {hex(address)}: {e}")
             return False
     
-    def close(self):
+    def close(self) -> None:
         """Close I2C bus connection."""
         if self._smbus:
             try:

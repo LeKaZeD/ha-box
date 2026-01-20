@@ -1,120 +1,107 @@
-# HA Box - Règles de développement pour Cursor
+# HA Box – Cursor Development Rules
 
-## Contexte du projet
+## Global consistency rules
+- English is the only allowed language for code, comments, documentation, commit messages, and responses.
+- Do not mix languages.
+- Do not use emojis anywhere (code, comments, documentation, or responses).
+- Keep tone strictly technical and factual.
 
-**HA Box** est un add-on Home Assistant OS pour Raspberry Pi.
 
-### Objectif principal
-Créer une interface physique pour afficher et interagir avec Home Assistant via :
-- Écran SPI avec interface tactile I2C
-- Capteurs I2C (NFC, température)
-- Sorties (bande LED, ventilateur PWM)
+## Project context (assumptions)
+HA Box is a Home Assistant OS Supervisor add-on running on Raspberry Pi.
+All code must assume execution inside a Docker container managed by the Home Assistant Supervisor.
 
-### Stack technique
-- **Conteneur** : Docker basé sur les images Home Assistant
-- **Init system** : s6-overlay v3
-- **Scripts** : Bash 5.x avec bashio
-- **Application** : Python 3.9+ (principal)
-- **Configuration** : YAML (config.yaml, build.yaml)
-- **Hardware** : Raspberry Pi 4/5 avec Home Assistant OS
+The add-on interacts with local hardware (SPI, I2C, GPIO, PWM) and may start before Home Assistant Core is ready.
 
-### Bibliothèques Python principales
-- `bashio` : API Supervisor (inclus)
-- `requests` : HTTP client pour API HA
-- `Pillow` : Rendu graphique E-Paper
-- `adafruit-circuitpython-bme280` : Capteur BME280
-- `adafruit-circuitpython-pn532` : Module NFC PN532
-- `RPi.GPIO` ou `gpiozero` : Accès GPIO
-- `spidev` : Accès SPI
-- `smbus2` : Accès I2C
+## Mandatory documentation sources
+All Home Assistant–related behavior must be based on the official documentation:
+https://developers.home-assistant.io
 
-## Documentation à consulter
+Do not invent Supervisor, HAOS, or Core behaviors.
+If information is missing or unclear, rely on official documentation or keep the behavior configurable and documented.
+This includes (but is not limited to):
+- Add-on structure and lifecycle
+- Supervisor behavior
+- startup ordering
+- Permissions and devices
+- API usage
 
-Avant de modifier le code, consulte :
-1. `ROADMAP.md` - **FEUILLE DE ROUTE** (état actuel, prochaines étapes)
-2. `docs/PROJECT.md` - Vision du projet
-3. `docs/FEATURES.md` - Cahier des fonctionnalités et statuts
-4. `docs/ARCHITECTURE.md` - Architecture technique détaillée
-5. `docs/HARDWARE.md` - Spécifications matérielles
-6. `CONTRIBUTING.md` - Règles de contribution
+Rules:
+- Do not invent or assume undocumented behavior.
+- Do not extrapolate from other projects without documentation.
+- If behavior is unclear, keep it configurable and document the assumption.
 
-## Conventions de code
+## Source of truth hierarchy
+When documents conflict, apply the following priority:
+1. docs/ARCHITECTURE.md
+2. docs/HARDWARE.md
+3. docs/FEATURES.md
+4. ROADMAP.md
+5. CONTRIBUTING.md
 
-### Bash (scripts s6)
-- Shebang : `#!/usr/bin/with-contenv bashio`
-- Indentation : 2 espaces
-- Variables : `"${variable}"` toujours quotées
-- Logging : `bashio::log.info`, `bashio::log.warning`, `bashio::log.error`
+## Scope and change policy
+- Make the smallest change that satisfies the request.
+- Do not refactor, rename, or reformat unrelated code.
+- Do not introduce new abstractions unless explicitly requested.
+- Do not invent hardware specifications (pins, I2C addresses, models).
 
-### Python
-- Python 3.9+ minimum
-- Style PEP 8
-- Type hints obligatoires
-- Docstrings Google style
-- Logging via module `logging`
+## Home Assistant OS constraints
+- The add-on may start before Home Assistant Core is available.
+- Never assume the Home Assistant API is reachable at startup.
+- All failures must be handled gracefully (log and continue in degraded mode).
+- Crash loops are not acceptable.
 
-### YAML
-- Indentation : 2 espaces
-- Commentaires pour les options complexes
+## Hardware access
+- All hardware access must go through the HAL layer:
+  rootfs/usr/bin/ha-box/hal/
+- No direct GPIO, I2C, or SPI access outside the HAL.
+- Missing or disconnected devices must not prevent the add-on from starting.
 
-## Structure de l'add-on
+## Bash (s6-overlay scripts)
+- Shebang must be: #!/usr/bin/with-contenv bashio
+- Indentation: 2 spaces
+- Always quote variables: "${VAR}"
+- Logging must use bashio::log.info, bashio::log.warning, bashio::log.error
+- No echo-based logging
 
-```
-ha-box/
-├── config.yaml        # Configuration add-on (NE PAS confondre avec example/)
-├── build.yaml         # Build multi-arch
-├── Dockerfile
-├── rootfs/
-│   ├── etc/services.d/ha-box/
-│   │   ├── run        # Point d'entrée
-│   │   └── finish     # Cleanup
-│   └── usr/bin/ha-box/
-│       ├── main.py    # Application principale
-│       ├── display/   # Gestion écran
-│       ├── sensors/   # Capteurs I2C
-│       ├── control/   # LED, ventilateur
-│       └── hal/       # Abstraction matérielle
-```
+## Python
+- Python version >= 3.9
+- PEP 8 compliant
+- Type hints required for all public functions and classes
+- Google-style docstrings for public APIs
+- Use the logging module exclusively (no print)
+- All network calls must define timeouts and bounded retries
 
-## Périphériques matériels
+## YAML
+- Indentation: 2 spaces
+- Backward compatibility is mandatory
+- Any configuration change requires updating documentation and defaults
 
-| Périphérique | Interface | Adresse/Pin | Modèle |
-|--------------|-----------|-------------|--------|
-| Écran E-Paper | SPI 4-wire | /dev/spidev0.0 | GDEY037T03-FT21 (UC8253) |
-| Tactile | I2C | 0x38 | FT6336U (intégré) |
-| NFC | I2C | 0x24 | PN532 |
-| BME280 | I2C | 0x76 ou 0x77 | Température/Humidité/Pression |
-| Ventilateur | PWM | GPIO 18 | 5V PWM |
-| LED | GPIO | GPIO 21 | WS2812B (optionnel) |
-| Front-light | GPIO PWM | TBD | 9 LEDs intégrées (2.8V), MOSFET PWM |
+## Documentation rules
+- Document only implemented or modified behavior.
+- Planned features must be clearly marked as not implemented.
+- No fictitious examples or unverified code snippets.
+- Any change to configuration options requires updating relevant documentation.
+- Any hardware-related change requires updating docs/HARDWARE.md.
 
-## Points d'attention
+## Output and formatting rules
+- Do not use emojis in code, comments, documentation, or responses.
+- Keep language technical and concise.
 
-1. **Démarrage** : L'add-on peut démarrer avant que HA soit prêt → gérer le fallback
-2. **Permissions** : Accès matériel via `devices` dans config.yaml
-3. **AppArmor** : Profil restrictif, déclarer les accès nécessaires
-4. **Tests** : Tester sur matériel réel quand possible
-5. **E-Paper** : Rafraîchissement lent (~2-3s) → optimiser les mises à jour
-6. **I2C** : Tous les périphériques partagent le même bus → vérifier adresses
+## Definition of Done
+A change is considered complete only if:
+- Code imports and runs without obvious runtime errors
+- Failure paths are logged
+- The response includes:
+  - List of modified files
+  - Short manual test checklist
+- Behavioral changes include either:
+  - A unit test, or
+  - A documented manual test procedure
 
-## Principes de documentation
+## Non-invention rules
 
-1. **Concis** : Documentation brève et factuelle, pas de code d'exemple non implémenté
-2. **Évolutif** : Documenter ce qui existe, compléter au fur et à mesure de l'implémentation
-3. **Factuel** : Indiquer clairement ce qui est planifié vs implémenté
-4. **Auto-suffisant** : Les fichiers bien structurés (YAML, config) s'auto-documentent
-5. **Exemples réels** : Utiliser le code réel comme référence, pas d'exemples fictifs
-
-## Feuille de route
-
-Consulter `ROADMAP.md` pour :
-- État actuel du projet
-- Prochaines étapes de développement
-- Timeline estimée
-- Phases de développement détaillées
-
-## Liens utiles
-
-- [Doc Add-ons HA](https://developers.home-assistant.io/docs/add-ons)
-- [API Supervisor](https://developers.home-assistant.io/docs/api/supervisor/endpoints)
-- [s6-overlay](https://github.com/just-containers/s6-overlay)
+- Do not invent GPIO pins, I2C addresses, SPI buses, or hardware models.
+- Do not assume timing characteristics (boot time, refresh rate, latency).
+- Do not infer behavior from similar hardware unless documented.
+- If a value is unknown, expose it as configuration and document it.

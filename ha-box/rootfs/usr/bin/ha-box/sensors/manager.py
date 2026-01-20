@@ -33,7 +33,7 @@ class SensorsManager:
         self._nfc = None
         self._touch = None
     
-    def start(self):
+    def start(self) -> None:
         """Start sensors manager."""
         if self._running:
             logger.warning("Sensors manager already running")
@@ -45,7 +45,7 @@ class SensorsManager:
         self._thread.start()
         logger.info("Sensors manager started")
     
-    def stop(self):
+    def stop(self) -> None:
         """Stop sensors manager."""
         if not self._running:
             return

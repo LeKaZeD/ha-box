@@ -2,10 +2,11 @@
 name: HA Box
 version: "0.1.0"
 slug: ha-box
-description: Interface physique pour Home Assistant avec écran E-Paper, capteurs et contrôleurs
+description: Physical interface for Home Assistant with E-Paper display, sensors and controllers
 url: "https://github.com/VOTRE_USERNAME/ha-box"
 arch:
   - aarch64
+  - amd64
 init: false
 startup: services
 boot: auto
@@ -15,10 +16,10 @@ devices:
   - /dev/i2c-1
   - /dev/spidev0.0
   - /dev/gpiomem
-gpio: true
-kernel_modules: true
+gpio: false
+kernel_modules: false
 options:
-  # Configuration écran E-Paper
+  # E-Paper display configuration
   display:
     enabled: true
     rotation: 0
@@ -27,7 +28,7 @@ options:
       enabled: true
       brightness: 50
   
-  # Configuration capteurs
+  # Sensors configuration
   sensors:
     bme280:
       enabled: true
@@ -40,7 +41,7 @@ options:
     touch:
       enabled: true
   
-  # Configuration contrôleurs
+  # Control devices configuration
   control:
     fan:
       enabled: false
@@ -53,7 +54,7 @@ options:
       pin: 21
       count: 10
   
-  # Configuration Home Assistant
+  # Home Assistant configuration
   home_assistant:
     entities:
       - sensor.temperature_salon
@@ -94,4 +95,4 @@ schema:
     entities: "list(str)?"
     update_interval: "int(10,300)?"
 
-image: "ghcr.io/VOTRE_USERNAME/{arch}-addon-ha-box"
+#image: "ghcr.io/lekazed/{arch}-addon-ha-box"

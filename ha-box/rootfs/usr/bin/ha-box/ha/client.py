@@ -79,14 +79,20 @@ class HAClient:
             logger.warning("Home Assistant API not available")
             return None
         
-        try:
-            url = f"{self.base_url}/core/api/states/{entity_id}"
-            response = self._session.get(url, timeout=5)
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"Error fetching entity state for {entity_id}: {e}")
-            return None
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                url = f"{self.base_url}/core/api/states/{entity_id}"
+                response = self._session.get(url, timeout=5)
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Error fetching entity state for {entity_id} (attempt {attempt + 1}/{max_retries}): {e}")
+                else:
+                    logger.error(f"Error fetching entity state for {entity_id} after {max_retries} attempts: {e}")
+                    return None
+        return None
     
     def call_service(self, domain: str, service: str, service_data: Optional[Dict] = None) -> bool:
         """
@@ -104,15 +110,21 @@ class HAClient:
             logger.warning("Home Assistant API not available")
             return False
         
-        try:
-            url = f"{self.base_url}/core/api/services/{domain}/{service}"
-            data = service_data or {}
-            response = self._session.post(url, json=data, timeout=5)
-            response.raise_for_status()
-            return True
-        except Exception as e:
-            logger.error(f"Error calling service {domain}.{service}: {e}")
-            return False
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                url = f"{self.base_url}/core/api/services/{domain}/{service}"
+                data = service_data or {}
+                response = self._session.post(url, json=data, timeout=5)
+                response.raise_for_status()
+                return True
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Error calling service {domain}.{service} (attempt {attempt + 1}/{max_retries}): {e}")
+                else:
+                    logger.error(f"Error calling service {domain}.{service} after {max_retries} attempts: {e}")
+                    return False
+        return False
     
     def fire_event(self, event_type: str, event_data: Optional[Dict] = None) -> bool:
         """
@@ -129,12 +141,18 @@ class HAClient:
             logger.warning("Home Assistant API not available")
             return False
         
-        try:
-            url = f"{self.base_url}/core/api/events/{event_type}"
-            data = event_data or {}
-            response = self._session.post(url, json=data, timeout=5)
-            response.raise_for_status()
-            return True
-        except Exception as e:
-            logger.error(f"Error firing event {event_type}: {e}")
-            return False
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                url = f"{self.base_url}/core/api/events/{event_type}"
+                data = event_data or {}
+                response = self._session.post(url, json=data, timeout=5)
+                response.raise_for_status()
+                return True
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Error firing event {event_type} (attempt {attempt + 1}/{max_retries}): {e}")
+                else:
+                    logger.error(f"Error firing event {event_type} after {max_retries} attempts: {e}")
+                    return False
+        return False

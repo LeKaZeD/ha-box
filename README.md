@@ -1,42 +1,42 @@
-# HA Box - Add-on Home Assistant pour Raspberry Pi
+# HA Box - Home Assistant Add-on for Raspberry Pi
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 ![Supports aarch64 Architecture](https://img.shields.io/badge/aarch64-yes-green.svg)
 
-**HA Box** est un add-on Home Assistant OS pour Raspberry Pi permettant de contrôler un ensemble de périphériques matériels pour créer une interface physique avec Home Assistant.
+**HA Box** is a Home Assistant OS add-on for Raspberry Pi that allows controlling a set of hardware devices to create a physical interface with Home Assistant.
 
-## 🎯 Objectif
+## Objective
 
-Afficher et interagir avec les informations de Home Assistant via un écran tactile connecté au Raspberry Pi, tout en gérant des capteurs et actuateurs locaux.
+Display and interact with Home Assistant information via a touchscreen connected to the Raspberry Pi, while managing local sensors and actuators.
 
-## ✨ Fonctionnalités
+## Features
 
-| Fonctionnalité | Interface | Matériel | Statut |
-|----------------|-----------|----------|--------|
-| 🖥️ Écran E-Paper | SPI | GDEY037T03-FT21 | 🔜 Planifié |
-| 👆 Interface tactile | I2C | FT6336U (intégré) | 🔜 Planifié |
-| 📡 Lecteur NFC | I2C | PN532 | 🔜 Planifié |
-| 🌡️ Capteur BME280 | I2C | Température/Humidité/Pression | 🔜 Planifié |
-| 💡 Bande LED | GPIO | WS2812B | 📋 À définir |
-| 🌀 Ventilateur | PWM | 5V PWM | 📋 À définir |
+| Feature | Interface | Hardware | Status |
+|---------|-----------|----------|--------|
+| E-Paper Display | SPI | GDEY037T03-FT21 | Planned |
+| Touch Interface | I2C | FT6336U (integrated) | Planned |
+| NFC Reader | I2C | PN532 | Planned |
+| BME280 Sensor | I2C | Temperature/Humidity/Pressure | Planned |
+| LED Strip | GPIO | WS2812B | To be defined |
+| Fan | PWM | 5V PWM | To be defined |
 
-## 📋 Prérequis
+## Prerequisites
 
-### Matériel
+### Hardware
 
-- Raspberry Pi 4 ou 5
-- Home Assistant OS installé
-- **Écran E-Paper** : GDEY037T03-FT21 (3.7", 240×416, tactile intégré)
-- **Capteur environnemental** : BME280 (température, humidité, pression)
-- **Module NFC** : PN532 (I2C)
-- Bande LED WS2812B (optionnel)
-- Ventilateur PWM 5V (optionnel)
+- Raspberry Pi 4 or 5
+- Home Assistant OS installed
+- **E-Paper Display**: GDEY037T03-FT21 (3.7", 240×416, integrated touch)
+- **Environmental Sensor**: BME280 (temperature, humidity, pressure)
+- **NFC Module**: PN532 (I2C)
+- WS2812B LED strip (optional)
+- 5V PWM fan (optional)
 
-📖 **Voir [docs/HARDWARE.md](docs/HARDWARE.md) pour les spécifications détaillées**
+**See [docs/HARDWARE.md](docs/HARDWARE.md) for detailed specifications**
 
-### Configuration du Raspberry Pi
+### Raspberry Pi Configuration
 
-Avant d'installer l'add-on, activez I2C et SPI dans `/mnt/boot/config.txt` :
+Before installing the add-on, enable I2C and SPI in `/mnt/boot/config.txt`:
 
 ```ini
 dtparam=i2c_arm=on
@@ -44,22 +44,22 @@ dtparam=i2c1=on
 dtparam=spi=on
 ```
 
-## 🚀 Installation
+## Installation
 
-1. Ajoutez ce dépôt à vos add-ons Home Assistant :
+1. Add this repository to your Home Assistant add-ons:
 
-   [![Ajouter le dépôt](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FVOTRE_USERNAME%2Fha-box)
+   [![Add repository](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FVOTRE_USERNAME%2Fha-box)
 
-   Ou manuellement : **Paramètres** → **Modules complémentaires** → **Boutique** → **⋮** → **Dépôts** → Ajouter l'URL du dépôt
+   Or manually: **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories** → Add the repository URL
 
-2. Installez l'add-on "HA Box"
-3. Configurez les options selon votre matériel
-4. Démarrez l'add-on
+2. Install the "HA Box" add-on
+3. Configure options according to your hardware
+4. Start the add-on
 
-## ⚙️ Configuration
+## Configuration
 
 ```yaml
-# Exemple de configuration (à venir)
+# Example configuration (coming soon)
 display:
   type: "ili9341"
   rotation: 0
@@ -78,54 +78,54 @@ entities:
   - switch.lumiere_salon
 ```
 
-## 📚 Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [ROADMAP.md](ROADMAP.md) | **Feuille de route** - État actuel et prochaines étapes |
-| [PROJECT.md](docs/PROJECT.md) | Vision et objectifs du projet |
-| [FEATURES.md](docs/FEATURES.md) | Cahier des fonctionnalités |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique |
-| [HARDWARE.md](docs/HARDWARE.md) | Spécifications matérielles détaillées |
-| [TECH_STACK.md](docs/TECH_STACK.md) | Stack technique détaillée |
-| [I18N.md](docs/I18N.md) | Support multilingue (i18n) |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Guide de contribution |
+| [ROADMAP.md](ROADMAP.md) | **Roadmap** - Current status and next steps |
+| [PROJECT.md](docs/PROJECT.md) | Project vision and objectives |
+| [FEATURES.md](docs/FEATURES.md) | Features specification |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical architecture |
+| [HARDWARE.md](docs/HARDWARE.md) | Detailed hardware specifications |
+| [TECH_STACK.md](docs/TECH_STACK.md) | Detailed technical stack |
+| [I18N.md](docs/I18N.md) | Multilingual support (i18n) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guide |
 
-## 🤝 Contribuer
+## Contributing
 
-Les contributions sont les bienvenues ! Consultez le [guide de contribution](CONTRIBUTING.md) pour commencer.
+Contributions are welcome! See the [contribution guide](CONTRIBUTING.md) to get started.
 
-### Comment participer
+### How to participate
 
-1. 📖 Lisez la documentation dans `docs/`
-2. 🐛 Signalez les bugs via les Issues
-3. 💡 Proposez des fonctionnalités via les Issues
-4. 🔧 Soumettez des Pull Requests
+1. Read the documentation in `docs/`
+2. Report bugs via Issues
+3. Propose features via Issues
+4. Submit Pull Requests
 
-## 📊 Statut du projet
+## Project Status
 
-🚧 **Phase de conception** - Le projet est en cours de définition. La documentation et l'architecture sont en place, le développement va bientôt commencer.
+**Design phase** - The project is being defined. Documentation and architecture are in place, development will begin soon.
 
 ### Roadmap
 
-- [x] Documentation initiale
-- [x] Architecture technique
-- [x] Cahier des fonctionnalités
-- [ ] Prototype écran SPI
-- [ ] Intégration capteurs I2C
-- [ ] Interface tactile
-- [ ] Première release alpha
+- [x] Initial documentation
+- [x] Technical architecture
+- [x] Features specification
+- [ ] SPI display prototype
+- [ ] I2C sensor integration
+- [ ] Touch interface
+- [ ] First alpha release
 
-## 🔗 Ressources utiles
+## Useful Resources
 
-- [Documentation Add-ons Home Assistant](https://developers.home-assistant.io/docs/add-ons)
-- [ha-rpi_gpio](https://github.com/thecode/ha-rpi_gpio) - Add-on GPIO de référence
-- [Pironman](https://github.com/sunfounder/home-assistant-addon) - Add-on similaire de SunFounder
+- [Home Assistant Add-ons Documentation](https://developers.home-assistant.io/docs/add-ons)
+- [ha-rpi_gpio](https://github.com/thecode/ha-rpi_gpio) - Reference GPIO add-on
+- [Pironman](https://github.com/sunfounder/home-assistant-addon) - Similar add-on by SunFounder
 
-## 📄 Licence
+## License
 
-Ce projet est sous licence [Apache 2.0](LICENSE).
+This project is licensed under [Apache 2.0](LICENSE).
 
 ---
 
-*Projet démarré le 17 janvier 2026*
+*Project started on January 17, 2026*

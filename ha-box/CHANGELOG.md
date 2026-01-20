@@ -5,15 +5,15 @@
 ### Added
 
 - Initial release
-- Infrastructure de base complète
-- HAL (Hardware Abstraction Layer) pour I2C, SPI, GPIO
-- Client API Home Assistant
-- Gestion de configuration
-- Scripts s6-overlay pour démarrage/arrêt
-- Structure Python modulaire
-- Support configuration via options.json
+- Complete base infrastructure
+- HAL (Hardware Abstraction Layer) for I2C, SPI, GPIO
+- Home Assistant API client
+- Configuration management
+- s6-overlay scripts for startup/shutdown
+- Modular Python structure
+- Configuration support via options.json
 
 ### Known Issues
 
-- Les drivers matériels (BME280, E-Paper, NFC) ne sont pas encore implémentés
-- L'interface utilisateur sur l'écran E-Paper n'est pas encore développée
+- Hardware drivers (BME280, E-Paper, NFC) are not yet implemented
+- User interface on E-Paper display is not yet developed

@@ -1,547 +1,547 @@
-# Cahier des fonctionnalités - HA Box
+# Features Specification - HA Box
 
-Ce document liste toutes les fonctionnalités prévues, leur statut et leurs spécifications.
+This document lists all planned features, their status and specifications.
 
-## Légende des statuts
+## Status Legend
 
-| Statut | Description |
+| Status | Description |
 |--------|-------------|
-| 📋 À définir | Besoin de spécifications |
-| 🔜 Planifié | Spécifié, en attente de développement |
-| 🚧 En cours | Développement actif |
-| ✅ Terminé | Implémenté et testé |
-| ❌ Abandonné | Non retenu |
+| To be defined | Needs specifications |
+| Planned | Specified, awaiting development |
+| In progress | Active development |
+| Completed | Implemented and tested |
+| Abandoned | Not retained |
 
-## Légende des priorités
+## Priority Legend
 
-| Priorité | Description |
+| Priority | Description |
 |----------|-------------|
-| 🔴 Critique | Bloquant pour le projet |
-| 🟠 Haute | Fonctionnalité principale |
-| 🟡 Moyenne | Amélioration importante |
-| 🟢 Basse | Nice to have |
+| Critical | Blocking for the project |
+| High | Main functionality |
+| Medium | Important improvement |
+| Low | Nice to have |
 
 ---
 
-## F001 - Écran E-Paper SPI
+## F001 - E-Paper SPI Display
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟠 Haute |
-| **Statut** | 🔜 Planifié |
-| **Interface** | SPI 4-wire ou 3-wire (`/dev/spidev0.0`) |
-| **Matériel** | GDEY037T03-FT21 (GooDisplay) |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | High |
+| **Status** | Planned |
+| **Interface** | SPI 4-wire or 3-wire (`/dev/spidev0.0`) |
+| **Hardware** | GDEY037T03-FT21 (GooDisplay) |
 
 ### Description
 
-Affichage graphique sur un écran E-Paper 3.7" avec front-light intégré. L'écran est bi-stable (conserve l'image sans alimentation) et permet d'afficher :
-- Informations de Home Assistant (états, capteurs)
-- Heure et date
-- Messages personnalisés
-- Icônes et graphiques simples (niveau de gris)
+Graphic display on a 3.7" E-Paper display with integrated front-light. The display is bi-stable (retains image without power) and allows displaying:
+- Home Assistant information (states, sensors)
+- Time and date
+- Custom messages
+- Simple icons and graphics (grayscale)
 
-**Avantages E-Paper :**
-- Consommation ultra-faible (34µA en veille, 1.1µA en deep sleep)
-- Lisibilité parfaite en lumière ambiante
-- Pas de rafraîchissement constant nécessaire
-- Front-light intégré pour utilisation dans l'obscurité
+**E-Paper Advantages:**
+- Ultra-low consumption (34µA standby, 1.1µA deep sleep)
+- Perfect readability in ambient light
+- No constant refresh necessary
+- Integrated front-light for use in darkness
 
-### Spécifications techniques
+### Technical Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
-| **Modèle** | GDEY037T03-FT21 |
-| **Taille** | 3.7" |
-| **Résolution** | 240×416 pixels |
+| Parameter | Value |
+|-----------|-------|
+| **Model** | GDEY037T03-FT21 |
+| **Size** | 3.7" |
+| **Resolution** | 240×416 pixels |
 | **DPI** | 130 |
-| **Contrôleur** | UC8253 |
-| **Interface** | SPI 4-wire ou 3-wire |
-| **Front-light** | 9 LEDs, 2.8V (typique) |
-| **Température** | -25°C à 70°C |
-| **Pixels** | 1-bit (noir/blanc) |
+| **Controller** | UC8253 |
+| **Interface** | SPI 4-wire or 3-wire |
+| **Front-light** | 9 LEDs, 2.8V (typical) |
+| **Temperature** | -25°C to 70°C |
+| **Pixels** | 1-bit (black/white) |
 
-**Bibliothèques envisagées :**
-- `waveshare-epd` (si compatible)
-- `epdlib` ou bibliothèque générique E-Paper
-- Driver personnalisé basé sur la datasheet
+**Libraries considered:**
+- `waveshare-epd` (if compatible)
+- `epdlib` or generic E-Paper library
+- Custom driver based on datasheet
 
-**Rafraîchissement :**
-- Rafraîchissement complet : ~2-3 secondes
-- Rafraîchissement partiel : ~1 seconde (si supporté)
-- Stratégie : Rafraîchir uniquement quand nécessaire (changement de données)
+**Refresh:**
+- Full refresh: ~2-3 seconds
+- Partial refresh: ~1 second (if supported)
+- Strategy: Refresh only when necessary (data changes)
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] L'écran s'initialise au démarrage de l'add-on
-- [ ] Affichage de texte lisible (niveau de gris)
-- [ ] Affichage d'au moins 3 entités Home Assistant
-- [ ] Mise à jour automatique des valeurs (rafraîchissement optimisé)
-- [ ] Contrôle du front-light (on/off, intensité)
-- [ ] Gestion du deep sleep pour économie d'énergie
+- [ ] Display initializes at add-on startup
+- [ ] Readable text display (grayscale)
+- [ ] Display at least 3 Home Assistant entities
+- [ ] Automatic value updates (optimized refresh)
+- [ ] Front-light control (on/off, intensity)
+- [ ] Deep sleep management for energy saving
 
-### Dépendances
+### Dependencies
 
-- Configuration SPI activée sur le Pi
-- Accès au périphérique `/dev/spidev0.0`
-- Pins de contrôle (DC, Reset, BUSY) via GPIO
+- SPI configuration enabled on Pi
+- Access to `/dev/spidev0.0` device
+- Control pins (DC, Reset, BUSY) via GPIO
 
-### Notes techniques
+### Technical Notes
 
-- Le contrôleur UC8253 nécessite une séquence d'initialisation spécifique
-- Signal BUSY à surveiller pour synchronisation
-- Waveform stockée dans OTP ou chargée par MCU
-- Support du mode portrait et paysage
+- UC8253 controller requires specific initialization sequence
+- BUSY signal to monitor for synchronization
+- Waveform stored in OTP or loaded by MCU
+- Portrait and landscape mode support
 
 ---
 
-## F002 - Interface tactile I2C
+## F002 - I2C Touch Interface
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟡 Moyenne |
-| **Statut** | 🔜 Planifié |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | Medium |
+| **Status** | Planned |
 | **Interface** | I2C (`/dev/i2c-1`) |
-| **Matériel** | FT6336U (intégré dans GDEY037T03-FT21) |
+| **Hardware** | FT6336U (integrated in GDEY037T03-FT21) |
 
 ### Description
 
-Gestion des entrées tactiles via le contrôleur FT6336U intégré à l'écran E-Paper. Permet une interaction simple avec l'interface :
-- Navigation entre écrans
-- Sélection d'éléments
-- Actions rapides (toggle, slider)
-- **Note** : Le feedback visuel sera limité par la vitesse de rafraîchissement de l'E-Paper
+Touch input management via the FT6336U controller integrated in the E-Paper display. Allows simple interaction with the interface:
+- Navigation between screens
+- Element selection
+- Quick actions (toggle, slider)
+- **Note**: Visual feedback will be limited by E-Paper refresh speed
 
-### Spécifications techniques
+### Technical Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
-| **Contrôleur** | FT6336U |
+| Parameter | Value |
+|-----------|-------|
+| **Controller** | FT6336U |
 | **Interface** | I2C |
-| **Tension** | 3.0V |
-| **Résolution écran** | 240×416 pixels (mapping tactile) |
+| **Voltage** | 3.0V |
+| **Screen Resolution** | 240×416 pixels (touch mapping) |
 
-**Bibliothèques envisagées :**
-- `ft6336` (driver Python)
-- Driver basé sur datasheet FT6336U
+**Libraries considered:**
+- `ft6336` (Python driver)
+- Driver based on FT6336U datasheet
 
-**Gestion des gestes :**
-- Tap simple
+**Gesture management:**
+- Simple tap
 - Long press
-- Swipe (limité par rafraîchissement E-Paper)
+- Swipe (limited by E-Paper refresh)
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] Détection des touches
-- [ ] Précision acceptable (±5px)
-- [ ] Réponse < 100ms (lecture I2C)
-- [ ] Au moins 3 gestes supportés (tap, long press, swipe)
-- [ ] Mapping correct avec la résolution 240×416
+- [ ] Touch detection
+- [ ] Acceptable accuracy (±5px)
+- [ ] Response < 100ms (I2C read)
+- [ ] At least 3 gestures supported (tap, long press, swipe)
+- [ ] Correct mapping with 240×416 resolution
 
-### Dépendances
+### Dependencies
 
-- F001 (Écran E-Paper) - le tactile est intégré
-- Configuration I2C activée
-- Adresse I2C du FT6336U (à vérifier dans datasheet)
+- F001 (E-Paper Display) - touch is integrated
+- I2C configuration enabled
+- FT6336U I2C address (to verify in datasheet)
 
-### Notes techniques
+### Technical Notes
 
-- Le FT6336U est intégré au module, pas besoin de composant séparé
-- Adresse I2C typique : 0x38 (à confirmer)
-- Support multi-touch (2 points simultanés)
+- FT6336U is integrated in the module, no separate component needed
+- Typical I2C address: 0x38 (to confirm)
+- Multi-touch support (2 simultaneous points)
 
 ---
 
-## F003 - Capteur NFC PN532
+## F003 - PN532 NFC Sensor
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟡 Moyenne |
-| **Statut** | 🔜 Planifié |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | Medium |
+| **Status** | Planned |
 | **Interface** | I2C (`/dev/i2c-1`) |
-| **Matériel** | PN532 (NXP) |
+| **Hardware** | PN532 (NXP) |
 
 ### Description
 
-Lecture de tags NFC via le module PN532 pour déclencher des actions dans Home Assistant :
-- Identification de tags
-- Déclenchement d'automatisations
-- Authentification simple
-- Support de multiples protocoles NFC
+NFC tag reading via PN532 module to trigger actions in Home Assistant:
+- Tag identification
+- Automation triggering
+- Simple authentication
+- Support for multiple NFC protocols
 
-### Spécifications techniques
+### Technical Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
-| **Modèle** | PN532 |
+| Parameter | Value |
+|-----------|-------|
+| **Model** | PN532 |
 | **Interface** | I2C |
-| **Adresse I2C** | 0x24 (typique) |
-| **Protocoles** | MIFARE Classic, NTAG21x, ISO14443 Type A/B |
-| **Portée** | ~5cm |
-| **Tension** | 3.3V ou 5V (selon module) |
+| **I2C Address** | 0x24 (typical) |
+| **Protocols** | MIFARE Classic, NTAG21x, ISO14443 Type A/B |
+| **Range** | ~5cm |
+| **Voltage** | 3.3V or 5V (depending on module) |
 
-**Bibliothèques envisagées :**
+**Libraries considered:**
 - `adafruit-circuitpython-pn532` (Adafruit)
-- `nfcpy` (driver Python générique)
-- `libnfc` (via bindings Python)
+- `nfcpy` (generic Python driver)
+- `libnfc` (via Python bindings)
 
-**Mode de lecture :**
-- Polling continu (détection de tags)
-- Mode interrupt (si supporté par le module)
-- Fréquence de scan : 1-2 Hz (configurable)
+**Reading mode:**
+- Continuous polling (tag detection)
+- Interrupt mode (if supported by module)
+- Scan frequency: 1-2 Hz (configurable)
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] Lecture de tags MIFARE Classic
-- [ ] Lecture de tags NTAG21x
-- [ ] Lecture de tags ISO14443 Type A
-- [ ] Envoi d'événement à Home Assistant avec UID du tag
-- [ ] Temps de lecture < 500ms
-- [ ] Détection automatique de la présence de tags
+- [ ] MIFARE Classic tag reading
+- [ ] NTAG21x tag reading
+- [ ] ISO14443 Type A tag reading
+- [ ] Send event to Home Assistant with tag UID
+- [ ] Reading time < 500ms
+- [ ] Automatic tag presence detection
 
-### Dépendances
+### Dependencies
 
-- Configuration I2C activée
-- API Home Assistant accessible
-- Module PN532 configuré en mode I2C (jumpers/sélecteurs)
+- I2C configuration enabled
+- Home Assistant API accessible
+- PN532 module configured in I2C mode (jumpers/selectors)
 
-### Notes techniques
+### Technical Notes
 
-- Le PN532 peut fonctionner en I2C, SPI ou UART selon la configuration
-- Vérifier les jumpers/sélecteurs du module pour le mode I2C
-- Adresse I2C peut varier selon le module (0x24 ou 0x48)
-- Consommation : ~15mA en mode actif
+- PN532 can operate in I2C, SPI or UART depending on configuration
+- Check jumpers/selectors on module for I2C mode
+- I2C address may vary by module (0x24 or 0x48)
+- Consumption: ~15mA in active mode
 
 ---
 
-## F004 - Capteur BME280 (Température/Humidité/Pression)
+## F004 - BME280 Sensor (Temperature/Humidity/Pressure)
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟠 Haute |
-| **Statut** | 🔜 Planifié |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | High |
+| **Status** | Planned |
 | **Interface** | I2C (`/dev/i2c-1`) |
-| **Matériel** | BME280 (Bosch) |
+| **Hardware** | BME280 (Bosch) |
 
 ### Description
 
-Mesure de la température, humidité et pression atmosphérique via le capteur BME280 pour :
-- Affichage sur l'écran E-Paper
-- Exposition comme entités Home Assistant (3 sensors)
-- Régulation du ventilateur (F006) basée sur température
-- Suivi des conditions ambiantes
+Measurement of temperature, humidity and atmospheric pressure via BME280 sensor for:
+- Display on E-Paper screen
+- Exposure as Home Assistant entities (3 sensors)
+- Fan regulation (F006) based on temperature
+- Ambient condition monitoring
 
-### Spécifications techniques
+### Technical Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
-| **Modèle** | BME280 |
-| **Interface** | I2C (ou SPI, mais I2C choisi) |
-| **Adresses I2C** | 0x76 ou 0x77 (selon configuration) |
-| **Température** | -40°C à +85°C |
-| **Précision température** | ±1°C |
-| **Humidité** | 0-100% RH |
-| **Précision humidité** | ±3% RH |
-| **Pression** | 300-1100 hPa |
-| **Précision pression** | ±1 hPa |
+| Parameter | Value |
+|-----------|-------|
+| **Model** | BME280 |
+| **Interface** | I2C (or SPI, but I2C chosen) |
+| **I2C Addresses** | 0x76 or 0x77 (depending on configuration) |
+| **Temperature** | -40°C to +85°C |
+| **Temperature Accuracy** | ±1°C |
+| **Humidity** | 0-100% RH |
+| **Humidity Accuracy** | ±3% RH |
+| **Pressure** | 300-1100 hPa |
+| **Pressure Accuracy** | ±1 hPa |
 
-**Bibliothèques envisagées :**
+**Libraries considered:**
 - `adafruit-circuitpython-bme280` (Adafruit)
-- `bme280` (driver Python standard)
-- `RPi.bme280` (spécifique Raspberry Pi)
+- `bme280` (standard Python driver)
+- `RPi.bme280` (Raspberry Pi specific)
 
-**Fréquence de mesure :**
-- Lecture toutes les 30 secondes (configurable)
-- Mise en cache pour éviter surcharge I2C
-- Mode sleep entre les lectures pour économie d'énergie
+**Measurement frequency:**
+- Reading every 30 seconds (configurable)
+- Value caching to avoid I2C overload
+- Sleep mode between readings for energy saving
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] Lecture de température avec précision ±1°C
-- [ ] Lecture d'humidité avec précision ±3% RH
-- [ ] Lecture de pression avec précision ±1 hPa
-- [ ] Exposition comme 3 sensors dans HA (`sensor.ha_box_temperature`, `sensor.ha_box_humidity`, `sensor.ha_box_pressure`)
-- [ ] Mise à jour toutes les 30s minimum
-- [ ] Affichage sur l'écran local (valeurs formatées)
-- [ ] Détection automatique de l'adresse I2C (0x76 ou 0x77)
+- [ ] Temperature reading with ±1°C accuracy
+- [ ] Humidity reading with ±3% RH accuracy
+- [ ] Pressure reading with ±1 hPa accuracy
+- [ ] Exposure as 3 sensors in HA (`sensor.ha_box_temperature`, `sensor.ha_box_humidity`, `sensor.ha_box_pressure`)
+- [ ] Update every 30s minimum
+- [ ] Local display (formatted values)
+- [ ] Automatic I2C address detection (0x76 or 0x77)
 
-### Dépendances
+### Dependencies
 
-- Configuration I2C activée
-- F001 (optionnel, pour affichage)
-- Pull-ups I2C (généralement présents sur modules BME280)
+- I2C configuration enabled
+- F001 (optional, for display)
+- I2C pull-ups (generally present on BME280 modules)
 
-### Notes techniques
+### Technical Notes
 
-- Le BME280 nécessite une calibration initiale (compensation)
-- Support du mode forced (mesure à la demande) ou normal (mesure continue)
-- Filtre configurable pour lisser les valeurs
+- BME280 requires initial calibration (compensation)
+- Support for forced mode (on-demand measurement) or normal mode (continuous measurement)
+- Configurable filter to smooth values
 
 ---
 
-## F005 - Bande LED
+## F005 - LED Strip
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟢 Basse |
-| **Statut** | 📋 À définir |
-| **Interface** | GPIO/PWM ou SPI |
-| **Matériel** | WS2812B, SK6812, APA102, etc. |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | Low |
+| **Status** | To be defined |
+| **Interface** | GPIO/PWM or SPI |
+| **Hardware** | WS2812B, SK6812, APA102, etc. |
 
 ### Description
 
-Contrôle d'une bande LED pour :
-- Notifications visuelles
-- Ambiance lumineuse
-- Indicateur de statut
+LED strip control for:
+- Visual notifications
+- Ambient lighting
+- Status indicator
 
-### Spécifications techniques
+### Technical Specifications
 
-- [ ] Type de LED (WS2812B recommandé)
-- [ ] Nombre de LEDs maximum
-- [ ] Méthode de contrôle (PWM, SPI, DMA)
-- [ ] Effets disponibles
+- [ ] LED type (WS2812B recommended)
+- [ ] Maximum number of LEDs
+- [ ] Control method (PWM, SPI, DMA)
+- [ ] Available effects
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] Contrôle de couleur RGB
-- [ ] Au moins 3 effets (fixe, fade, rainbow)
-- [ ] Intégration comme light dans HA
-- [ ] Réactivité < 50ms
+- [ ] RGB color control
+- [ ] At least 3 effects (fixed, fade, rainbow)
+- [ ] Integration as light in HA
+- [ ] Responsiveness < 50ms
 
-### Dépendances
+### Dependencies
 
-- Accès GPIO ou SPI
-- Alimentation suffisante
+- GPIO or SPI access
+- Sufficient power supply
 
 ---
 
-## F006 - Ventilateur PWM
+## F006 - PWM Fan
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟡 Moyenne |
-| **Statut** | 📋 À définir |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | Medium |
+| **Status** | To be defined |
 | **Interface** | GPIO PWM |
-| **Matériel** | Ventilateur 5V PWM 4 pins |
+| **Hardware** | 5V PWM 4-pin fan |
 
 ### Description
 
-Régulation de la vitesse du ventilateur basée sur :
-- Température du CPU
-- Température ambiante (F004)
-- Contrôle manuel
+Fan speed regulation based on:
+- CPU temperature
+- Ambient temperature (F004)
+- Manual control
 
-### Spécifications techniques
+### Technical Specifications
 
-- [ ] Pin GPIO PWM à utiliser
-- [ ] Fréquence PWM
-- [ ] Courbe de régulation
-- [ ] Seuils de température
+- [ ] GPIO PWM pin to use
+- [ ] PWM frequency
+- [ ] Regulation curve
+- [ ] Temperature thresholds
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] Contrôle de vitesse 0-100%
-- [ ] Régulation automatique basée sur température
-- [ ] Mode manuel disponible
-- [ ] Exposition comme fan dans HA
+- [ ] Speed control 0-100%
+- [ ] Automatic regulation based on temperature
+- [ ] Manual mode available
+- [ ] Exposure as fan in HA
 
-### Dépendances
+### Dependencies
 
-- Accès GPIO PWM
-- F004 (pour régulation automatique)
+- GPIO PWM access
+- F004 (for automatic regulation)
 
 ---
 
-## F007 - Configuration et UI
+## F007 - Configuration and UI
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟠 Haute |
-| **Statut** | 📋 À définir |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | High |
+| **Status** | To be defined |
 | **Interface** | Home Assistant |
 
 ### Description
 
-Interface de configuration de l'add-on :
-- Options dans le panneau de l'add-on
-- Sélection des entités à afficher
-- Configuration des seuils et paramètres
+Add-on configuration interface:
+- Options in add-on panel
+- Entity selection to display
+- Threshold and parameter configuration
 
-### Spécifications techniques
+### Technical Specifications
 
-- [ ] Schema de configuration
-- [ ] Validation des entrées
-- [ ] Rechargement à chaud
-- [ ] Traductions (FR, EN)
+- [ ] Configuration schema
+- [ ] Input validation
+- [ ] Hot reload
+- [ ] Translations (FR, EN)
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] Configuration fonctionnelle via UI
-- [ ] Validation des erreurs
-- [ ] Documentation des options
-- [ ] Au moins 2 langues
+- [ ] Functional configuration via UI
+- [ ] Error validation
+- [ ] Option documentation
+- [ ] At least 2 languages
 
-### Dépendances
+### Dependencies
 
-- Structure de base de l'add-on
+- Basic add-on structure
 
 ---
 
-## F008 - Démarrage précoce
+## F008 - Early Startup
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟢 Basse |
-| **Statut** | 📋 À définir |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | Low |
+| **Status** | To be defined |
 | **Interface** | Supervisor |
 
 ### Description
 
-Permettre à l'add-on de démarrer le plus tôt possible pour :
-- Afficher un écran de boot
-- Initialiser les périphériques rapidement
-- Afficher le statut de démarrage de HA
+Allow add-on to start as early as possible for:
+- Display boot screen
+- Quick device initialization
+- Display HA startup status
 
-### Spécifications techniques
+### Technical Specifications
 
-- [ ] Valeur de `startup` dans config.yaml
-- [ ] Gestion de l'indisponibilité de HA
-- [ ] Écran de fallback
+- [ ] `startup` value in config.yaml
+- [ ] HA unavailability handling
+- [ ] Fallback screen
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] L'écran affiche quelque chose dès le boot de l'add-on
-- [ ] Pas de crash si HA n'est pas encore prêt
-- [ ] Transition fluide vers l'écran principal
+- [ ] Screen displays something from add-on boot
+- [ ] No crash if HA not ready yet
+- [ ] Smooth transition to main screen
 
-### Dépendances
+### Dependencies
 
-- F001 (Écran SPI)
-- Compréhension du cycle de boot Supervisor
+- F001 (SPI Display)
+- Understanding Supervisor boot cycle
 
 ---
 
-## F008 - Front-light de l'écran
+## F008 - Display Front-light
 
-| Attribut | Valeur |
-|----------|--------|
-| **Priorité** | 🟡 Moyenne |
-| **Statut** | 🔜 Planifié |
+| Attribute | Value |
+|----------|-------|
+| **Priority** | Medium |
+| **Status** | Planned |
 | **Interface** | GPIO PWM |
-| **Matériel** | 9 LEDs intégrées (2.8V) contrôlées par MOSFET |
+| **Hardware** | 9 integrated LEDs (2.8V) controlled by MOSFET |
 
 ### Description
 
-Contrôle du front-light intégré à l'écran E-Paper pour permettre la lecture dans l'obscurité. Le front-light est contrôlé via un MOSFET qui bloque le courant par défaut, permettant un contrôle PWM pour régler l'intensité :
-- Activation/désactivation
-- Réglage de l'intensité via PWM (0-100%)
-- Mode automatique basé sur luminosité ambiante (si capteur disponible)
-- Économie d'énergie (désactivation automatique)
+Control of the front-light integrated in the E-Paper display to allow reading in darkness. The front-light is controlled via a MOSFET that blocks current by default, allowing PWM control to adjust brightness:
+- Activation/deactivation
+- Intensity adjustment via PWM (0-100%)
+- Automatic mode based on ambient light (if sensor available)
+- Energy saving (automatic deactivation)
 
-### Spécifications techniques
+### Technical Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
-| **Contrôle** | MOSFET (PWM) |
-| **Tension LEDs** | 2.8V typique |
-| **Nombre de LEDs** | 9 |
-| **Consommation max** | ~20-30mA |
-| **Interface** | GPIO PWM (Hardware ou Software PWM) |
+| Parameter | Value |
+|-----------|-------|
+| **Control** | MOSFET (PWM) |
+| **LED Voltage** | 2.8V typical |
+| **Number of LEDs** | 9 |
+| **Max Consumption** | ~20-30mA |
+| **Interface** | GPIO PWM (Hardware or Software PWM) |
 
-**Contrôle PWM :**
-- Fréquence PWM : 1-10 kHz (à optimiser pour éviter scintillement)
-- Résolution : 8-12 bits (256-4096 niveaux)
-- Duty cycle : 0-100% (0% = éteint, 100% = max)
+**PWM Control:**
+- PWM frequency: 1-10 kHz (optimize to avoid flicker)
+- Resolution: 8-12 bits (256-4096 levels)
+- Duty cycle: 0-100% (0% = off, 100% = max)
 
-**Bibliothèques envisagées :**
-- `RPi.GPIO` avec software PWM
-- Hardware PWM du Raspberry Pi (si pin disponible)
-- `pigpio` pour PWM plus précis
+**Libraries considered:**
+- `RPi.GPIO` with software PWM
+- Raspberry Pi hardware PWM (if pin available)
+- `pigpio` for more precise PWM
 
-### Critères d'acceptation
+### Acceptance Criteria
 
-- [ ] Contrôle on/off fonctionnel
-- [ ] Intensité réglable via PWM (0-100%)
-- [ ] Pas de scintillement visible à l'œil
-- [ ] Intégration dans la configuration de l'add-on
-- [ ] Mode automatique (on/off selon heure ou luminosité)
+- [ ] Functional on/off control
+- [ ] Intensity adjustable via PWM (0-100%)
+- [ ] No visible flicker
+- [ ] Integration in add-on configuration
+- [ ] Automatic mode (on/off based on time or light)
 
-### Dépendances
+### Dependencies
 
-- F001 (Écran E-Paper)
-- Pin GPIO disponible pour PWM
-- Configuration PWM activée
+- F001 (E-Paper Display)
+- Available GPIO pin for PWM
+- PWM configuration enabled
 
-### Notes techniques
+### Technical Notes
 
-- Le MOSFET bloque le courant par défaut (état bas = éteint)
-- PWM permet un contrôle fluide de l'intensité
-- Éviter les fréquences trop basses (< 100Hz) pour éviter le scintillement
-- Hardware PWM recommandé si disponible (plus précis, moins de charge CPU)
-
----
-
-## Spécificités E-Paper
-
-### Contraintes et opportunités
-
-L'utilisation d'un écran E-Paper apporte des contraintes mais aussi des avantages uniques :
-
-**Contraintes :**
-- ⚠️ **Rafraîchissement lent** : 2-3 secondes pour un rafraîchissement complet
-- ⚠️ **Affichage 1-bit** : Noir et blanc uniquement, pas de couleurs
-- ⚠️ **Ghosting** : Traces d'images précédentes possibles (nécessite rafraîchissement périodique)
-- ⚠️ **Température** : Performance dégradée en dessous de 0°C
-
-**Avantages :**
-- ✅ **Consommation ultra-faible** : 34µA en veille, 1.1µA en deep sleep
-- ✅ **Lisibilité parfaite** : Excellent contraste en lumière ambiante
-- ✅ **Bi-stable** : L'image reste affichée sans alimentation
-- ✅ **Pas d'éblouissement** : Confortable pour lecture prolongée
-- ✅ **Idéal pour affichage statique** : Parfait pour dashboard Home Assistant
-
-### Stratégies d'optimisation
-
-1. **Rafraîchissement intelligent** :
-   - Rafraîchir uniquement les zones modifiées (si supporté)
-   - Rafraîchissement complet périodique pour éviter le ghosting
-   - Détection des changements significatifs avant rafraîchissement
-
-2. **Interface utilisateur adaptée** :
-   - Design minimaliste, optimisé pour noir/blanc
-   - Utilisation de contrastes forts
-   - Éviter les animations rapides
-   - Feedback tactile/haptique pour compenser la latence visuelle
-
-3. **Gestion de l'énergie** :
-   - Mode deep sleep quand l'écran n'est pas utilisé
-   - Désactivation du front-light quand non nécessaire
-   - Rafraîchissement uniquement lors de changements importants
+- MOSFET blocks current by default (low state = off)
+- PWM allows smooth intensity control
+- Avoid frequencies too low (< 100Hz) to prevent flicker
+- Hardware PWM recommended if available (more precise, less CPU load)
 
 ---
 
-## Backlog / Idées futures
+## E-Paper Specifics
 
-Ces fonctionnalités ne sont pas planifiées mais pourraient être ajoutées :
+### Constraints and Opportunities
 
-| ID | Fonctionnalité | Description |
-|----|----------------|-------------|
-| F009 | Boutons physiques | Support de boutons GPIO en plus du tactile |
-| F010 | Audio | Sortie audio pour notifications sonores |
-| F011 | Thèmes | Personnalisation de l'interface (niveaux de gris via dithering) |
-| F012 | Widgets | Widgets personnalisables sur l'écran |
-| F013 | Multi-écrans | Support de plusieurs écrans |
-| F014 | Rafraîchissement partiel | Optimisation avec rafraîchissement partiel de l'E-Paper |
-| F015 | Mode économie d'énergie | Détection d'inactivité et deep sleep automatique |
+Using an E-Paper display brings constraints but also unique advantages:
+
+**Constraints:**
+- **Slow refresh**: 2-3 seconds for full refresh
+- **1-bit display**: Black and white only, no colors
+- **Ghosting**: Possible traces of previous images (requires periodic refresh)
+- **Temperature**: Performance degraded below 0°C
+
+**Advantages:**
+- **Ultra-low consumption**: 34µA standby, 1.1µA deep sleep
+- **Perfect readability**: Excellent contrast in ambient light
+- **Bi-stable**: Image remains displayed without power
+- **No glare**: Comfortable for prolonged reading
+- **Ideal for static display**: Perfect for Home Assistant dashboard
+
+### Optimization Strategies
+
+1. **Smart refresh**:
+   - Refresh only modified areas (if supported)
+   - Periodic full refresh to avoid ghosting
+   - Detect significant changes before refresh
+
+2. **Adapted user interface**:
+   - Minimalist design, optimized for black/white
+   - Use strong contrasts
+   - Avoid fast animations
+   - Tactile/haptic feedback to compensate for visual latency
+
+3. **Energy management**:
+   - Deep sleep mode when display not used
+   - Front-light deactivation when not needed
+   - Refresh only on important changes
 
 ---
 
-## Historique des modifications
+## Backlog / Future Ideas
+
+These features are not planned but could be added:
+
+| ID | Feature | Description |
+|----|---------|-------------|
+| F009 | Physical buttons | GPIO button support in addition to touch |
+| F010 | Audio | Audio output for sound notifications |
+| F011 | Themes | Interface customization (grayscale via dithering) |
+| F012 | Widgets | Customizable widgets on screen |
+| F013 | Multi-display | Multiple display support |
+| F014 | Partial refresh | Optimization with E-Paper partial refresh |
+| F015 | Energy saving mode | Inactivity detection and automatic deep sleep |
+
+---
+
+## Modification History
 
 | Date | Modification |
 |------|--------------|
-| 2026-01-17 | Création initiale du cahier de features |
+| 2026-01-17 | Initial features specification creation |
 
 ---
 
-*Ce document est vivant et sera mis à jour au fur et à mesure de l'avancement du projet.*
+*This document is living and will be updated as the project progresses.*

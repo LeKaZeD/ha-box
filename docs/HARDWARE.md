@@ -1,283 +1,283 @@
-# Matériel - HA Box
+# Hardware - HA Box
 
-Ce document liste tous les composants matériels utilisés dans le projet HA Box avec leurs spécifications détaillées.
+This document lists all hardware components used in the HA Box project with their detailed specifications.
 
-## Composants principaux
+## Main Components
 
-### 1. Écran E-Paper GDEY037T03-FT21
+### 1. GDEY037T03-FT21 E-Paper Display
 
-**Fabricant** : GooDisplay (Dalian Good Display Co., Ltd.)  
-**Modèle** : GDEY037T03-FT21  
-**Type** : E-Paper (Electrophoretic Display) avec front-light et tactile intégrés
+**Manufacturer**: GooDisplay (Dalian Good Display Co., Ltd.)  
+**Model**: GDEY037T03-FT21  
+**Type**: E-Paper (Electrophoretic Display) with integrated front-light and touch
 
-#### Spécifications
+#### Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
-| Taille | 3.7" |
-| Résolution | 240×416 pixels |
+| Parameter | Value |
+|-----------|-------|
+| Size | 3.7" |
+| Resolution | 240×416 pixels |
 | DPI | 130 |
-| Zone active | 47.04×81.54 mm |
-| Pitch pixel | 0.196×0.196 mm |
-| Contrôleur | UC8253 |
-| Interface | SPI 4-wire ou 3-wire |
-| Front-light | 9 LEDs, 2.8V (typique) |
-| Tactile | FT6336U (I2C, 3.0V) |
-| Température opérationnelle | -25°C à 70°C |
-| Consommation veille | 34µA |
-| Consommation deep sleep | 1.1µA |
+| Active area | 47.04×81.54 mm |
+| Pixel pitch | 0.196×0.196 mm |
+| Controller | UC8253 |
+| Interface | SPI 4-wire or 3-wire |
+| Front-light | 9 LEDs, 2.8V (typical) |
+| Touch | FT6336U (I2C, 3.0V) |
+| Operating temperature | -25°C to 70°C |
+| Standby consumption | 34µA |
+| Deep sleep consumption | 1.1µA |
 
-#### Caractéristiques E-Paper
+#### E-Paper Characteristics
 
-- **Bi-stable** : L'image reste affichée sans alimentation
-- **Rafraîchissement complet** : ~2-3 secondes
-- **Rafraîchissement partiel** : ~1 seconde (si supporté)
-- **Contraste élevé** : Excellent en lumière ambiante
-- **Consommation ultra-faible** : Idéal pour applications embarquées
-- **1-bit** : Affichage noir/blanc uniquement
+- **Bi-stable**: Image remains displayed without power
+- **Full refresh**: ~2-3 seconds
+- **Partial refresh**: ~1 second (if supported)
+- **High contrast**: Excellent in ambient light
+- **Ultra-low consumption**: Ideal for embedded applications
+- **1-bit**: Black/white display only
 
-#### Pins de connexion
+#### Connection Pins
 
-| Pin | Nom | Fonction | Notes |
-|-----|-----|----------|-------|
-| SPI MOSI | Data | Données SPI | GPIO 10 |
-| SPI SCLK | Clock | Horloge SPI | GPIO 11 |
+| Pin | Name | Function | Notes |
+|-----|------|----------|-------|
+| SPI MOSI | Data | SPI data | GPIO 10 |
+| SPI SCLK | Clock | SPI clock | GPIO 11 |
 | SPI CE0 | CS | Chip Select | GPIO 8 |
-| DC | Data/Command | Sélection | GPIO (TBD) |
-| Reset | Reset | Reset contrôleur | GPIO (TBD) |
-| BUSY | Status | État contrôleur | GPIO (TBD, lecture) |
-| TSCL | I2C Clock | Horloge I2C tactile | GPIO 3 |
-| TSDA | I2C Data | Données I2C tactile | GPIO 2 |
-| Front-light | PWM | Contrôle MOSFET front-light | GPIO (TBD, PWM) |
-| VDD | Alimentation | 3.0V | Alimentation principale |
-| GND | Masse | 0V | Masse commune |
+| DC | Data/Command | Selection | GPIO (TBD) |
+| Reset | Reset | Controller reset | GPIO (TBD) |
+| BUSY | Status | Controller state | GPIO (TBD, read) |
+| TSCL | I2C Clock | Touch I2C clock | GPIO 3 |
+| TSDA | I2C Data | Touch I2C data | GPIO 2 |
+| Front-light | PWM | MOSFET front-light control | GPIO (TBD, PWM) |
+| VDD | Power | 3.0V | Main power supply |
+| GND | Ground | 0V | Common ground |
 
 #### Front-light
 
-Le front-light est composé de 9 LEDs (2.8V typique) contrôlées par un MOSFET. Le MOSFET bloque le courant par défaut (état bas = éteint), permettant un contrôle PWM pour régler l'intensité lumineuse.
+The front-light consists of 9 LEDs (2.8V typical) controlled by a MOSFET. The MOSFET blocks current by default (low state = off), allowing PWM control to adjust light intensity.
 
-**Caractéristiques :**
-- 9 LEDs intégrées
-- Tension : 2.8V typique
-- Contrôle : MOSFET avec PWM
-- Consommation : ~20-30mA à intensité maximale
-- Interface : GPIO avec PWM (Hardware ou Software PWM)
+**Characteristics:**
+- 9 integrated LEDs
+- Voltage: 2.8V typical
+- Control: MOSFET with PWM
+- Consumption: ~20-30mA at maximum intensity
+- Interface: GPIO with PWM (Hardware or Software PWM)
 
-**Contrôle PWM :**
-- Fréquence recommandée : 1-10 kHz (éviter scintillement)
-- Résolution : 8-12 bits (256-4096 niveaux)
-- Duty cycle : 0-100% (0% = éteint, 100% = max)
+**PWM Control:**
+- Recommended frequency: 1-10 kHz (avoid flicker)
+- Resolution: 8-12 bits (256-4096 levels)
+- Duty cycle: 0-100% (0% = off, 100% = max)
 
 #### Documentation
 
-- Datasheet : `GDEY037T03-FT21.pdf`
-- Site web : [www.good-display.com](https://www.good-display.com)
+- Datasheet: `GDEY037T03-FT21.pdf`
+- Website: [www.good-display.com](https://www.good-display.com)
 
 ---
 
-### 2. Capteur BME280
+### 2. BME280 Sensor
 
-**Fabricant** : Bosch  
-**Modèle** : BME280  
-**Type** : Capteur environnemental (Température, Humidité, Pression)
+**Manufacturer**: Bosch  
+**Model**: BME280  
+**Type**: Environmental sensor (Temperature, Humidity, Pressure)
 
-#### Spécifications
+#### Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
-| Interface | I2C (ou SPI) |
-| Adresses I2C | 0x76 ou 0x77 (selon configuration) |
-| Température | -40°C à +85°C |
-| Précision température | ±1°C |
-| Humidité | 0-100% RH |
-| Précision humidité | ±3% RH |
-| Pression | 300-1100 hPa |
-| Précision pression | ±1 hPa |
-| Tension | 1.8V à 3.6V |
-| Consommation | ~3.6µA (mode sleep) |
+| Parameter | Value |
+|-----------|-------|
+| Interface | I2C (or SPI) |
+| I2C Addresses | 0x76 or 0x77 (depending on configuration) |
+| Temperature | -40°C to +85°C |
+| Temperature Accuracy | ±1°C |
+| Humidity | 0-100% RH |
+| Humidity Accuracy | ±3% RH |
+| Pressure | 300-1100 hPa |
+| Pressure Accuracy | ±1 hPa |
+| Voltage | 1.8V to 3.6V |
+| Consumption | ~3.6µA (sleep mode) |
 
-#### Connexion
+#### Connection
 
-| Pin | Fonction | Raspberry Pi |
+| Pin | Function | Raspberry Pi |
 |-----|----------|--------------|
-| VCC | Alimentation 3.3V | 3.3V |
-| GND | Masse | GND |
+| VCC | 3.3V Power | 3.3V |
+| GND | Ground | GND |
 | SDA | I2C Data | GPIO 2 (SDA) |
 | SCL | I2C Clock | GPIO 3 (SCL) |
 
 #### Documentation
 
-- Datasheet : Disponible sur le site Bosch
-- Module Amazon : [BME280](https://www.amazon.fr/Gy-bme280-num%C3%A9rique-pr%C3%A9cision-barom%C3%A9trique-Temp%C3%A9rature/dp/B077PNKCQ6)
+- Datasheet: Available on Bosch website
+- Amazon module: [BME280](https://www.amazon.fr/Gy-bme280-num%C3%A9rique-pr%C3%A9cision-barom%C3%A9trique-Temp%C3%A9rature/dp/B077PNKCQ6)
 
 ---
 
-### 3. Module NFC PN532
+### 3. PN532 NFC Module
 
-**Fabricant** : NXP  
-**Modèle** : PN532  
-**Type** : Contrôleur NFC 13.56 MHz
+**Manufacturer**: NXP  
+**Model**: PN532  
+**Type**: 13.56 MHz NFC controller
 
-#### Spécifications
+#### Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
-| Interface | I2C (ou SPI/UART selon configuration) |
-| Adresse I2C | 0x24 (typique, peut varier selon module) |
-| Protocoles | MIFARE Classic, NTAG21x, ISO14443 Type A/B |
-| Portée | ~5cm |
-| Tension | 3.3V ou 5V (selon module) |
-| Consommation | ~15mA (mode actif) |
-| Fréquence | 13.56 MHz |
+| Parameter | Value |
+|-----------|-------|
+| Interface | I2C (or SPI/UART depending on configuration) |
+| I2C Address | 0x24 (typical, may vary by module) |
+| Protocols | MIFARE Classic, NTAG21x, ISO14443 Type A/B |
+| Range | ~5cm |
+| Voltage | 3.3V or 5V (depending on module) |
+| Consumption | ~15mA (active mode) |
+| Frequency | 13.56 MHz |
 
-#### Caractéristiques
+#### Characteristics
 
-- Support de multiples protocoles NFC
-- Mode polling pour détection automatique de tags
-- Lecture/écriture de tags NFC
-- Compatible avec la plupart des tags NFC standards
+- Support for multiple NFC protocols
+- Polling mode for automatic tag detection
+- NFC tag read/write
+- Compatible with most standard NFC tags
 
-#### Connexion
+#### Connection
 
-| Pin | Fonction | Raspberry Pi |
+| Pin | Function | Raspberry Pi |
 |-----|----------|--------------|
-| VCC | Alimentation | 3.3V ou 5V (selon module) |
-| GND | Masse | GND |
+| VCC | Power | 3.3V or 5V (depending on module) |
+| GND | Ground | GND |
 | SDA | I2C Data | GPIO 2 (SDA) |
 | SCL | I2C Clock | GPIO 3 (SCL) |
 
-**Note** : Vérifier que le module est configuré en mode I2C (jumpers/sélecteurs sur le breakout board).
+**Note**: Verify that the module is configured in I2C mode (jumpers/selectors on breakout board).
 
 #### Documentation
 
-- Datasheet : Disponible sur le site NXP
-- Modules Amazon :
-  - [Module NFC 1](https://www.amazon.fr/dp/B0FB95HMMC/)
-  - [Module NFC 2](https://www.amazon.fr/dp/B0DJP3987K/)
+- Datasheet: Available on NXP website
+- Amazon modules:
+  - [NFC Module 1](https://www.amazon.fr/dp/B0FB95HMMC/)
+  - [NFC Module 2](https://www.amazon.fr/dp/B0DJP3987K/)
 
 ---
 
-### 4. Bande LED WS2812B (Optionnel)
+### 4. WS2812B LED Strip (Optional)
 
-**Type** : LED RGB adressable  
-**Interface** : GPIO (protocole propriétaire)
+**Type**: Addressable RGB LED  
+**Interface**: GPIO (proprietary protocol)
 
-#### Spécifications
+#### Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
+| Parameter | Value |
+|-----------|-------|
 | Interface | GPIO (1-wire) |
-| Pin | GPIO 21 (proposé) |
-| Tension | 5V |
-| Consommation | ~60mA par LED (blanc max) |
-| Protocole | WS2812B (timing critique) |
+| Pin | GPIO 21 (proposed) |
+| Voltage | 5V |
+| Consumption | ~60mA per LED (white max) |
+| Protocol | WS2812B (critical timing) |
 
 #### Notes
 
-- Nécessite une bibliothèque dédiée (rpi_ws281x, neopixel)
-- Timing précis requis (DMA recommandé)
-- Alimentation externe recommandée pour >10 LEDs
+- Requires dedicated library (rpi_ws281x, neopixel)
+- Precise timing required (DMA recommended)
+- External power supply recommended for >10 LEDs
 
 ---
 
-### 5. Ventilateur PWM (Optionnel)
+### 5. PWM Fan (Optional)
 
-**Type** : Ventilateur 5V avec contrôle PWM
+**Type**: 5V fan with PWM control
 
-#### Spécifications
+#### Specifications
 
-| Paramètre | Valeur |
-|-----------|--------|
+| Parameter | Value |
+|-----------|-------|
 | Interface | GPIO PWM |
 | Pin | GPIO 18 (Hardware PWM) |
-| Tension | 5V |
-| Contrôle | 0-100% vitesse |
+| Voltage | 5V |
+| Control | 0-100% speed |
 
 #### Notes
 
-- Utilise le PWM hardware du Raspberry Pi
-- Régulation basée sur température (BME280 ou CPU)
-- Peut être contrôlé manuellement via HA
+- Uses Raspberry Pi hardware PWM
+- Regulation based on temperature (BME280 or CPU)
+- Can be manually controlled via HA
 
 ---
 
-## Configuration Raspberry Pi
+## Raspberry Pi Configuration
 
-### config.txt requis
+### Required config.txt
 
 ```ini
-# Activer I2C
+# Enable I2C
 dtparam=i2c_arm=on
 dtparam=i2c1=on
 
-# Activer SPI
+# Enable SPI
 dtparam=spi=on
 
-# PWM pour ventilateur (GPIO 18)
+# PWM for fan (GPIO 18)
 dtoverlay=pwm,pin=18,func=2
 ```
 
-### Périphériques Linux
+### Linux Devices
 
-| Périphérique | Usage |
-|--------------|-------|
-| `/dev/i2c-1` | Bus I2C principal (tactile, BME280, NFC) |
-| `/dev/spidev0.0` | Bus SPI (écran E-Paper) |
-| `/dev/gpiomem` | Accès GPIO (LED, front-light, contrôle) |
+| Device | Usage |
+|--------|-------|
+| `/dev/i2c-1` | Main I2C bus (touch, BME280, NFC) |
+| `/dev/spidev0.0` | SPI bus (E-Paper display) |
+| `/dev/gpiomem` | GPIO access (LED, front-light, control) |
 
 ---
 
-## Schéma de connexion (À compléter)
+## Connection Diagram (To be completed)
 
 ```
 Raspberry Pi 4/5
 ├── SPI0
-│   ├── MOSI (GPIO 10) ──> Écran E-Paper (Data)
-│   ├── SCLK (GPIO 11) ──> Écran E-Paper (Clock)
-│   └── CE0  (GPIO 8)  ──> Écran E-Paper (CS)
+│   ├── MOSI (GPIO 10) ──> E-Paper Display (Data)
+│   ├── SCLK (GPIO 11) ──> E-Paper Display (Clock)
+│   └── CE0  (GPIO 8)  ──> E-Paper Display (CS)
 │
 ├── I2C1
-│   ├── SDA (GPIO 2) ──> Tactile FT6336U, BME280, NFC
-│   └── SCL (GPIO 3) ──> Tactile FT6336U, BME280, NFC
+│   ├── SDA (GPIO 2) ──> Touch FT6336U, BME280, NFC
+│   └── SCL (GPIO 3) ──> Touch FT6336U, BME280, NFC
 │
 ├── GPIO
-│   ├── GPIO 18 ──> Ventilateur PWM
-│   ├── GPIO 21 ──> LED WS2812B (optionnel)
-│   └── GPIO (TBD) ──> Écran E-Paper (DC, Reset, BUSY, Front-light PWM)
+│   ├── GPIO 18 ──> PWM Fan
+│   ├── GPIO 21 ──> WS2812B LED (optional)
+│   └── GPIO (TBD) ──> E-Paper Display (DC, Reset, BUSY, Front-light PWM)
 │
-└── Alimentation
-    ├── 3.3V ──> BME280, Écran (VDD)
-    ├── 5V ──> Ventilateur, LED (optionnel)
-    └── GND ──> Tous les composants
+└── Power
+    ├── 3.3V ──> BME280, Display (VDD)
+    ├── 5V ──> Fan, LED (optional)
+    └── GND ──> All components
 ```
 
 ---
 
-## Consommation électrique estimée
+## Estimated Power Consumption
 
-| Composant | Consommation | Notes |
-|-----------|--------------|-------|
-| Écran E-Paper (veille) | 34µA | Deep sleep : 1.1µA |
-| Écran E-Paper (rafraîchissement) | ~50mA | Pendant 2-3 secondes |
-| Front-light | ~20-30mA | 9 LEDs à 2.8V (contrôlé par MOSFET PWM) |
-| BME280 | ~3.6µA | Mode sleep |
-| Tactile FT6336U | ~10µA | Mode sleep |
-| NFC (PN532) | ~15mA | Mode actif |
-| LED WS2812B | ~60mA/LED | Blanc max |
-| Ventilateur | ~100-200mA | 5V PWM |
+| Component | Consumption | Notes |
+|-----------|-------------|-------|
+| E-Paper Display (standby) | 34µA | Deep sleep: 1.1µA |
+| E-Paper Display (refresh) | ~50mA | During 2-3 seconds |
+| Front-light | ~20-30mA | 9 LEDs at 2.8V (controlled by MOSFET PWM) |
+| BME280 | ~3.6µA | Sleep mode |
+| Touch FT6336U | ~10µA | Sleep mode |
+| NFC (PN532) | ~15mA | Active mode |
+| WS2812B LED | ~60mA/LED | White max |
+| Fan | ~100-200mA | 5V PWM |
 
-**Total estimé (veille)** : ~50µA (excellent pour applications embarquées)  
-**Total estimé (actif)** : ~200-300mA (selon composants actifs)
-
----
-
-## Notes importantes
-
-1. **E-Paper** : Le rafraîchissement est lent (~2-3s), adapter l'interface utilisateur en conséquence
-2. **I2C** : Tous les composants I2C partagent le même bus, vérifier les adresses
-3. **Alimentation** : Le Raspberry Pi peut fournir 3.3V et 5V, mais vérifier les limites de courant
-4. **Front-light** : Contrôlé via MOSFET avec PWM, tension 2.8V typique (9 LEDs intégrées)
+**Total estimated (standby)**: ~50µA (excellent for embedded applications)  
+**Total estimated (active)**: ~200-300mA (depending on active components)
 
 ---
 
-*Dernière mise à jour : 2026-01-17*
+## Important Notes
+
+1. **E-Paper**: Refresh is slow (~2-3s), adapt user interface accordingly
+2. **I2C**: All I2C components share the same bus, verify addresses
+3. **Power supply**: Raspberry Pi can provide 3.3V and 5V, but check current limits
+4. **Front-light**: Controlled via MOSFET with PWM, 2.8V typical voltage (9 integrated LEDs)
+
+---
+
+*Last updated: 2026-01-17*

@@ -1,43 +1,43 @@
 # Home Assistant Add-on: HA Box
 
-_Interface physique pour Home Assistant avec écran E-Paper, capteurs et contrôleurs._
+_Physical interface for Home Assistant with E-Paper display, sensors and controllers._
 
 ![Supports aarch64 Architecture](https://img.shields.io/badge/aarch64-yes-green.svg)
 
-## À propos
+## About
 
-HA Box est un add-on Home Assistant OS qui permet de créer une interface physique pour votre installation Home Assistant via :
+HA Box is a Home Assistant OS add-on that allows creating a physical interface for your Home Assistant installation via:
 
-- 🖥️ **Écran E-Paper 3.7"** (GDEY037T03-FT21) avec front-light intégré
-- 👆 **Interface tactile** (FT6336U intégré)
-- 📡 **Lecteur NFC** (PN532)
-- 🌡️ **Capteur environnemental** (BME280 - température, humidité, pression)
-- 💡 **Bande LED** (WS2812B - optionnel)
-- 🌀 **Ventilateur PWM** (optionnel)
+- **3.7" E-Paper Display** (GDEY037T03-FT21) with integrated front-light
+- **Touch Interface** (FT6336U integrated)
+- **NFC Reader** (PN532)
+- **Environmental Sensor** (BME280 - temperature, humidity, pressure)
+- **LED Strip** (WS2812B - optional)
+- **PWM Fan** (optional)
 
 ## Installation
 
-1. Ajoutez ce dépôt à vos add-ons Home Assistant
-2. Installez l'add-on "HA Box"
-3. Configurez les options selon votre matériel
-4. Démarrez l'add-on
+1. Add this repository to your Home Assistant add-ons
+2. Install the "HA Box" add-on
+3. Configure options according to your hardware
+4. Start the add-on
 
 ## Configuration
 
-Consultez la documentation complète dans le dépôt principal pour la configuration détaillée.
+See the complete documentation in the main repository for detailed configuration.
 
-### Prérequis matériels
+### Hardware Prerequisites
 
-- Raspberry Pi 4 ou 5
-- Écran E-Paper GDEY037T03-FT21
-- Capteur BME280
-- Module NFC PN532 (optionnel)
-- Bande LED WS2812B (optionnel)
-- Ventilateur PWM 5V (optionnel)
+- Raspberry Pi 4 or 5
+- GDEY037T03-FT21 E-Paper Display
+- BME280 Sensor
+- PN532 NFC Module (optional)
+- WS2812B LED Strip (optional)
+- 5V PWM Fan (optional)
 
-### Configuration Raspberry Pi
+### Raspberry Pi Configuration
 
-Activez I2C et SPI dans `/mnt/boot/config.txt` :
+Enable I2C and SPI in `/mnt/boot/config.txt`:
 
 ```ini
 dtparam=i2c_arm=on
@@ -47,7 +47,7 @@ dtparam=spi=on
 
 ## Support
 
-Pour les problèmes, questions ou contributions, consultez le dépôt principal du projet.
+For issues, questions or contributions, see the main project repository.
 
 ## License
 

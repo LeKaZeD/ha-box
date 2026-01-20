@@ -1,183 +1,183 @@
-# Stack technique - HA Box
+# Technical Stack - HA Box
 
-Ce document détaille toutes les technologies, langages et bibliothèques utilisés dans le projet.
+This document details all technologies, languages and libraries used in the project.
 
-## Langages
+## Languages
 
 ### Python 3.9+
 
-**Usage principal** : Application métier, drivers matériels, communication avec Home Assistant.
+**Main usage**: Business application, hardware drivers, communication with Home Assistant.
 
-**Raisons du choix :**
-- Excellente support des bibliothèques matériel (GPIO, I2C, SPI)
-- Bibliothèques Adafruit disponibles
-- Facile à maintenir et déboguer
-- Support natif dans les images Home Assistant
+**Reasons for choice:**
+- Excellent hardware library support (GPIO, I2C, SPI)
+- Adafruit libraries available
+- Easy to maintain and debug
+- Native support in Home Assistant images
 
-**Standards :**
-- PEP 8 pour le style
-- Type hints obligatoires
-- Docstrings Google style
-- Python 3.9+ minimum (compatibilité Home Assistant)
+**Standards:**
+- PEP 8 for style
+- Type hints mandatory
+- Google style docstrings
+- Python 3.9+ minimum (Home Assistant compatibility)
 
 ### Bash 5.x
 
-**Usage** : Scripts de démarrage/arrêt s6-overlay.
+**Usage**: s6-overlay startup/shutdown scripts.
 
-**Raisons du choix :**
-- Standard pour les scripts système Linux
-- Intégration native avec s6-overlay
-- Accès à bashio pour l'API Supervisor
+**Reasons for choice:**
+- Standard for Linux system scripts
+- Native integration with s6-overlay
+- Access to bashio for Supervisor API
 
-**Standards :**
-- Shebang : `#!/usr/bin/with-contenv bashio`
-- Indentation : 2 espaces
-- Variables toujours quotées : `"${variable}"`
+**Standards:**
+- Shebang: `#!/usr/bin/with-contenv bashio`
+- Indentation: 2 spaces
+- Variables always quoted: `"${variable}"`
 
 ### YAML
 
-**Usage** : Configuration de l'add-on, build, traductions.
+**Usage**: Add-on configuration, build, translations.
 
-**Fichiers :**
-- `config.yaml` : Configuration de l'add-on
-- `build.yaml` : Configuration de build multi-arch
-- `translations/*.yaml` : Traductions
+**Files:**
+- `config.yaml`: Add-on configuration
+- `build.yaml`: Multi-arch build configuration
+- `translations/*.yaml`: Translations
 
 ---
 
-## Technologies de base
+## Base Technologies
 
 ### Docker
 
-**Usage** : Conteneurisation de l'add-on.
+**Usage**: Add-on containerization.
 
-**Image de base** : Images Home Assistant officielles
+**Base image**: Official Home Assistant images
 - `ghcr.io/home-assistant/{arch}-base:3.15`
-- Support aarch64 (Raspberry Pi)
+- aarch64 support (Raspberry Pi)
 
-**Raisons du choix :**
-- Standard pour les add-ons Home Assistant
-- Isolation et sécurité
-- Build reproductible
+**Reasons for choice:**
+- Standard for Home Assistant add-ons
+- Isolation and security
+- Reproducible build
 
 ### s6-overlay v3
 
-**Usage** : Système d'initialisation et gestion des services.
+**Usage**: Initialization system and service management.
 
-**Raisons du choix :**
-- Standard pour les add-ons Home Assistant
-- Gestion robuste des processus
-- Support des scripts de démarrage/arrêt
+**Reasons for choice:**
+- Standard for Home Assistant add-ons
+- Robust process management
+- Startup/shutdown script support
 
-**Scripts :**
-- `rootfs/etc/services.d/ha-box/run` : Démarrage
-- `rootfs/etc/services.d/ha-box/finish` : Arrêt/cleanup
-
----
-
-## Bibliothèques Python
-
-### Communication avec Home Assistant
-
-| Bibliothèque | Version | Usage | Installation |
-|--------------|---------|-------|--------------|
-| `bashio` | Inclus | API Supervisor | Inclus dans images HA |
-| `requests` | Latest | HTTP client pour API HA | `pip install requests` |
-
-### Matériel - Bus de communication
-
-| Bibliothèque | Version | Usage | Installation |
-|--------------|---------|-------|--------------|
-| `smbus2` | Latest | Accès I2C | `pip install smbus2` |
-| `spidev` | Latest | Accès SPI | `pip install spidev` |
-| `RPi.GPIO` | Latest | Accès GPIO | `pip install RPi.GPIO` |
-| `gpiozero` | Latest | Alternative GPIO (plus haut niveau) | `pip install gpiozero` |
-
-### Matériel - Périphériques
-
-| Bibliothèque | Version | Usage | Installation |
-|--------------|---------|-------|--------------|
-| `adafruit-circuitpython-bme280` | Latest | Capteur BME280 | `pip install adafruit-circuitpython-bme280` |
-| `adafruit-circuitpython-pn532` | Latest | Module NFC PN532 | `pip install adafruit-circuitpython-pn532` |
-
-### Graphisme
-
-| Bibliothèque | Version | Usage | Installation |
-|--------------|---------|-------|--------------|
-| `Pillow` | Latest | Rendu graphique, conversion images | `pip install Pillow` |
-
-### Utilitaires
-
-| Bibliothèque | Version | Usage | Installation |
-|--------------|---------|-------|--------------|
-| `python-dateutil` | Latest | Gestion dates/heures | `pip install python-dateutil` |
+**Scripts:**
+- `rootfs/etc/services.d/ha-box/run`: Startup
+- `rootfs/etc/services.d/ha-box/finish`: Shutdown/cleanup
 
 ---
 
-## Alternatives considérées
+## Python Libraries
+
+### Communication with Home Assistant
+
+| Library | Version | Usage | Installation |
+|---------|---------|-------|--------------|
+| `bashio` | Included | Supervisor API | Included in HA images |
+| `requests` | Latest | HTTP client for HA API | `pip install requests` |
+
+### Hardware - Communication Buses
+
+| Library | Version | Usage | Installation |
+|---------|---------|-------|--------------|
+| `smbus2` | Latest | I2C access | `pip install smbus2` |
+| `spidev` | Latest | SPI access | `pip install spidev` |
+| `RPi.GPIO` | Latest | GPIO access | `pip install RPi.GPIO` |
+| `gpiozero` | Latest | Alternative GPIO (higher level) | `pip install gpiozero` |
+
+### Hardware - Devices
+
+| Library | Version | Usage | Installation |
+|---------|---------|-------|--------------|
+| `adafruit-circuitpython-bme280` | Latest | BME280 sensor | `pip install adafruit-circuitpython-bme280` |
+| `adafruit-circuitpython-pn532` | Latest | PN532 NFC module | `pip install adafruit-circuitpython-pn532` |
+
+### Graphics
+
+| Library | Version | Usage | Installation |
+|---------|---------|-------|--------------|
+| `Pillow` | Latest | Graphic rendering, image conversion | `pip install Pillow` |
+
+### Utilities
+
+| Library | Version | Usage | Installation |
+|---------|---------|-------|--------------|
+| `python-dateutil` | Latest | Date/time management | `pip install python-dateutil` |
+
+---
+
+## Alternatives Considered
 
 ### GPIO
 
-- **RPi.GPIO** : Choix principal (standard, bien documenté)
-- **gpiozero** : Alternative plus haut niveau, peut être utilisé pour simplifier certains cas
+- **RPi.GPIO**: Main choice (standard, well documented)
+- **gpiozero**: Higher level alternative, can be used to simplify some cases
 
 ### E-Paper
 
-- **waveshare-epd** : Si compatible avec GDEY037T03-FT21
-- **Driver personnalisé** : Probablement nécessaire (basé sur datasheet UC8253)
+- **waveshare-epd**: If compatible with GDEY037T03-FT21
+- **Custom driver**: Probably necessary (based on UC8253 datasheet)
 
 ### NFC
 
-- **nfcpy** : Alternative générique, mais Adafruit plus simple
-- **libnfc** : Via bindings Python, plus complexe
+- **nfcpy**: Generic alternative, but Adafruit simpler
+- **libnfc**: Via Python bindings, more complex
 
 ---
 
-## Outils de développement
+## Development Tools
 
-### Linting et formatage
+### Linting and Formatting
 
-| Outil | Usage | Installation |
-|-------|-------|--------------|
-| `pylint` | Linting Python | `pip install pylint` |
-| `flake8` | Linting Python (alternative) | `pip install flake8` |
-| `black` | Formatage Python | `pip install black` |
-| `shellcheck` | Linting Bash | `apt-get install shellcheck` |
+| Tool | Usage | Installation |
+|------|-------|--------------|
+| `pylint` | Python linting | `pip install pylint` |
+| `flake8` | Python linting (alternative) | `pip install flake8` |
+| `black` | Python formatting | `pip install black` |
+| `shellcheck` | Bash linting | `apt-get install shellcheck` |
 
-### Tests (optionnel)
+### Tests (optional)
 
-| Outil | Usage | Installation |
-|-------|-------|--------------|
-| `pytest` | Tests unitaires | `pip install pytest` |
-| `pytest-cov` | Couverture de code | `pip install pytest-cov` |
+| Tool | Usage | Installation |
+|------|-------|--------------|
+| `pytest` | Unit tests | `pip install pytest` |
+| `pytest-cov` | Code coverage | `pip install pytest-cov` |
 
 ---
 
-## Structure des dépendances
+## Dependency Structure
 
-### requirements.txt (à créer)
+### requirements.txt (to be created)
 
 ```txt
 # Communication
 requests>=2.31.0
 
-# Matériel - Bus
+# Hardware - Buses
 smbus2>=0.4.3
 spidev>=3.6
 RPi.GPIO>=0.7.1
 
-# Matériel - Périphériques
+# Hardware - Devices
 adafruit-circuitpython-bme280>=2.5.11
 adafruit-circuitpython-pn532>=1.4.0
 
-# Graphisme
+# Graphics
 Pillow>=10.0.0
 
-# Utilitaires
+# Utilities
 python-dateutil>=2.8.2
 ```
 
-### Installation dans Dockerfile
+### Installation in Dockerfile
 
 ```dockerfile
 RUN pip3 install --no-cache-dir -r requirements.txt
@@ -185,46 +185,46 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 ---
 
-## Compatibilité
+## Compatibility
 
 ### Python
 
-- **Minimum** : Python 3.9
-- **Recommandé** : Python 3.11+
-- **Testé sur** : Python 3.9, 3.10, 3.11 (selon images HA)
+- **Minimum**: Python 3.9
+- **Recommended**: Python 3.11+
+- **Tested on**: Python 3.9, 3.10, 3.11 (depending on HA images)
 
 ### Architecture
 
-- **Principal** : aarch64 (Raspberry Pi 4/5)
-- **Support futur** : amd64 (pour développement/test)
+- **Main**: aarch64 (Raspberry Pi 4/5)
+- **Future support**: amd64 (for development/testing)
 
 ### Home Assistant
 
-- **Version minimum** : Home Assistant OS 12+
-- **API Supervisor** : Compatible avec versions récentes
+- **Minimum version**: Home Assistant OS 12+
+- **Supervisor API**: Compatible with recent versions
 
 ---
 
-## Performance et contraintes
+## Performance and Constraints
 
 ### E-Paper
 
-- **Rafraîchissement lent** : Optimiser les mises à jour
-- **1-bit uniquement** : Conversion d'images nécessaire
-- **Consommation** : Très faible, idéal pour embarqué
+- **Slow refresh**: Optimize updates
+- **1-bit only**: Image conversion necessary
+- **Consumption**: Very low, ideal for embedded
 
 ### I2C
 
-- **Bus partagé** : Tous les périphériques sur le même bus
-- **Vitesse** : 100kHz standard, 400kHz fast mode
-- **Gestion** : Polling ou interrupt selon périphérique
+- **Shared bus**: All devices on same bus
+- **Speed**: 100kHz standard, 400kHz fast mode
+- **Management**: Polling or interrupt depending on device
 
 ### GPIO/PWM
 
-- **Hardware PWM** : Préféré pour précision (GPIO 18)
-- **Software PWM** : Alternative si hardware non disponible
-- **Timing critique** : WS2812B nécessite timing précis
+- **Hardware PWM**: Preferred for precision (GPIO 18)
+- **Software PWM**: Alternative if hardware unavailable
+- **Critical timing**: WS2812B requires precise timing
 
 ---
 
-*Dernière mise à jour : 2026-01-17*
+*Last updated: 2026-01-17*
