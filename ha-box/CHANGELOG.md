@@ -17,6 +17,8 @@
 - Presentation assets (icon.png, logo.png)
 - Development setup for amd64 (gitignored)
 - Optimized Dockerfile (build dependencies cleanup)
+- Multilingual support infrastructure (translations/ folder, i18n.py module)
+- Translation files for English and French (config.yaml labels/descriptions)
 
 ### Security
 

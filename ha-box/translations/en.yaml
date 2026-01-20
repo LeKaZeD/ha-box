@@ -1,0 +1,107 @@
+configuration:
+  display:
+    name: E-Paper Display
+    description: Configuration for the E-Paper display
+    fields:
+      enabled:
+        name: Enable Display
+        description: Enable or disable the E-Paper display
+      rotation:
+        name: Rotation
+        description: Display rotation (0=0°, 1=90°, 2=180°, 3=270°)
+      refresh_mode:
+        name: Refresh Mode
+        description: Display refresh mode (full or partial)
+      front_light:
+        name: Front Light
+        description: Front light configuration
+        fields:
+          enabled:
+            name: Enable Front Light
+            description: Enable or disable the front light
+          brightness:
+            name: Brightness
+            description: Front light brightness (0-100)
+  sensors:
+    name: Sensors
+    description: Configuration for environmental and input sensors
+    fields:
+      bme280:
+        name: BME280 Sensor
+        description: Temperature, humidity and pressure sensor configuration
+        fields:
+          enabled:
+            name: Enable BME280
+            description: Enable or disable the BME280 sensor
+          address:
+            name: I2C Address
+            description: I2C address (auto, 0x76, or 0x77)
+          update_interval:
+            name: Update Interval
+            description: Sensor reading interval in seconds (10-300)
+      nfc:
+        name: NFC Reader
+        description: PN532 NFC reader configuration
+        fields:
+          enabled:
+            name: Enable NFC
+            description: Enable or disable the NFC reader
+          address:
+            name: I2C Address
+            description: I2C address (0x24 or 0x48)
+          polling_interval:
+            name: Polling Interval
+            description: NFC tag polling interval in seconds (1-10)
+      touch:
+        name: Touch Interface
+        description: FT6336U touch controller configuration
+        fields:
+          enabled:
+            name: Enable Touch
+            description: Enable or disable the touch interface
+  control:
+    name: Control Devices
+    description: Configuration for output devices (fan, LED)
+    fields:
+      fan:
+        name: PWM Fan
+        description: PWM fan control configuration
+        fields:
+          enabled:
+            name: Enable Fan
+            description: Enable or disable the PWM fan
+          pin:
+            name: GPIO Pin
+            description: GPIO pin number for fan control (1-40)
+          auto_control:
+            name: Automatic Control
+            description: Automatically control fan based on temperature
+          min_temp:
+            name: Minimum Temperature
+            description: Minimum temperature threshold in Celsius (0-100)
+          max_temp:
+            name: Maximum Temperature
+            description: Maximum temperature threshold in Celsius (0-100)
+      led:
+        name: LED Strip
+        description: WS2812B LED strip configuration
+        fields:
+          enabled:
+            name: Enable LED
+            description: Enable or disable the LED strip
+          pin:
+            name: GPIO Pin
+            description: GPIO pin number for LED control (1-40)
+          count:
+            name: LED Count
+            description: Number of LEDs in the strip (1-100)
+  home_assistant:
+    name: Home Assistant Integration
+    description: Configuration for Home Assistant entity integration
+    fields:
+      entities:
+        name: Entities
+        description: List of Home Assistant entity IDs to display
+      update_interval:
+        name: Update Interval
+        description: Entity update interval in seconds (10-300)

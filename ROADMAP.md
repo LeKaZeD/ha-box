@@ -82,13 +82,13 @@ This document describes the current state of the project and the next developmen
 
 **Result**: Complete infrastructure created, security documentation complete, ready for Phase 3 (hardware support)
 
-#### 2.1 Multilingual Support (Medium priority)
+#### 2.1 Multilingual Support (COMPLETED)
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Create `translations/` structure | To do | YAML files by language (fr, en) |
-| Implement `i18n.py` module | To do | YAML loading, language detection |
-| Translate configuration interface | To do | Labels/descriptions in config.yaml |
+| Create `translations/` structure | Completed | YAML files created (en.yaml, fr.yaml) |
+| Implement `i18n.py` module | Completed | YAML loading, language detection implemented |
+| Translate configuration interface | Completed | Labels/descriptions for all schema fields |
 | Translate E-Paper screen texts | To do | Phase 5 - UI messages |
 
 **Note**: YAML translation files are self-documenting by their structure. See `docs/I18N.md` for general operation.

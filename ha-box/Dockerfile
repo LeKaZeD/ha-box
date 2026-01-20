@@ -47,5 +47,8 @@ RUN \
 RUN \
     apk del --no-cache .build-deps
 
+# Copy translations (for Python i18n module)
+COPY translations /addon/translations
+
 # Copy root filesystem
 COPY rootfs /

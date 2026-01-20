@@ -1,0 +1,107 @@
+configuration:
+  display:
+    name: Affichage E-Paper
+    description: Configuration de l'affichage E-Paper
+    fields:
+      enabled:
+        name: Activer l'affichage
+        description: Activer ou désactiver l'affichage E-Paper
+      rotation:
+        name: Rotation
+        description: Rotation de l'affichage (0=0°, 1=90°, 2=180°, 3=270°)
+      refresh_mode:
+        name: Mode de rafraîchissement
+        description: Mode de rafraîchissement de l'affichage (full ou partial)
+      front_light:
+        name: Éclairage frontal
+        description: Configuration de l'éclairage frontal
+        fields:
+          enabled:
+            name: Activer l'éclairage
+            description: Activer ou désactiver l'éclairage frontal
+          brightness:
+            name: Luminosité
+            description: Luminosité de l'éclairage frontal (0-100)
+  sensors:
+    name: Capteurs
+    description: Configuration des capteurs environnementaux et d'entrée
+    fields:
+      bme280:
+        name: Capteur BME280
+        description: Configuration du capteur de température, humidité et pression
+        fields:
+          enabled:
+            name: Activer BME280
+            description: Activer ou désactiver le capteur BME280
+          address:
+            name: Adresse I2C
+            description: Adresse I2C (auto, 0x76 ou 0x77)
+          update_interval:
+            name: Intervalle de mise à jour
+            description: Intervalle de lecture du capteur en secondes (10-300)
+      nfc:
+        name: Lecteur NFC
+        description: Configuration du lecteur NFC PN532
+        fields:
+          enabled:
+            name: Activer NFC
+            description: Activer ou désactiver le lecteur NFC
+          address:
+            name: Adresse I2C
+            description: Adresse I2C (0x24 ou 0x48)
+          polling_interval:
+            name: Intervalle de sondage
+            description: Intervalle de sondage des tags NFC en secondes (1-10)
+      touch:
+        name: Interface tactile
+        description: Configuration du contrôleur tactile FT6336U
+        fields:
+          enabled:
+            name: Activer le tactile
+            description: Activer ou désactiver l'interface tactile
+  control:
+    name: Dispositifs de contrôle
+    description: Configuration des dispositifs de sortie (ventilateur, LED)
+    fields:
+      fan:
+        name: Ventilateur PWM
+        description: Configuration du contrôle du ventilateur PWM
+        fields:
+          enabled:
+            name: Activer le ventilateur
+            description: Activer ou désactiver le ventilateur PWM
+          pin:
+            name: Broche GPIO
+            description: Numéro de broche GPIO pour le contrôle du ventilateur (1-40)
+          auto_control:
+            name: Contrôle automatique
+            description: Contrôler automatiquement le ventilateur selon la température
+          min_temp:
+            name: Température minimale
+            description: Seuil de température minimale en Celsius (0-100)
+          max_temp:
+            name: Température maximale
+            description: Seuil de température maximale en Celsius (0-100)
+      led:
+        name: Ruban LED
+        description: Configuration du ruban LED WS2812B
+        fields:
+          enabled:
+            name: Activer LED
+            description: Activer ou désactiver le ruban LED
+          pin:
+            name: Broche GPIO
+            description: Numéro de broche GPIO pour le contrôle LED (1-40)
+          count:
+            name: Nombre de LED
+            description: Nombre de LED dans le ruban (1-100)
+  home_assistant:
+    name: Intégration Home Assistant
+    description: Configuration de l'intégration avec les entités Home Assistant
+    fields:
+      entities:
+        name: Entités
+        description: Liste des identifiants d'entités Home Assistant à afficher
+      update_interval:
+        name: Intervalle de mise à jour
+        description: Intervalle de mise à jour des entités en secondes (10-300)
