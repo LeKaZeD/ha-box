@@ -90,6 +90,8 @@ entities:
 | [TECH_STACK.md](docs/TECH_STACK.md) | Detailed technical stack |
 | [I18N.md](docs/I18N.md) | Multilingual support (i18n) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guide |
+| [SECURITY.md](ha-box/SECURITY.md) | Security policy and rating |
+| [TESTING.md](TESTING.md) | Testing and installation guide |
 
 ## Contributing
 
@@ -104,16 +106,19 @@ Contributions are welcome! See the [contribution guide](CONTRIBUTING.md) to get 
 
 ## Project Status
 
-**Design phase** - The project is being defined. Documentation and architecture are in place, development will begin soon.
+**Infrastructure complete** - Base infrastructure is implemented and tested. Hardware drivers development (Phase 3) is in progress.
 
 ### Roadmap
 
 - [x] Initial documentation
 - [x] Technical architecture
 - [x] Features specification
-- [ ] SPI display prototype
-- [ ] I2C sensor integration
-- [ ] Touch interface
+- [x] Base infrastructure (HAL, managers, API client)
+- [x] Security documentation and AppArmor profile
+- [x] Presentation assets (icon, logo)
+- [ ] SPI display prototype (Phase 3)
+- [ ] I2C sensor integration (Phase 3)
+- [ ] Touch interface (Phase 3)
 - [ ] First alpha release
 
 ## Useful Resources

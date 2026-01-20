@@ -6,7 +6,6 @@ description: Physical interface for Home Assistant with E-Paper display, sensors
 url: "https://github.com/VOTRE_USERNAME/ha-box"
 arch:
   - aarch64
-  - amd64
 init: false
 startup: services
 boot: auto
@@ -16,8 +15,8 @@ devices:
   - /dev/i2c-1
   - /dev/spidev0.0
   - /dev/gpiomem
-gpio: false
-kernel_modules: false
+gpio: true
+kernel_modules: true
 options:
   # E-Paper display configuration
   display:

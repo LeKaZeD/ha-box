@@ -61,3 +61,8 @@ coverage.xml
 
 # Cursor
 .cursorignore
+
+# Development files (amd64 dev setup)
+.dev/
+*.dev.yaml
+*.dev.yml

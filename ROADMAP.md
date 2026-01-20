@@ -65,18 +65,22 @@ This document describes the current state of the project and the next developmen
 |------|----------|--------|-------|
 | Create `ha-box/` structure | Critical | Completed | Base structure created |
 | Configure `config.yaml` | Critical | Completed | Permissions, devices, options configured |
-| Configure `build.yaml` | Critical | Completed | Multi-arch build configured |
-| Create `Dockerfile` | Critical | Completed | Image with Python dependencies |
+| Configure `build.yaml` | Critical | Completed | Build configuration (aarch64) |
+| Create `Dockerfile` | Critical | Completed | Image with Python dependencies, optimized |
 | s6 scripts (`run`, `finish`) | Critical | Completed | Startup/shutdown implemented |
 | Base Python structure | Critical | Completed | `main.py`, base modules created |
 | HAL (Hardware Abstraction Layer) | High | Completed | `hal/i2c.py`, `hal/spi.py`, `hal/gpio.py` |
-| Home Assistant API client | High | Completed | `ha/client.py` implemented |
+| Home Assistant API client | High | Completed | `ha/client.py` implemented with retries |
 | Configuration management | High | Completed | `config.py` with options loading |
 | Logging and error handling | High | Completed | Logging infrastructure created |
+| AppArmor profile | High | Completed | Custom security profile |
+| Security documentation | High | Completed | `SECURITY.md` with full documentation |
+| Presentation assets | High | Completed | `icon.png` and `logo.png` added |
+| Development setup | Medium | Completed | `.dev/` folder for amd64 dev (gitignored) |
 
 **Actual duration**: Completed
 
-**Result**: Complete infrastructure created, ready for Phase 3 (hardware support)
+**Result**: Complete infrastructure created, security documentation complete, ready for Phase 3 (hardware support)
 
 #### 2.1 Multilingual Support (Medium priority)
 
@@ -91,7 +95,7 @@ This document describes the current state of the project and the next developmen
 
 ---
 
-### Phase 3: Base Hardware Support (IN PROGRESS)
+### Phase 3: Base Hardware Support (READY TO START)
 
 **Objective**: Implement support for essential hardware devices.
 
