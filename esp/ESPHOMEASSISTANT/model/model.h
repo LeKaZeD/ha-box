@@ -15,7 +15,7 @@ struct Model
   HomeState home;
   SettingsState settings;
 
-  // Dirty bitmask: set par les setters, consommé par l'UI
+  // Dirty bitmask: set by setters, consumed by UI
   uint32_t dirty = DK_None;
 
   // ---- Helpers ----
@@ -46,7 +46,6 @@ struct Model
   void setHumidity(uint8_t pct);
   void setClock(uint8_t hh, uint8_t mm, uint8_t ss, uint32_t receivedAtMs);
   void updateClockDisplay(uint32_t nowMs);
-  void setBattery(uint8_t pct);
   void setDayMode(uint8_t mode);
 
   // ---- Settings setters ----

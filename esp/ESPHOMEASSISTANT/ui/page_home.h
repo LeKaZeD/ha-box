@@ -10,7 +10,7 @@
 template<typename DisplayT>
 struct PageHome : public Page<DisplayT>
 {
-  // Layout constants (économie de RAM via constexpr)
+  // Layout constants (constexpr to save RAM)
   static constexpr int16_t MARGIN = 8;
   static constexpr int16_t HEADER_HEIGHT = 40;
   static constexpr int16_t SCREEN_WIDTH = 240;

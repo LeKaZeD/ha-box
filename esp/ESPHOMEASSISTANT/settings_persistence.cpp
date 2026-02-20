@@ -1,5 +1,6 @@
 #include "settings_persistence.h"
 #include "model/model.h"
+#include <Arduino.h>
 #include <Preferences.h>
 
 static const char* SETTINGS_NAMESPACE = "habox";
@@ -10,7 +11,10 @@ static uint8_t s_lastLanguage = 255;
 
 void loadSettings(Model& model)
 {
-  if (!s_prefs.begin(SETTINGS_NAMESPACE, true)) return;
+  if (!s_prefs.begin(SETTINGS_NAMESPACE, true)) {
+    Serial.println("[NVS] loadSettings: begin failed");
+    return;
+  }
   if (s_prefs.isKey("brightness")) {
     uint8_t v = s_prefs.getUChar("brightness", 2);
     model.setBrightness(v);
@@ -41,7 +45,10 @@ void saveSettingsIfChanged(const Model& model)
   s_lastBrightness = model.settings.brightness;
   s_lastSoundEnabled = model.settings.sound_enabled;
   s_lastLanguage = model.settings.language;
-  if (!s_prefs.begin(SETTINGS_NAMESPACE, false)) return;
+  if (!s_prefs.begin(SETTINGS_NAMESPACE, false)) {
+    Serial.println("[NVS] saveSettingsIfChanged: begin failed");
+    return;
+  }
   s_prefs.putUChar("brightness", s_lastBrightness);
   s_prefs.putBool("sound", s_lastSoundEnabled);
   s_prefs.putUChar("lang", s_lastLanguage);

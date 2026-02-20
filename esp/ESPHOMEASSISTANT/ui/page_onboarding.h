@@ -7,12 +7,12 @@ struct PageOnboarding : public Page<DisplayT>
 {
   OnboardingWidget ob { Rect{ 0, 0, 240, 416 } };
 
-  // Permet de brancher ton renderer QR + font
+  // Plug in your QR renderer and font
   template<typename QrFn>
   void setQrDrawer(QrFn fn) { ob.drawQrPtr = reinterpret_cast<void*>(fn); }
   void setFonts(const GFXfont* linkFont) { ob.fontLink = linkFont; }
 
-  // Tu peux aussi modifier la layout interne
+  // You can also change the internal layout
   void setLayout(const Rect& qrRect, const Rect& linkRect)
   {
     ob.qrRect = qrRect;

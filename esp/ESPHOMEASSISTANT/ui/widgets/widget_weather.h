@@ -25,10 +25,10 @@ struct WeatherWidget : public WidgetBase<WeatherWidget>
   {
     display.setTextColor(GxEPD_BLACK);
     //display.drawRoundRect(r.x, r.y, r.w, r.h, 10, GxEPD_BLACK);
-    // Buffer pour icône jusqu'à 48x48 (288 bytes)
+    // Buffer for icon up to 48x48 (288 bytes)
     static uint8_t tmp[288];
 
-    // 1) icône météo
+    // 1) Weather icon
     const uint8_t* bmp = nullptr;
     int iw = 0, ih = 0;
 
@@ -37,7 +37,7 @@ struct WeatherWidget : public WidgetBase<WeatherWidget>
       bmp = iconFn(model.home.weather_code, iw, ih);
     }
 
-    // Fallback: icône N/A si pas d'icône trouvée
+    // Fallback: N/A icon if none found
     if (!bmp || iw == 0 || ih == 0)
     {
       bmp = WEATHER_NA_45x45;
@@ -45,23 +45,22 @@ struct WeatherWidget : public WidgetBase<WeatherWidget>
       ih = 45;
     }
 
-    // Icône météo agrandie (centrée dans un espace plus grand)
-    // L'icône 45x45 est dessinée dans un espace plus large pour paraître plus grande
-    const int16_t iconX = r.x + 5;  // Plus d'espace à gauche
-    const int16_t iconY = r.y + 5;  // Plus d'espace en haut
+    // Weather icon (centered in a larger area)
+    const int16_t iconX = r.x + 5;
+    const int16_t iconY = r.y + 5;
     drawIcon_0Black(display, iconX, iconY, bmp, iw, ih, GxEPD_BLACK, GxEPD_WHITE, tmp);
     //display.drawRoundRect(iconX, iconY, iw, ih, 10, GxEPD_BLACK);
 
-    // 2) temp extérieure (arrondie, sans décimales) + °C
+    // 2) Outdoor temp (rounded, no decimals) + C
     const int16_t t = model.home.temp_out_x10;
-    // Arrondir : +5 pour arrondir au lieu de tronquer
+    // Round: +5 to round instead of truncate
     const int16_t rounded = (t >= 0) ? (t + 5) / 10 : (t - 5) / 10;
 
     char tempBuf[6]; // "-99" max = 4 chars + '\0'
     snprintf(tempBuf, sizeof(tempBuf), "%d", rounded);
 
-    const int16_t textX = r.x + 50;  // Décalé pour laisser plus de place à l'icône agrandie
-    const int16_t baseY = r.y + 42;  // Ajusté verticalement
+    const int16_t textX = r.x + 50;  // Offset to leave room for icon
+    const int16_t baseY = r.y + 42;  // Vertical alignment
 
     display.setFont(font);
     display.setCursor(textX, baseY);

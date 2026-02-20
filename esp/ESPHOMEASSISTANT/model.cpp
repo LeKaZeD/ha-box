@@ -8,14 +8,13 @@ static bool safeCopy(char* dst, size_t dstSize, const char* src)
   if (!dst || dstSize == 0) return false;
   if (!src) src = "";
 
-  // Compare rapide : si identique, on ne touche pas
+  // Quick compare: if identical, do not touch
   if (strncmp(dst, src, dstSize) == 0) {
-    // Attention: strncmp ne garantit pas que dst est null-terminated,
-    // mais ici on maintient toujours dst null-terminated.
+    // we always keep dst null-terminated here.
     return false;
   }
 
-  // Copie + null-termination
+  // Copy + null-terminate
   size_t n = strnlen(src, dstSize - 1);
   memcpy(dst, src, n);
   dst[n] = '\0';
@@ -186,13 +185,6 @@ void Model::updateClockDisplay(uint32_t nowMs)
   } else {
     home.displaySecond = s;
   }
-}
-
-void Model::setBattery(uint8_t pct)
-{
-  if (home.battery_pct == pct) return;
-  home.battery_pct = pct;
-  dirty |= DK_HM_Battery;
 }
 
 void Model::setDayMode(uint8_t mode)

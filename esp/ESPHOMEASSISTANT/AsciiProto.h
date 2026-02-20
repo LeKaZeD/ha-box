@@ -17,7 +17,7 @@ public:
 
   struct Message {
     uint32_t id = 0;
-    char verb[MAX_VERB];   // Ex: "READY", "STATUS", "SHUTDOWN_REQUEST"
+    char verb[MAX_VERB];   // e.g. "READY", "STATUS", "SHUTDOWN_REQUEST"
     KV kv[MAX_KV];
     uint8_t kvCount = 0;
   };
@@ -25,7 +25,7 @@ public:
   struct Ack {
     uint32_t id = 0;
     bool ok = false;
-    char err[MAX_KEY];     // Ex: "unauthorized", "bad_args", "unknown_cmd"
+    char err[MAX_KEY];     // e.g. "unauthorized", "bad_args", "unknown_cmd"
   };
 
   using AuthorizeFn = bool (*)(const Message& msg, void* user, const char** errCode);
@@ -38,7 +38,7 @@ public:
   void begin();
   void poll();
 
-  // Heartbeat implicite : mis à jour à chaque ligne valide reçue (ACK ou message)
+  // Implicit heartbeat: updated on every valid line received (ACK or message)
   uint32_t lastSeenMs() const;
 
   // Callbacks
@@ -47,11 +47,11 @@ public:
   void setAckCallback(AckFn fn, void* user);
   void setRawLineCallback(RawLineFn fn, void* user);
 
-  // Envoi
+  // Send
   uint32_t nextId();
   uint32_t sendCommand(const char* verb, const KV* kv = nullptr, uint8_t kvCount = 0);
 
-  // Version simple synchrone (bloquante) pour attendre l'ACK d'une commande envoyée
+  // Simple synchronous (blocking) wait for ACK of a sent command
   bool sendWithAck(const char* verb,
                    const KV* kv,
                    uint8_t kvCount,
@@ -59,7 +59,7 @@ public:
                    uint8_t retryCount,
                    Ack* outAck = nullptr);
 
-  // ACK manuel (si tu veux l'utiliser toi-même)
+  // Manual ACK (if you want to use it yourself)
   void sendAckOk(uint32_t id);
   void sendAckErr(uint32_t id, const char* errCode);
 

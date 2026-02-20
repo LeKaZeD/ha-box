@@ -101,8 +101,8 @@ void PowerButton::update() {
     return;
   }
 
-  // (Optionnel) ce bloc devient redondant avec celui du dessus,
-  // mais tu peux le garder si tu veux une intention plus explicite.
+  // Optional: this block is redundant with the one above;
+  // keep it if you want the intent to be more explicit.
   if (m_piState == PiState::SHUTDOWN_PENDING && !isPiAliveNow(now)) {
     setPiState(PiState::OFF);
     enterDeepSleep();

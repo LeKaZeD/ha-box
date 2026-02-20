@@ -41,15 +41,15 @@ struct TempWidget : public WidgetBase<TempWidget>
       const int16_t tempIconY = r.y + 2;
       drawIcon_0Black(display, tempIconX, tempIconY, home_temp_48x48, 48, 48, GxEPD_BLACK, GxEPD_WHITE, tmp);
       
-      // 2) Température arrondie (sans décimales) - à droite de l'icône
+      // 2) Rounded temperature (no decimals) - right of icon
       const int16_t t = model.home.temp_in_x10;
       const int16_t rounded = (t >= 0) ? (t + 5) / 10 : (t - 5) / 10;
       
       char tempBuf[6]; // "-99" max = 4 chars + '\0'
       snprintf(tempBuf, sizeof(tempBuf), "%d", rounded);
       
-      const int16_t tempX = r.x + 50; // Après l'icône 48x48 + marge
-      const int16_t tempY = r.y + 35; // Centré verticalement avec l'icône (2 + 24 = 26, mais on met 30 pour aligner le texte)
+      const int16_t tempX = r.x + 50; // After 48x48 icon + margin
+      const int16_t tempY = r.y + 35; // Vertically centered with icon
       
       display.setFont(font);
       display.setCursor(tempX, tempY);
@@ -69,17 +69,17 @@ struct TempWidget : public WidgetBase<TempWidget>
       display.setCursor(tempX + w + 12, tempY);
       display.print("C");
       
-      // 3) Icône humidité (48x48) - en bas
+      // 3) Humidity icon (48x48) - below temp
       const int16_t humIconX = r.x + 115;
-      const int16_t humIconY = r.y + 2; // Après l'icône temp (2 + 48 + 2 = 52)
+      const int16_t humIconY = r.y + 2; // After temp icon (2 + 48 + 2 = 52)
       drawIcon_0Black(display, humIconX, humIconY, humidity_48x48, 48, 48, GxEPD_BLACK, GxEPD_WHITE, tmp);
       
-      // 4) Valeur humidité - à droite de l'icône
+      // 4) Humidity value - right of icon
       char humBuf[6]; // "99%" max = 4 chars + '\0'
       snprintf(humBuf, sizeof(humBuf), "%u%%", model.home.humidity);
       
-      const int16_t humX = r.x + 160; // Même alignement que la température
-      const int16_t humY = r.y + 35; // Centré verticalement avec l'icône humidity (52 + 24 = 76)
+      const int16_t humX = r.x + 160; // Same alignment as temperature
+      const int16_t humY = r.y + 35;  // Vertically centered with humidity icon
       
       display.setFont(font);
       display.setCursor(humX, humY);
@@ -87,7 +87,7 @@ struct TempWidget : public WidgetBase<TempWidget>
     }
     else
     {
-      // Outdoor: comportement original (sans icône pour l'instant)
+      // Outdoor: original behaviour (no icon for now)
       const int16_t t = model.home.temp_out_x10;
       const int16_t rounded = (t >= 0) ? (t + 5) / 10 : (t - 5) / 10;
       

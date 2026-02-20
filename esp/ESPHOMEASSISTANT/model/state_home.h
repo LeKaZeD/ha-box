@@ -1,10 +1,10 @@
 #pragma once
 #include <stdint.h>
 
-// Home: données "dashboard"
+// Home: dashboard data
 struct HomeState
 {
-  // connectivité
+  // connectivity
   bool wifi_ok = false;
   bool ble_ok  = false;
   bool zigbee_ok = false;
@@ -13,17 +13,17 @@ struct HomeState
   bool mhz433_ok = false;
   bool matter_ok = false;
 
-  // températures en dixièmes pour éviter float : 234 => 23.4°C
+  // temperatures in tenths to avoid float: 234 => 23.4 C
   int16_t temp_out_x10 = 0;
   int16_t temp_in_x10  = 0;
 
-  // météo (code libre, tu fais un mapping code->icone dans l'UI)
+  // weather (free-form code; UI maps code to icon)
   uint8_t weather_code = 0;
 
-  // humidité
+  // humidity
   uint8_t humidity = 0;
 
-  // horloge: sync from Pi (hh, mm, ss) at clockReceivedAtMs; display* = computed current time
+  // clock: sync from Pi (hh, mm, ss) at clockReceivedAtMs; display* = computed current time
   uint8_t hour = 0;
   uint8_t minute = 0;
   uint8_t second = 0;
@@ -31,9 +31,6 @@ struct HomeState
   uint8_t displayHour = 0;
   uint8_t displayMinute = 0;
   uint8_t displaySecond = 0;
-
-  // batterie (placeholder)
-  uint8_t battery_pct = 0;
 
   // mode switch: 0 = day (left), 1 = night (right), 2+ reserved
   uint8_t day_mode = 0;

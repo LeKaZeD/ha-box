@@ -1,8 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-// Bits "quoi redraw"
-// Tu peux les regrouper par page + par widget.
+// Bits for what to redraw (can be grouped by page/widget).
 enum DirtyKey : uint32_t
 {
   DK_None = 0,
@@ -29,7 +28,6 @@ enum DirtyKey : uint32_t
   DK_HM_TempIn    = 1u << 14,   // indoor temp
   DK_HM_Humidity  = 1u << 15,   // humidity
   DK_HM_Clock     = 1u << 16,   // clock
-  DK_HM_Battery   = 1u << 17,   // battery (placeholder)
   DK_HM_DayMode   = 1u << 18,   // day/night switch
 
   // -------- Settings --------

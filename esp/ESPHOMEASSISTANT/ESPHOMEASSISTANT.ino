@@ -4,10 +4,10 @@
 #include "settings_persistence.h"
 #include "buzzer.h"
 #include "BME280.h"
-#include "PowerButton.h"
+#include "POWERBUTTON.h"
 #include "FANCONTROLLER.h"
 
-//#include "epd_uc8253.h"
+
 #include <GxEPD2_BW.h>
 #include "gdey/GxEPD2_370_GDEY037T03.h"
 #include "ui/assets/fonts/RobotoBold24.h"
@@ -29,6 +29,8 @@
 #include "ui/config/page_home_config.h"
 #include "ui/config/page_settings_config.h"
 #include "ui/config/page_loading_config.h"
+
+static void rebuildPageAfterLanguageChange(uint8_t langId);
 
 //*******************************************
 GxEPD2_BW<GxEPD2_370_GDEY037T03, GxEPD2_370_GDEY037T03::HEIGHT> display(GxEPD2_370_GDEY037T03(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY));
@@ -99,8 +101,8 @@ PowerButton powerBtn(pbCfg, proto);
 
 FanController::Config fanCfg{
   .pwmPin = PWM_PIN,
-  .pwmFreqHz = 25000,
-  .pwmResBits = 8,
+  .pwmFreqHz = PWM_FREQ_HZ,
+  .pwmResBits = PWM_RES_BITS,
   .tFanOff = 25.0f,
   .tFanOn  = 28.0f,
   .tFull   = 35.0f,
@@ -118,7 +120,7 @@ static bool authorizeIncoming(const AsciiProto::Message& msg, void* user, const 
   if (strcmp(msg.verb, "STATUS") == 0) return true;
   if (strcmp(msg.verb, "WEATHER") == 0) return true;
   if (strcmp(msg.verb, "CLOCK") == 0) return true;
-  if (strcmp(msg.verb, "SCREEN") == 0) return true;
+  if (strcmp(msg.verb, "LANG") == 0) return true;
   *err = "unknown_cmd";
   return false;
 }
@@ -148,7 +150,7 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
     return;
   }
   
-  // WEATHER: météo + temp extérieure
+  // WEATHER: weather code + outdoor temp
   if (strcmp(msg.verb, "WEATHER") == 0) {
     for (uint8_t i = 0; i < msg.kvCount; i++) {
       if (strcmp(msg.kv[i].key, "code") == 0) {
@@ -170,6 +172,23 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
       if (strcmp(msg.kv[i].key, "ss") == 0) ss = (uint8_t)atoi(msg.kv[i].val);
     }
     model.setClock(hh, mm, ss, millis());
+    return;
+  }
+
+  // LANG: 0 = français, 1 = anglais (from Pi or other). Only if language actually changed: save and rebuild.
+  if (strcmp(msg.verb, "LANG") == 0) {
+    for (uint8_t i = 0; i < msg.kvCount; i++) {
+      if (strcmp(msg.kv[i].key, "id") == 0) {
+        uint8_t langId = (uint8_t)atoi(msg.kv[i].val);
+        if (langId > 1) langId = 1;
+        if (langId == model.settings.language) return;
+        model.setLanguage(langId);
+        saveSettingsIfChanged(model);
+        rebuildPageAfterLanguageChange(langId);
+        Serial.printf("[cmd] LANG set to %s (id=%u)\n", langId == 0 ? "FR" : "EN", (unsigned)langId);
+        break;
+      }
+    }
     return;
   }
 }
@@ -201,10 +220,8 @@ static void onSettingsButtonClick(void* user) {
   if (mgr) mgr->navigateTo(PageId::Settings);
 }
 
-static void onSettingsBackClick(void* user) {
-  (void)user;
-  saveSettingsIfChanged(model);
-  i18n::init(model.settings.language);
+static void rebuildPageAfterLanguageChange(uint8_t langId) {
+  i18n::init(langId);
   applyHomeConfig(
     uiManager.pageHome(),
     kHomePageConfig,
@@ -217,6 +234,13 @@ static void onSettingsBackClick(void* user) {
     onDayNightSelect,
     &model
   );
+  uiManager.redrawCurrentPage();
+}
+
+static void onSettingsBackClick(void* user) {
+  (void)user;
+  saveSettingsIfChanged(model);
+  rebuildPageAfterLanguageChange(model.settings.language);
   uiManager.navigateTo(PageId::Home);
 }
 
@@ -262,21 +286,6 @@ static void onPiStateChange(PowerButton::PiState st) {
   }
 }
 
-void fullSplashOnce()
-{
-  display.setFullWindow();
-  display.firstPage();
-  do
-  {
-    display.fillScreen(GxEPD_WHITE);
-    display.setFont(&FreeMonoBold12pt7b);
-    display.setTextColor(GxEPD_BLACK);
-    display.setCursor(10, 30);
-    display.print("FULL INIT OK");
-    Serial.printf("BUSY after full: %d\n", digitalRead(PIN_BUSY));
-  } while (display.nextPage());
-}
-
 
 
 void setup() {
@@ -313,10 +322,8 @@ void setup() {
 
   // Force: PAS de fast partial update (differential)
   // (GxEPD2 expose ce flag sur le driver)
-  display.epd2.hasFastPartialUpdate;
+  //display.epd2.hasFastPartialUpdate;
 
-  // 1 full refresh au boot (recommandé)
-  //fullSplashOnce();
 
   touch.begin(PIN_I2C_SDA, PIN_I2C_SCL, PIN_TOUCH_IRQ);
   touch.setDisplayWidth(240);   // invert X so touch matches display (rotation 2)
@@ -380,29 +387,16 @@ void loop() {
     
     char cmd = input.charAt(0);
     
-    // Language: l0 = FR, l1 = EN
+    // Language: l0 = FR, l1 = EN. Only if language actually changed: save and rebuild.
     if (cmd == 'l' && input.length() > 1)
     {
       uint8_t langId = (uint8_t)input.substring(1).toInt();
       if (langId > 1) langId = 1;
-      model.setLanguage(langId);
-      i18n::init(langId);
-      applyHomeConfig(
-        uiManager.pageHome(),
-        kHomePageConfig,
-        onHomeButtonClick,
-        nullptr,
-        onAllOffButtonClick,
-        nullptr,
-        onSettingsButtonClick,
-        &uiManager,
-        onDayNightSelect,
-        &model
-      );
-      Serial.printf("[cmd] language set to %s\n", langId == 0 ? "FR" : "EN");
-      uiManager.update();
-      if (uiManager.getCurrentPageId() == PageId::Home) {
-        uiManager.navigateTo(PageId::Home);
+      if (langId != model.settings.language) {
+        model.setLanguage(langId);
+        saveSettingsIfChanged(model);
+        rebuildPageAfterLanguageChange(langId);
+        Serial.printf("[cmd] language set to %s\n", langId == 0 ? "FR" : "EN");
       }
       return;
     }
@@ -411,7 +405,7 @@ void loop() {
     if (cmd == 'w' && input.length() > 1)
     {
       // Test weather icon: 'w' + number (0-15)
-      // Ex: w12 = sunny, w9 = rainy, w0 = N/A
+      // e.g. w12 = sunny, w9 = rainy, w0 = N/A
       String codeStr = input.substring(1);
       uint8_t code = (uint8_t)codeStr.toInt();
       if (code > 15) code = 15;
@@ -485,7 +479,7 @@ void loop() {
     }
   }
 
-  // Envoi capteurs 30 s vers le Pi (uses last BME values)
+  // Send sensors every 30 s to Pi (uses last BME values)
   if (powerBtn.getPiState() == PowerButton::PiState::ON) {
     if (now - lastSensMs >= SENS_PERIOD_MS) {
       lastSensMs = now;

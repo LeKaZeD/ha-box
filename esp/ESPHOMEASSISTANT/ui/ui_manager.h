@@ -44,14 +44,14 @@ public:
       currentPage_->applyDirty(dirty);
     }
 
-    // 3) Render partial (budget = 2 refreshes max par update)
+    // 3) Render partial (budget = 2 refreshes max per update)
     currentPage_->renderPartials(display_, model_, 2);
   }
 
   // ---- Navigation ----
   void navigateTo(PageId pageId)
   {
-    if (pageId == currentPageId_) return; // déjà sur cette page
+    if (pageId == currentPageId_) return; // already on this page
 
     // Exit current page
     if (currentPage_)
@@ -90,6 +90,14 @@ public:
   }
 
   PageId getCurrentPageId() const { return currentPageId_; }
+
+  void redrawCurrentPage()
+  {
+    if (!currentPage_) return;
+    currentPage_->onExit(model_);
+    currentPage_->onEnter(model_);
+    currentPage_->drawFull(display_, model_);
+  }
 
   // Call when touch is detected (x, y in display coordinates). Returns true if the page consumed it.
   bool handleTouch(int16_t x, int16_t y)

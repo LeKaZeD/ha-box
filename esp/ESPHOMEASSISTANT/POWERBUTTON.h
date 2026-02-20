@@ -10,11 +10,11 @@ public:
     bool j2ActiveHigh = true;   // true: pulse HIGH, false: pulse LOW
     uint32_t j2PulseMs = 150;   // Durée d'appui virtuel sur J2
     uint32_t j2ResetMs = 5500;  // Durée d'appui virtuel sur J2 pour reset le pi (hard stop)
-    uint32_t debounceMs = 30;   // Anti-rebond minimal
-    uint32_t minClickMs = 120;  // appui trop court => ignore
-    uint32_t longPressMs = 5000; // Seuil appui long
-    uint32_t hbTimeoutMs = 5000;// Perte heartbeat => Pi considéré OFF
-    const char* token = nullptr;// Token attendu par ton bridge (optionnel)
+    uint32_t debounceMs = 30;   // Minimal debounce
+    uint32_t minClickMs = 120;  // Too short press => ignore
+    uint32_t longPressMs = 5000; // Long press threshold
+    uint32_t hbTimeoutMs = 5000;// Heartbeat lost => Pi considered OFF
+    const char* token = nullptr;// Token expected by your bridge (optional)
   };
 
   enum class PiState : uint8_t { OFF, ON, SHUTDOWN_PENDING };
@@ -24,14 +24,14 @@ public:
   void begin();
   void update();
 
-  // À appeler quand tu reçois une ligne UART du Pi/bridge
+  // Call when you receive a UART line from Pi/bridge
   void onUartLine(const char* line);
 
-  // Optionnel: forcer l'état si tu as une source fiable
+  // Optional: force state if you have a reliable source
   void setPiState(PiState st);
   PiState getPiState() const;
 
-  // Expose des hooks si tu veux compléter (log/UI etc.)
+  // Hooks for logging/UI etc.
   void setOnStateChange(void (*cb)(PiState st));
 
   void touchHeartbeat();
