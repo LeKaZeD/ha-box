@@ -1,6 +1,6 @@
 # Technical Architecture - HA Box
 
-This document describes the technical architecture of the HA Box add-on.
+This document describes the technical architecture of the HA Box App.
 
 ## Overview
 
@@ -107,7 +107,7 @@ Abstraction layer for hardware access.
 
 ### Supervisor API
 
-The add-on communicates with Home Assistant via the Supervisor API:
+The App communicates with Home Assistant via the Supervisor API:
 
 ```
 ┌─────────────┐     HTTP/REST      ┌─────────────┐
@@ -133,7 +133,7 @@ The add-on communicates with Home Assistant via the Supervisor API:
 ### Authentication
 
 - Supervisor token via `SUPERVISOR_TOKEN` environment variable
-- Automatic access from add-on container
+- Automatic access from App container
 
 ## File Structure
 

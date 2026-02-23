@@ -2,7 +2,7 @@
 
 ## Project Vision
 
-**HA Box** is a Home Assistant OS add-on for Raspberry Pi that allows controlling a set of hardware devices:
+**HA Box** is a Home Assistant OS App for Raspberry Pi that allows controlling a set of hardware devices:
 
 - **3.7" E-Paper Display** (GDEY037T03-FT21) - Display Home Assistant information with integrated front-light
 - **I2C Touch** (FT6336U integrated) - Navigation interface
@@ -19,19 +19,19 @@ Provide a simple and elegant physical interface to display and interact with cer
 
 ### Startup Order
 
-The add-on can use the `startup` parameter in `config.yaml`:
+The App can use the `startup` parameter in `config.yaml`:
 - `initialize`: Starts very early, before other services
 - `system`: Starts with system services
 - `services`: Starts after system services
 - `application`: Starts after Home Assistant (default)
 
-**Important**: Add-ons are managed by the Supervisor, which starts after OS boot. An add-on cannot start before the system itself.
+**Important**: Apps are managed by the Supervisor, which starts after OS boot. An App cannot start before the system itself.
 
 ### Hardware Access
 
 To access SPI/I2C/GPIO buses, you need to:
 1. Enable interfaces in Raspberry Pi `config.txt`
-2. Declare devices in add-on `config.yaml`
+2. Declare devices in App `config.yaml`
 3. Potentially disable "Protection Mode"
 
 ### Reference Existing Add-ons

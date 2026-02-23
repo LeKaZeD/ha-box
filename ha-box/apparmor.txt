@@ -1,5 +1,5 @@
-# AppArmor profile for HA Box add-on
-# https://developers.home-assistant.io/docs/add-ons/apparmor
+# AppArmor profile for HA Box App
+# https://developers.home-assistant.io/docs/apps/security
 
 #include <tunables/global>
 
@@ -68,10 +68,10 @@ profile ha-box flags=(attach_disconnected,mediate_deleted) {
   /etc/services.d/** rix,
   /etc/s6-overlay/s6-rc.d/** rix,
   
-  # Allow reading add-on files (translations, etc.)
+  # Allow reading App files (translations, etc.)
   /addon/** r,
   
-  # Allow reading add-on options
+  # Allow reading App options
   /data/options.json r,
 
   # Allow writing logs

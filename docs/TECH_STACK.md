@@ -56,7 +56,7 @@ This document details all technologies, languages and libraries used in the proj
 - aarch64 support (Raspberry Pi)
 
 **Reasons for choice:**
-- Standard for Home Assistant add-ons
+- Standard for Home Assistant Apps
 - Isolation and security
 - Reproducible build
 
@@ -65,7 +65,7 @@ This document details all technologies, languages and libraries used in the proj
 **Usage**: Initialization system and service management.
 
 **Reasons for choice:**
-- Standard for Home Assistant add-ons
+- Standard for Home Assistant Apps
 - Robust process management
 - Startup/shutdown script support
 

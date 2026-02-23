@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 def load_options() -> dict:
     """
-    Load options from Home Assistant add-on configuration.
+    Load options from Home Assistant App configuration.
     
     Returns:
         Dictionary with configuration options

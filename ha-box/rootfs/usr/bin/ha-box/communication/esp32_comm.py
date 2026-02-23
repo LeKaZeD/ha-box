@@ -1,5 +1,5 @@
 """
-ESP32 communication module for HA Box add-on.
+ESP32 communication module for HA Box App.
 
 This module implements the ASCII protocol for communication with the ESP32
 via UART (Serial0). It handles message parsing, ACK management, and

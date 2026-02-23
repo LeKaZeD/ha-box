@@ -2,7 +2,7 @@
 """
 HA Box - Main application entry point.
 
-This is the main entry point for the HA Box add-on.
+This is the main entry point for the HA Box App.
 """
 
 import sys
@@ -40,7 +40,7 @@ def handle_esp32_ack(ack: Ack) -> None:
 
 
 def _esp32_lang_id() -> int:
-    """ESP32 lang id from add-on translator: 0 = French, 1 = English (default if unsupported)."""
+    """ESP32 lang id from App translator: 0 = French, 1 = English (default if unsupported)."""
     lang = get_translator().language
     return 0 if lang == "fr" else 1
 
@@ -85,7 +85,7 @@ def _initialization_loop(
             weather_handler.set_connection_check(connection_manager.is_connected)
             clock_handler.set_connection_check(connection_manager.is_connected)
             
-            # Send language from add-on translator (ESP32: 0 = FR, 1 = EN; default EN if unsupported)
+            # Send language from App translator (ESP32: 0 = FR, 1 = EN; default EN if unsupported)
             lang_id = _esp32_lang_id()
             try:
                 msg_id = esp32_comm.send_command("LANG", [KV("id", str(lang_id))])

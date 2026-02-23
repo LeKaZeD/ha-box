@@ -1,17 +1,17 @@
-# Testing HA Box Add-on on Home Assistant OS
+# Testing HA Box App on Home Assistant OS
 
-This guide explains how to test the HA Box add-on on Home Assistant OS.
+This guide explains how to test the HA Box App on Home Assistant OS.
 
 ## Prerequisites
 
 1. **Home Assistant OS** installed on Raspberry Pi 4 or 5
 2. **SSH access** to your Home Assistant instance
-3. **Samba add-on** or **SSH add-on** enabled (for file transfer)
+3. **Samba** or **SSH & Web Terminal** App enabled (for file transfer)
 4. **Git** installed on your development machine
 
-## Method 1: Local Add-on (Recommended for Development)
+## Method 1: Local App (Recommended for Development)
 
-### Step 1: Prepare Your Add-on
+### Step 1: Prepare Your App
 
 1. **Create icon and logo** (optional but recommended):
    - Create `ha-box/icon.png` (256x256 pixels)
@@ -22,21 +22,21 @@ This guide explains how to test the HA Box add-on on Home Assistant OS.
 
 #### Option A: Using Samba Share
 
-1. Enable the **Samba share** add-on in Home Assistant
+1. Enable the **Samba share** App in Home Assistant
 2. Access the share from your computer (usually `\\homeassistant\config` or `smb://homeassistant.local`)
 3. Navigate to `addons/` (or `addons/local/`, create if it does not exist)
 4. Copy the entire `ha-box` folder to `addons/ha-box/` (or `addons/local/ha-box/`)
 
 #### Option B: Using SSH
 
-1. Enable the **SSH & Web Terminal** add-on in Home Assistant
+1. Enable the **SSH & Web Terminal** App in Home Assistant
 2. SSH into your Home Assistant instance:
    ```bash
    ssh root@homeassistant.local
    # or
    ssh root@<your-ha-ip>
    ```
-3. Create the local add-ons directory:
+3. Create the local Apps directory:
    ```bash
    mkdir -p /config/addons
    ```
@@ -45,16 +45,16 @@ This guide explains how to test the HA Box add-on on Home Assistant OS.
    scp -r ha-box root@homeassistant.local:/config/addons/
    ```
 
-### Step 3: Refresh Add-on Store
+### Step 3: Refresh App Store
 
-1. In Home Assistant, go to **Settings** → **Add-ons** → **Add-on Store**
+1. In Home Assistant, go to **Settings** → **Apps** → **App Store**
 2. Click the **⋮** (three dots) menu in the top right
 3. Click **Check for updates**
 4. Wait a few seconds and refresh the page (F5)
 
-### Step 4: Install the Add-on
+### Step 4: Install the App
 
-1. You should now see "HA Box" in the add-on store
+1. You should now see "HA Box" in the App store
 2. Click on **HA Box**
 3. Click **Install**
 4. Wait for installation to complete
@@ -82,7 +82,7 @@ When running on a Home Assistant OS VM without real GPIO/I2C/SPI hardware:
      #image: "ghcr.io/YOUR_USERNAME/{arch}-addon-ha-box"
      ```
 2. Copy the updated `ha-box` folder to the HAOS VM as described above.
-3. Use **Check for updates** in the Add-on Store, then install and start **HA Box**.
+3. Use **Check for updates** in the App Store, then install and start **HA Box**.
 
 ## Method 2: Git Repository (For Production)
 
@@ -97,15 +97,15 @@ When running on a Home Assistant OS VM without real GPIO/I2C/SPI hardware:
 
 ### Step 2: Add Repository to Home Assistant
 
-1. In Home Assistant, go to **Settings** → **Add-ons** → **Add-on Store**
+1. In Home Assistant, go to **Settings** → **Apps** → **App Store**
 2. Click the **⋮** menu → **Repositories**
 3. Add repository URL: `https://github.com/YOUR_USERNAME/ha-box`
 4. Click **Add**
 5. Refresh the page
 
-### Step 3: Install the Add-on
+### Step 3: Install the App
 
-1. Find **HA Box** in the add-on store
+1. Find **HA Box** in the App store
 2. Click **Install**
 3. Configure and start
 
@@ -131,7 +131,7 @@ docker run --rm -it \
 
 ## Troubleshooting
 
-### Add-on Not Appearing
+### App Not Appearing
 
 - Check that `repository.yaml` is in the correct location
 - Verify the `ha-box` folder structure matches the expected format
@@ -145,9 +145,9 @@ docker run --rm -it \
 - Check `config.yaml` syntax is valid YAML
 - Ensure `Dockerfile` is correct
 
-### Add-on Crashes on Start
+### App Crashes on Start
 
-- Check add-on logs: **HA Box** → **Logs** tab
+- Check App logs: **HA Box** → **Logs** tab
 - Verify hardware permissions in `config.yaml`
 - Check that I2C/SPI are enabled in `/mnt/boot/config.txt`
 - Verify Python dependencies are installed correctly
@@ -187,13 +187,13 @@ docker run --rm -it \
 
 1. **Make changes** to your code
 2. **Transfer files** to Home Assistant (Method 1, Step 2)
-3. **Restart the add-on** in Home Assistant
+3. **Restart the App** in Home Assistant
 4. **Check logs** for errors
 5. **Repeat** as needed
 
 ## Next Steps
 
-Once the add-on is running:
+Once the App is running:
 
 1. Check logs to verify startup
 2. Test hardware detection (if hardware is connected)
@@ -203,4 +203,4 @@ Once the add-on is running:
 
 ---
 
-*For more information, see the [Home Assistant Add-on Documentation](https://developers.home-assistant.io/docs/add-ons)*
+*For more information, see the [Home Assistant Apps Documentation](https://developers.home-assistant.io/docs/apps/)*

@@ -8,10 +8,10 @@
 
 
 ## Project context (assumptions)
-HA Box is a Home Assistant OS Supervisor add-on running on Raspberry Pi.
+HA Box is a Home Assistant OS Supervisor App running on Raspberry Pi.
 All code must assume execution inside a Docker container managed by the Home Assistant Supervisor.
 
-The add-on interacts with local hardware (SPI, I2C, GPIO, PWM) and may start before Home Assistant Core is ready.
+The App interacts with local hardware (SPI, I2C, GPIO, PWM) and may start before Home Assistant Core is ready.
 
 ## Mandatory documentation sources
 All Home Assistant–related behavior must be based on the official documentation:
@@ -20,7 +20,7 @@ https://developers.home-assistant.io
 Do not invent Supervisor, HAOS, or Core behaviors.
 If information is missing or unclear, rely on official documentation or keep the behavior configurable and documented.
 This includes (but is not limited to):
-- Add-on structure and lifecycle
+- App (add-on) structure and lifecycle
 - Supervisor behavior
 - startup ordering
 - Permissions and devices

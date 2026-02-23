@@ -59,7 +59,7 @@ This document describes the current state of the project and the next developmen
 
 ### Phase 2: Base Infrastructure (COMPLETED)
 
-**Objective**: Create the base structure of the add-on and minimal infrastructure.
+**Objective**: Create the base structure of the App and minimal infrastructure.
 
 | Task | Priority | Status | Notes |
 |------|----------|--------|-------|
@@ -174,7 +174,7 @@ This document describes the current state of the project and the next developmen
 | Touch navigation | To do | Swipe between screens |
 | HA entity display | To do | Configurable selection |
 | Widgets | To do | Temperature, clock, etc. |
-| Configuration UI | To do | Options in add-on |
+| Configuration UI | To do | Options in App |
 | UI translation integration | To do | Texts displayed on E-Paper screen |
 
 **Estimated duration**: 2-3 weeks

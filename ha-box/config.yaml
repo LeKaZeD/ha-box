@@ -1,9 +1,9 @@
-# https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
+# https://developers.home-assistant.io/docs/apps/configuration
 name: HA Box
 version: "0.1.36"
 slug: ha-box
 description: Physical interface for Home Assistant with E-Paper display, sensors and controllers
-url: "https://github.com/VOTRE_USERNAME/ha-box"
+url: "https://github.com/LeKaZeD/ha-box"
 arch:
   - aarch64
 init: false

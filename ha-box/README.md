@@ -6,7 +6,7 @@ _Physical interface for Home Assistant with E-Paper display, sensors and control
 
 ## About
 
-HA Box is a Home Assistant OS add-on that allows creating a physical interface for your Home Assistant installation via:
+HA Box is a Home Assistant OS App that allows creating a physical interface for your Home Assistant installation via:
 
 - **3.7" E-Paper Display** (GDEY037T03-FT21) with integrated front-light
 - **Touch Interface** (FT6336U integrated)
@@ -17,10 +17,10 @@ HA Box is a Home Assistant OS add-on that allows creating a physical interface f
 
 ## Installation
 
-1. Add this repository to your Home Assistant add-ons
-2. Install the "HA Box" add-on
+1. Add this repository to your Home Assistant Apps
+2. Install the "HA Box" App
 3. Configure options according to your hardware
-4. Start the add-on
+4. Start the App
 
 ## Configuration
 

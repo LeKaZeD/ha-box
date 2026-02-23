@@ -1,5 +1,5 @@
 """
-Internationalization (i18n) module for HA Box add-on.
+Internationalization (i18n) module for HA Box App.
 
 This module provides translation support for user-facing messages in Python code.
 Home Assistant automatically handles translations for config.yaml labels/descriptions
@@ -22,7 +22,7 @@ SUPPORTED_LANGUAGES = ["en", "fr"]
 
 
 class Translator:
-    """Translation manager for HA Box add-on."""
+    """Translation manager for HA Box App."""
 
     def __init__(self, language: Optional[str] = None) -> None:
         """
@@ -75,23 +75,22 @@ class Translator:
 
     def _load_translations(self) -> None:
         """Load translation file for the current language."""
-        # Translation files are in the add-on root, but we run from /usr/bin/ha-box
-        # Need to find the add-on root
-        addon_root = self._find_addon_root()
-        if not addon_root:
+        # Translation files are in the App root (mounted at /addon in container), we run from /usr/bin/ha-box
+        app_root = self._find_app_root()
+        if not app_root:
             logger.warning(
-                "Could not find add-on root, translations will not be loaded"
+                "Could not find App root, translations will not be loaded"
             )
             return
 
-        translation_file = addon_root / "translations" / f"{self._language}.yaml"
+        translation_file = app_root / "translations" / f"{self._language}.yaml"
         if not translation_file.exists():
             logger.warning(
                 "Translation file not found: %s, falling back to English",
                 translation_file,
             )
             if self._language != DEFAULT_LANGUAGE:
-                translation_file = addon_root / "translations" / f"{DEFAULT_LANGUAGE}.yaml"
+                translation_file = app_root / "translations" / f"{DEFAULT_LANGUAGE}.yaml"
             if not translation_file.exists():
                 logger.warning("English translation file not found, no translations loaded")
                 return
@@ -111,18 +110,17 @@ class Translator:
             logger.error("Failed to load translations from %s: %s", translation_file, e)
             self._translations = {}
 
-    def _find_addon_root(self) -> Optional[Path]:
+    def _find_app_root(self) -> Optional[Path]:
         """
-        Find the add-on root directory.
+        Find the App root directory (translations, etc.).
 
         Returns:
-            Path to add-on root, or None if not found.
+            Path to App root, or None if not found.
         """
         # Translation files are copied to rootfs during build
         # They should be at /addon/translations/ in the container
-        # But we can also check relative to our code location
         possible_paths = [
-            Path("/addon"),  # Standard add-on root in container
+            Path("/addon"),  # Standard App root in container
             Path("/data"),   # Alternative location
             Path(__file__).parent.parent.parent.parent / "ha-box",  # Development path
         ]
@@ -132,12 +130,8 @@ class Translator:
             if translations_dir.exists() and translations_dir.is_dir():
                 return path
 
-        # Fallback: check if translations are in the same directory structure
-        # as the code (for development/testing)
+        # Fallback: development layout (ha-box/translations)
         code_dir = Path(__file__).parent
-        # Go up: core -> ha-box -> usr -> bin -> usr -> /
-        # Then look for ha-box/translations
-        # From core/ we need to go: core -> ha-box -> usr -> bin -> usr -> /
         root = code_dir.parent.parent.parent.parent.parent
         translations_dir = root / "ha-box" / "translations"
         if translations_dir.exists() and translations_dir.is_dir():

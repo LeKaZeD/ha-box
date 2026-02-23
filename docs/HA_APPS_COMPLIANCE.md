@@ -14,13 +14,13 @@ References:
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| `config.yaml` at add-on root | OK | Present with name, version, slug, description, url, arch |
+| `config.yaml` at App root | OK | Present with name, version, slug, description, url, arch |
 | `Dockerfile` using `ARG BUILD_FROM` | OK | Uses `FROM $BUILD_FROM`, standard base |
 | Startup script | OK | s6-overlay `run` script under `rootfs/etc/s6-overlay/s6-rc.d/ha-box/run` (modern approach) |
 | `build.yaml` for builder | OK | Present with `build_from`, labels, args |
-| Single `config.yaml` for add-on config | OK | No other `config.yaml` in repo that could be picked up by Supervisor recursive search |
+| Single `config.yaml` for App config | OK | No other `config.yaml` in repo that could be picked up by Supervisor recursive search |
 
-**Recommendation:** Keep only one `config.yaml` in the add-on directory; avoid naming other files `config.yaml` elsewhere in the repo.
+**Recommendation:** Keep only one `config.yaml` in the App directory; avoid naming other files `config.yaml` elsewhere in the repo.
 
 ---
 
@@ -36,7 +36,7 @@ References:
 | `arch` | OK | `aarch64` (Raspberry Pi); consider adding `amd64` for local dev if supported |
 | `options` | OK | Default values for all configuration |
 | `schema` | OK | Validation for all options (str?, int(), list(), match(), etc.) |
-| `init` | OK | `false` (add-on does not need to run host init) |
+| `init` | OK | `false` (App does not need to run host init) |
 | `startup` | OK | `services` |
 | `boot` | OK | `auto` |
 | `apparmor` | OK | `true` |
@@ -56,8 +56,8 @@ References:
 
 | Item | Status | Notes |
 |------|--------|------|
-| `apparmor.txt` present | OK | Custom profile in add-on root |
-| Profile name matches add-on | OK | `profile ha-box` |
+| `apparmor.txt` present | OK | Custom profile in App root |
+| Profile name matches App | OK | `profile ha-box` |
 | Least privilege | OK | Only required paths and devices (serial, network, /data/options.json, /addon/**, etc.) |
 | No broad filesystem access | OK | No `/** rw` or host mount |
 | Documented in SECURITY.md | OK | SECURITY.md describes rating and permissions |
@@ -115,7 +115,7 @@ References:
 | Commented `image` in config | OK | Optional for pre-built image; fine when building locally |
 
 **Gaps:**
-- README and docs still use "add-on" widely; HA now uses "App" in official docs. Prefer "App" when citing HA terminology; "add-on" remains valid for config and legacy references.
+- Terminology aligned with HA: "App" for the product; "add-on" only for config keys and legacy/doc URLs.
 - No dedicated DOCS.md; configuration is documented via README and translation labels. Optional: add a short DOCS.md for the store if required by publishing checklist.
 
 ---
@@ -139,4 +139,4 @@ References:
 - **To fix before publishing:** Replace placeholder `url` in config.yaml.
 - **Optional improvements:** Align terminology with "App" where referring to HA docs; keep version and CHANGELOG in sync; consider DOCS.md and multi-arch if needed for store submission.
 
-HA Box is aligned with Home Assistant Apps (add-on) recommendations; the main actionable item is replacing the placeholder URL and maintaining version/changelog consistency.
+HA Box is aligned with Home Assistant App recommendations; the main actionable item is replacing the placeholder URL and maintaining version/changelog consistency.

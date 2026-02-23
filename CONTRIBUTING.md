@@ -6,7 +6,7 @@ Welcome! This document describes the rules and process for contributing to the H
 
 ### Required Knowledge
 
-- **Home Assistant OS**: Understanding of add-ons and their configuration
+- **Home Assistant OS**: Understanding of Apps and their configuration
 - **Embedded Linux**: Basic knowledge of I2C, SPI, GPIO buses
 - **Docker**: Containerization basics
 - **Bash/Python**: Depending on components to develop

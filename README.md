@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 ![Supports aarch64 Architecture](https://img.shields.io/badge/aarch64-yes-green.svg)
 
-**HA Box** is a Home Assistant OS add-on for Raspberry Pi that allows controlling a set of hardware devices to create a physical interface with Home Assistant.
+**HA Box** is a Home Assistant OS App for Raspberry Pi that allows controlling a set of hardware devices to create a physical interface with Home Assistant.
 
 ## Objective
 
@@ -36,7 +36,7 @@ Display and interact with Home Assistant information via a touchscreen connected
 
 ### Raspberry Pi Configuration
 
-Before installing the add-on, enable I2C and SPI in `/mnt/boot/config.txt`:
+Before installing the App, enable I2C and SPI in `/mnt/boot/config.txt`:
 
 ```ini
 dtparam=i2c_arm=on
@@ -46,15 +46,15 @@ dtparam=spi=on
 
 ## Installation
 
-1. Add this repository to your Home Assistant add-ons:
+1. Add this repository to your Home Assistant Apps:
 
    [![Add repository](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FVOTRE_USERNAME%2Fha-box)
 
    Or manually: **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories** → Add the repository URL
 
-2. Install the "HA Box" add-on
+2. Install the "HA Box" App
 3. Configure options according to your hardware
-4. Start the add-on
+4. Start the App
 
 ## Configuration
 
@@ -123,9 +123,9 @@ Contributions are welcome! See the [contribution guide](CONTRIBUTING.md) to get 
 
 ## Useful Resources
 
-- [Home Assistant Add-ons Documentation](https://developers.home-assistant.io/docs/add-ons)
-- [ha-rpi_gpio](https://github.com/thecode/ha-rpi_gpio) - Reference GPIO add-on
-- [Pironman](https://github.com/sunfounder/home-assistant-addon) - Similar add-on by SunFounder
+- [Home Assistant Apps Documentation](https://developers.home-assistant.io/docs/apps/)
+- [ha-rpi_gpio](https://github.com/thecode/ha-rpi_gpio) - Reference GPIO App
+- [Pironman](https://github.com/sunfounder/home-assistant-addon) - Similar App by SunFounder
 
 ## License
 

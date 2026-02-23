@@ -14,8 +14,8 @@
 | **Onboarding “add device”** | Home Assistant (logique), ESP32 (UI) | UART | bidirectionnel | HA décide des étapes, ESP32 affiche + collecte inputs (NFC / touch). |
 | **Capteurs temp/hum** | ESP32 | UART | ESP32 → Pi | Remontée vers HA pour dashboards et automatisations. |
 | **Temp dédiée pour refroidissement + fan PWM** | ESP32 | UART *(optionnel)* | ESP32 → Pi | Contrôle ventilo autonome (sécurité) + télémétrie vers HA si souhaité. |
-| **États Wi-Fi / BT / Zigbee / Thread / Matter / 433MHz** (opérationnels ?) | Pi/HA (source de vérité) | UART | Pi → ESP32 | HA agrège l’état des intégrations/add-ons et envoie un “status bundle” à l’ESP32 pour affichage. |
-| **Health check add-ons** (Zigbee2MQTT, Thread, etc.) | Pi/HAOS Supervisor + HA | UART | Pi → ESP32 | Le Pi lit l’état via Supervisor/HA, push vers ESP32. |
+| **États Wi-Fi / BT / Zigbee / Thread / Matter / 433MHz** (opérationnels ?) | Pi/HA (source de vérité) | UART | Pi → ESP32 | HA agrège l’état des intégrations/Apps et envoie un “status bundle” à l’ESP32 pour affichage. |
+| **Health check Apps** (Zigbee2MQTT, Thread, etc.) | Pi/HAOS Supervisor + HA | UART | Pi → ESP32 | Le Pi lit l’état via Supervisor/HA, push vers ESP32. |
 
 
 ## Hardware connection

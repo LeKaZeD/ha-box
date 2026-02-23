@@ -72,7 +72,7 @@ Graphic display on a 3.7" E-Paper display with integrated front-light. The displ
 
 ### Acceptance Criteria
 
-- [ ] Display initializes at add-on startup
+- [ ] Display initializes at App startup
 - [ ] Readable text display (grayscale)
 - [ ] Display at least 3 Home Assistant entities
 - [ ] Automatic value updates (optimized refresh)
@@ -363,7 +363,7 @@ Fan speed regulation based on:
 ### Description
 
 Add-on configuration interface:
-- Options in add-on panel
+- Options in App panel
 - Entity selection to display
 - Threshold and parameter configuration
 
@@ -383,7 +383,7 @@ Add-on configuration interface:
 
 ### Dependencies
 
-- Basic add-on structure
+- Basic App structure
 
 ---
 
@@ -397,7 +397,7 @@ Add-on configuration interface:
 
 ### Description
 
-Allow add-on to start as early as possible for:
+Allow App to start as early as possible for:
 - Display boot screen
 - Quick device initialization
 - Display HA startup status
@@ -410,7 +410,7 @@ Allow add-on to start as early as possible for:
 
 ### Acceptance Criteria
 
-- [ ] Screen displays something from add-on boot
+- [ ] Screen displays something from App boot
 - [ ] No crash if HA not ready yet
 - [ ] Smooth transition to main screen
 
@@ -463,7 +463,7 @@ Control of the front-light integrated in the E-Paper display to allow reading in
 - [ ] Functional on/off control
 - [ ] Intensity adjustable via PWM (0-100%)
 - [ ] No visible flicker
-- [ ] Integration in add-on configuration
+- [ ] Integration in App configuration
 - [ ] Automatic mode (on/off based on time or light)
 
 ### Dependencies

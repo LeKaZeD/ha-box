@@ -2,20 +2,20 @@
 
 ## Security Rating
 
-This add-on is designed to achieve a **security rating of 6/6** (maximum security) according to Home Assistant add-on security standards.
+This App is designed to achieve a **security rating of 6/6** (maximum security) according to Home Assistant App security standards.
 
-**Note**: Home Assistant's official security rating scale is **1-6**, where 6 is the maximum. All add-ons start at 5/6, then points are added/subtracted based on configuration choices.
+**Note**: Home Assistant's official security rating scale is **1-6**, where 6 is the maximum. All Apps start at 5/6, then points are added/subtracted based on configuration choices.
 
 ## Security Features
 
 ### Protection Mode
 
 - **Status**: Enabled (default)
-- **Rationale**: Protection mode provides isolation and security restrictions. This add-on does not require disabling protection mode.
+- **Rationale**: Protection mode provides isolation and security restrictions. This App does not require disabling protection mode.
 
 ### Permissions
 
-The add-on requires the following permissions for hardware access:
+The App requires the following permissions for hardware access:
 
 #### Hardware Access
 - **GPIO**: Required for controlling LEDs, fan PWM, and display control pins
@@ -32,14 +32,14 @@ The add-on requires the following permissions for hardware access:
 
 ### AppArmor Profile
 
-A custom AppArmor profile (`apparmor.txt`) restricts the add-on to:
+A custom AppArmor profile (`apparmor.txt`) restricts the App to:
 - Only necessary hardware devices
 - Network access limited to Supervisor API
 - No access to host filesystem
 - Minimal file system permissions
 
 **Profile Details**:
-- Allows execution of s6-overlay init system (`/init`, `/run/s6/**`, `/usr/bin/s6-*`) - required for add-on startup
+- Allows execution of s6-overlay init system (`/init`, `/run/s6/**`, `/usr/bin/s6-*`) - required for App startup
 - Allows execution of basic system binaries (`/bin/sh`, `/bin/bash`, `/usr/bin/with-contenv`) - required by s6-overlay
 - Allows I2C/SPI/GPIO device access (hardware requirement)
 - Allows network access for Supervisor API communication
@@ -85,13 +85,13 @@ A custom AppArmor profile (`apparmor.txt`) restricts the add-on to:
 
 ### Known Limitations
 
-- **Hardware dependencies**: Requires GPIO/kernel modules (hardware add-on limitation)
+- **Hardware dependencies**: Requires GPIO/kernel modules (hardware App limitation)
 - **No ingress**: Currently no web interface (future enhancement)
 - **Image signing**: Not yet implemented (planned for production releases)
 
 ## Security Best Practices for Users
 
-1. **Keep add-on updated**: Regular updates include security patches
+1. **Keep App updated**: Regular updates include security patches
 2. **Review configuration**: Only enable features you need
 3. **Monitor logs**: Check logs for unusual activity
 4. **Hardware security**: Ensure physical access to Raspberry Pi is secured
@@ -112,7 +112,7 @@ If you discover a security vulnerability, please:
 
 ## Compliance
 
-This add-on follows Home Assistant add-on security guidelines:
+This App follows Home Assistant App security guidelines:
 - ✅ Protection mode enabled
 - ✅ No privileged mode
 - ✅ No host network
