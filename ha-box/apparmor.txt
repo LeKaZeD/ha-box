@@ -3,31 +3,74 @@
 
 #include <tunables/global>
 
-profile addon_ha-box flags=(attach_disconnected,mediate_deleted) {
+profile ha-box flags=(attach_disconnected,mediate_deleted) {
   #include <abstractions/base>
 
-  # Allow access to I2C bus
-  /dev/i2c-1 rw,
-  /dev/i2c-* rw,
+  # S6-Overlay
+  /init rix,
+  /bin/** rix,
+  /usr/bin/** rix,
+  /usr/bin/s6-* rix,
+  /package/** rix,
+  /package/admin/s6-overlay-*/** rix,
+  /command/** rix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /dev/tty rw,
+  /etc/s6/** rix,
+  /etc/s6-overlay/** rix,
+  /etc/s6-overlay/s6-rc.d/** rix,
 
-  # Allow access to SPI bus
-  /dev/spidev0.0 rw,
-  /dev/spidev* rw,
+  # S6-Overlay runtime directories
+  # Full access to /run for s6-overlay (simplified rules to avoid conflicts)
+  /run/ rw,
+  /run/** rwkix,
+  /tmp/** rwk,
+  
+  # Basic system binaries (required by s6-overlay and scripts)
+  /bin/sh rix,
+  /bin/bash rix,
+  /bin/cp rix,
+  /bin/mkdir rix,
+  /bin/ln rix,
+  /bin/rm rix,
+  /bin/find rix,
+  /bin/pkill rix,
+  /bin/killall rix,
+  /bin/pgrep rix,
+  /usr/bin/with-contenv ix,
+  /usr/bin/env ix,
+  /usr/bin/python3* ix,
 
-  # Allow access to GPIO
-  /dev/gpiomem rw,
+  # Allow access to UART/serial devices (ESP32 communication)
+  /dev/serial0 rw,
+  /dev/ttyAMA0 rw,
+  /dev/ttyUSB* rw,
 
   # Allow access to supervisor API
   @{PROC}/sys/kernel/random/uuid r,
+  # Allow access to /proc for process management (pkill, etc.)
+  @{PROC}/** r,
   /etc/machine-id r,
 
   # Allow network access (Supervisor and HA API)
   network,
+  
+  # SSL/TLS certificates for HTTPS requests
+  /etc/ssl/** r,
+  /etc/ssl/certs/** r,
+  /etc/ssl/openssl.cnf r,
+  /usr/lib/ssl/** r,
+  /usr/share/ca-certificates/** r,
 
-  # Allow reading configuration and service files
-  /usr/bin/ha-box/** r,
-  /etc/services.d/** r,
-
+  # Allow reading and executing service scripts
+  /usr/bin/ha-box/** rix,
+  /etc/services.d/** rix,
+  /etc/s6-overlay/s6-rc.d/** rix,
+  
+  # Allow reading add-on files (translations, etc.)
+  /addon/** r,
+  
   # Allow reading add-on options
   /data/options.json r,
 

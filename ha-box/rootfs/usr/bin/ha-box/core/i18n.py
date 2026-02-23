@@ -135,9 +135,10 @@ class Translator:
         # Fallback: check if translations are in the same directory structure
         # as the code (for development/testing)
         code_dir = Path(__file__).parent
-        # Go up: /usr/bin/ha-box -> /usr/bin -> /usr -> /
+        # Go up: core -> ha-box -> usr -> bin -> usr -> /
         # Then look for ha-box/translations
-        root = code_dir.parent.parent.parent
+        # From core/ we need to go: core -> ha-box -> usr -> bin -> usr -> /
+        root = code_dir.parent.parent.parent.parent.parent
         translations_dir = root / "ha-box" / "translations"
         if translations_dir.exists() and translations_dir.is_dir():
             return root / "ha-box"

@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: HA Box
-version: "0.1.0"
+version: "0.1.36"
 slug: ha-box
 description: Physical interface for Home Assistant with E-Paper display, sensors and controllers
 url: "https://github.com/VOTRE_USERNAME/ha-box"
@@ -9,15 +9,22 @@ arch:
 init: false
 startup: services
 boot: auto
+apparmor: true
+hassio_api: true
+homeassistant_api: true
 map:
   - share:rw
+# Only UART devices needed for ESP32 communication
+# I2C, SPI, GPIO will be added when those features are implemented
 devices:
-  - /dev/i2c-1
-  - /dev/spidev0.0
-  - /dev/gpiomem
-gpio: true
-kernel_modules: true
+  - /dev/ttyAMA0
+  - /dev/serial0
+gpio: false
+kernel_modules: false
 options:
+  home_assistant:
+    weather_entity: "weather.forecast_home"
+    update_interval: 300
   # E-Paper display configuration
   display:
     enabled: true
@@ -52,15 +59,11 @@ options:
       enabled: false
       pin: 21
       count: 10
-  
-  # Home Assistant configuration
-  home_assistant:
-    entities:
-      - sensor.temperature_salon
-      - sensor.humidity_salon
-    update_interval: 60
 
 schema:
+  home_assistant:
+    weather_entity: "str?"
+    update_interval: "int(10,300)?"
   display:
     enabled: "bool"
     rotation: "int(0,3)?"
@@ -90,8 +93,5 @@ schema:
       enabled: "bool"
       pin: "int(1,40)?"
       count: "int(1,100)?"
-  home_assistant:
-    entities: "list(str)?"
-    update_interval: "int(10,300)?"
 
 #image: "ghcr.io/lekazed/{arch}-addon-ha-box"

@@ -39,8 +39,12 @@ A custom AppArmor profile (`apparmor.txt`) restricts the add-on to:
 - Minimal file system permissions
 
 **Profile Details**:
+- Allows execution of s6-overlay init system (`/init`, `/run/s6/**`, `/usr/bin/s6-*`) - required for add-on startup
+- Allows execution of basic system binaries (`/bin/sh`, `/bin/bash`, `/usr/bin/with-contenv`) - required by s6-overlay
 - Allows I2C/SPI/GPIO device access (hardware requirement)
 - Allows network access for Supervisor API communication
+- Allows reading and executing Python code from `/usr/bin/ha-box/**`
+- Allows reading and executing service scripts from `/etc/services.d/**`
 - Allows reading configuration from `/data/options.json`
 - Allows writing logs to `/var/log/**`
 - Blocks all other system access

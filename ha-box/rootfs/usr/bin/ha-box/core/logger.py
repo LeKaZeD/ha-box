@@ -3,7 +3,7 @@
 import logging
 import sys
 
-def setup_logging(level: int = logging.INFO) -> logging.Logger:
+def setup_logging(level: int = logging.DEBUG) -> logging.Logger:
     """
     Setup logging configuration.
     
@@ -13,9 +13,13 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
     Returns:
         Configured logger instance
     """
-    # Create logger
-    logger = logging.getLogger("ha-box")
-    logger.setLevel(level)
+    # Configure root logger to catch all loggers
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    
+    # Remove existing handlers to avoid duplicates
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
     
     # Create console handler
     handler = logging.StreamHandler(sys.stdout)
@@ -28,7 +32,9 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
     )
     handler.setFormatter(formatter)
     
-    # Add handler to logger
-    logger.addHandler(handler)
+    # Add handler to root logger
+    root_logger.addHandler(handler)
     
+    # Return main logger
+    logger = logging.getLogger("ha-box")
     return logger

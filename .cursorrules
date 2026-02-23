@@ -31,6 +31,15 @@ Rules:
 - Do not extrapolate from other projects without documentation.
 - If behavior is unclear, keep it configurable and document the assumption.
 
+## Home Assistant Apps (add-ons) compliance
+- Use the official Apps documentation as the reference for structure, config, security, and communication: https://developers.home-assistant.io/docs/apps/ (and /docs/add-ons/ where still applicable).
+- When changing add-on structure or permissions, check docs/HA_APPS_COMPLIANCE.md and keep it updated.
+- config.yaml: slug must be unique; version must match the built image tag when publishing; do not commit placeholder URLs (e.g. VOTRE_USERNAME); every option must have a schema entry.
+- When adding or changing options: update config.yaml (options + schema), core/config.py if used at runtime, and translations (en.yaml, fr.yaml) for UI labels/descriptions.
+- AppArmor: any new device or filesystem path required by the app must be explicitly allowed in apparmor.txt and reflected in SECURITY.md.
+- Supervisor/Core API: use only SUPERVISOR_TOKEN and SUPERVISOR_URL (or documented fallback) from the environment; never hardcode credentials or base URLs for production.
+- Terminology: prefer "App" when referring to HA product terminology; "add-on" remains valid for config keys and legacy references.
+
 ## Source of truth hierarchy
 When documents conflict, apply the following priority:
 1. docs/ARCHITECTURE.md

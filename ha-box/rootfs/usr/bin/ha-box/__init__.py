@@ -1,3 +1,3 @@
-"""HA Box - Interface physique pour Home Assistant."""
+"""HA Box - Physical interface for Home Assistant."""
 
 __version__ = "0.1.0"

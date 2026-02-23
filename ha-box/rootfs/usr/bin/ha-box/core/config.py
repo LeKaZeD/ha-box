@@ -28,6 +28,12 @@ def load_options() -> dict:
         return {}
 
 @dataclass
+class HomeAssistantConfig:
+    """Home Assistant integration configuration."""
+    weather_entity: str = "weather.home"
+    update_interval: int = 30
+
+@dataclass
 class FrontLightConfig:
     """Front-light configuration."""
     enabled: bool = True
@@ -107,15 +113,6 @@ class ControlConfig:
         if self.led is None:
             self.led = LEDConfig()
 
-@dataclass
-class HomeAssistantConfig:
-    """Home Assistant integration configuration."""
-    entities: List[str] = None
-    update_interval: int = 60  # seconds
-    
-    def __post_init__(self):
-        if self.entities is None:
-            self.entities = []
 
 @dataclass
 class Config:
@@ -194,8 +191,8 @@ class Config:
         if "home_assistant" in options:
             ha_opts = options["home_assistant"]
             config.home_assistant = HomeAssistantConfig(
-                entities=ha_opts.get("entities", []),
-                update_interval=ha_opts.get("update_interval", 60)
+                weather_entity=ha_opts.get("weather_entity", "weather.home"),
+                update_interval=ha_opts.get("update_interval", 30)
             )
         
         return config

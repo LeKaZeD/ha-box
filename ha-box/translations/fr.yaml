@@ -95,13 +95,3 @@ configuration:
           count:
             name: Nombre de LED
             description: Nombre de LED dans le ruban (1-100)
-  home_assistant:
-    name: Intégration Home Assistant
-    description: Configuration de l'intégration avec les entités Home Assistant
-    fields:
-      entities:
-        name: Entités
-        description: Liste des identifiants d'entités Home Assistant à afficher
-      update_interval:
-        name: Intervalle de mise à jour
-        description: Intervalle de mise à jour des entités en secondes (10-300)

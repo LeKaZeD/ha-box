@@ -1,0 +1,13 @@
+#!/usr/bin/with-contenv bash
+# ==============================================================================
+# Start HA Box service
+# ==============================================================================
+
+# Force unbuffered output
+exec 2>&1
+
+# Make sure Python output is unbuffered
+export PYTHONUNBUFFERED=1
+
+# Run the main application
+exec python3 -u /usr/bin/ha-box/main.py

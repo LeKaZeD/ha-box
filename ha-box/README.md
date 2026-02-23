@@ -1,4 +1,4 @@
-# Home Assistant Add-on: HA Box
+# Home Assistant App: HA Box
 
 _Physical interface for Home Assistant with E-Paper display, sensors and controllers._
 

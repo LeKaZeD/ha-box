@@ -95,13 +95,3 @@ configuration:
           count:
             name: LED Count
             description: Number of LEDs in the strip (1-100)
-  home_assistant:
-    name: Home Assistant Integration
-    description: Configuration for Home Assistant entity integration
-    fields:
-      entities:
-        name: Entities
-        description: List of Home Assistant entity IDs to display
-      update_interval:
-        name: Update Interval
-        description: Entity update interval in seconds (10-300)

@@ -1,0 +1,12 @@
+#!/usr/bin/with-contenv bash
+# ==============================================================================
+# Finish HA Box service
+# ==============================================================================
+
+declare exit_code=${1}
+
+echo "[ha-box] Service exited with code: ${exit_code}"
+
+if [[ "${exit_code}" -ne 0 ]] && [[ "${exit_code}" -ne 256 ]]; then
+    echo "[ha-box] Stopping container due to failure"
+fi

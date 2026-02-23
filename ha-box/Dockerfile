@@ -15,40 +15,28 @@ RUN \
         py3-pip \
         py3-requests
 
-# Install build dependencies (needed for compiling Python packages)
-RUN \
-    apk add --no-cache --virtual .build-deps \
-        linux-headers \
-        gcc \
-        python3-dev \
-        musl-dev \
-        zlib-dev \
-        jpeg-dev \
-        freetype-dev \
-        lcms2-dev \
-        openjpeg-dev \
-        tiff-dev
-
-# Install architecture-specific packages
-# i2c-tools and RPi.GPIO are only available/needed on aarch64 (Raspberry Pi)
-RUN \
-    if [ "$BUILD_ARCH" = "aarch64" ]; then \
-        apk add --no-cache i2c-tools && \
-        pip3 install --no-cache-dir RPi.GPIO>=0.7.1; \
-    fi
+# Note: RPi.GPIO and i2c-tools not needed for UART communication only
+# Note: Build dependencies (gcc, python3-dev, image libraries) not needed for current minimal setup
+# They will be added back when GPIO/I2C/SPI/display features are implemented
 
 # Install Python packages
+# Using --break-system-packages is safe in a container environment
 COPY requirements.txt /tmp/
 RUN \
-    pip3 install --no-cache-dir -r /tmp/requirements.txt \
+    pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt \
     && rm -rf /tmp/requirements.txt
-
-# Remove build dependencies to reduce image size
-RUN \
-    apk del --no-cache .build-deps
 
 # Copy translations (for Python i18n module)
 COPY translations /addon/translations
 
 # Copy root filesystem
 COPY rootfs /
+
+# Make s6-overlay scripts executable
+# This is critical for s6-overlay v3 to work properly
+RUN \
+    chmod +x /etc/s6-overlay/s6-rc.d/ha-box/run \
+    && chmod +x /etc/s6-overlay/s6-rc.d/ha-box/finish \
+    && chmod 644 /etc/s6-overlay/s6-rc.d/ha-box/type \
+    && find /etc/cont-init.d -type f -exec chmod +x {} \; 2>/dev/null || true \
+    && find /etc/cont-finish.d -type f -exec chmod +x {} \; 2>/dev/null || true
