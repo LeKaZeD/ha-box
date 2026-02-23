@@ -10,66 +10,18 @@
 
 #include <GxEPD2_BW.h>
 #include "gdey/GxEPD2_370_GDEY037T03.h"
-#include "ui/assets/fonts/RobotoBold24.h"
-#include "ui/assets/fonts/RobotoBold20.h"
-#include "ui/assets/fonts/RobotoBold12.h"
-#include "ui/assets/fonts/RobotoBold16.h"
-#include "ui/assets/fonts/RobotoBold8.h"
-#include "ui/assets/fonts/Roboto16.h"
-#include "ui/assets/fonts/Roboto12.h"
-#include "ui/assets/fonts/Roboto20.h"
 #include "touch_ft6336.h"
-
-
-// UI Manager
 #include "model/model.h"
 #include "ui/ui_manager.h"
-#include "weather_icons.h"
-#include "i18n.h"
-#include "ui/config/page_home_config.h"
-#include "ui/config/page_settings_config.h"
-#include "ui/config/page_loading_config.h"
-
-static void rebuildPageAfterLanguageChange(uint8_t langId);
 
 //*******************************************
 GxEPD2_BW<GxEPD2_370_GDEY037T03, GxEPD2_370_GDEY037T03::HEIGHT> display(GxEPD2_370_GDEY037T03(PIN_CS, PIN_DC, PIN_RST, PIN_BUSY));
 TouchFT6336 touch(0x38);
 
-// Model & UI Manager
 Model model;
 UIManager<GxEPD2_BW<GxEPD2_370_GDEY037T03, GxEPD2_370_GDEY037T03::HEIGHT>> uiManager(display, model);
 
-// Default page configs (fonts/icons from .ino includes only, no redefinition)
-static const HomePageConfig kHomePageConfig = {
-  &Roboto_Bold20pt7b,
-  &Roboto_Bold16pt7b,
-  &Roboto_Bold20pt7b,
-  &Roboto_Bold12pt7b,
-  16,
-  ADD_24x24,
-  24, 24,
-  LIGHT_OFF_24x24,
-  SETTINGS,
-  DAY_MODE_66x66,
-  NIGHT_MODE_60x60
-};
-static const SettingsPageConfig kSettingsPageConfig = {
-  &Roboto_Bold16pt7b,
-  ARROW_BACK,
-  ARROW_FORWARD,
-  VOLUME_UP_24x24,
-  VOLUME_OFF_24x24
-};
-static const LoadingPageConfig kLoadingPageConfig = {
-  &Roboto_Bold20pt7b,
-  &Roboto_Bold16pt7b,
-  &Roboto_Bold12pt7b,
-  &Roboto_Bold8pt7b,
-  TIMER_UP_72x72,
-  TIMER_MID_72x72,
-  TIMER_COMPLETE_72x72
-};
+#include "ui/ui_entry.h"
 
 //*******************************************
 static uint32_t lastSensMs = 0;
@@ -184,7 +136,7 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
         if (langId == model.settings.language) return;
         model.setLanguage(langId);
         saveSettingsIfChanged(model);
-        rebuildPageAfterLanguageChange(langId);
+        rebuildPageAfterLanguageChange(langId, uiManager);
         Serial.printf("[cmd] LANG set to %s (id=%u)\n", langId == 0 ? "FR" : "EN", (unsigned)langId);
         break;
       }
@@ -197,65 +149,10 @@ static void onRawLine(const char* line, void* user) {
   Serial.printf("[RX raw] %s\n", line);
 }
 
-static void onHomeButtonClick(void* user) {
-  (void)user;
-  buzzerBeep(model);
-  Serial.println("[UI] Home button clicked");
-}
-
-static void onAllOffButtonClick(void* user) {
-  (void)user;
-  buzzerBeep(model);
-  Serial.println("[UI] All off button clicked");
-}
-
-static void onDayNightSelect(uint8_t mode, void* user) {
-  Model* m = (Model*)user;
-  m->setDayMode(mode);
-}
-
-static void onSettingsButtonClick(void* user) {
-  buzzerBeep(model);
-  auto* mgr = static_cast<decltype(uiManager)*>(user);
-  if (mgr) mgr->navigateTo(PageId::Settings);
-}
-
-static void rebuildPageAfterLanguageChange(uint8_t langId) {
-  i18n::init(langId);
-  applyHomeConfig(
-    uiManager.pageHome(),
-    kHomePageConfig,
-    onHomeButtonClick,
-    nullptr,
-    onAllOffButtonClick,
-    nullptr,
-    onSettingsButtonClick,
-    &uiManager,
-    onDayNightSelect,
-    &model
-  );
-  uiManager.redrawCurrentPage();
-}
-
 static void onSettingsBackClick(void* user) {
   (void)user;
   saveSettingsIfChanged(model);
-  rebuildPageAfterLanguageChange(model.settings.language);
-  uiManager.navigateTo(PageId::Home);
-}
-
-static void onBrightnessChange(int delta, void* user) {
-  Model* m = (Model*)user;
-  int v = (int)m->settings.brightness + delta;
-  if (v < 0) v = 0;
-  if (v > 4) v = 4;
-  m->setBrightness((uint8_t)v);
-}
-
-static void onSoundChange(bool enabled, void* user) {
-  Model* m = (Model*)user;
-  m->setSoundEnabled(enabled);
-  if (enabled) buzzerBeep(*m);
+  setupUI_rebuildAndGoHome(uiManager, model);
 }
 
 static void onAck(const AsciiProto::Ack& ack, void* user) {
@@ -329,41 +226,7 @@ void setup() {
   touch.setDisplayWidth(240);   // invert X so touch matches display (rotation 2)
   touch.setDisplayHeight(display.height());  // invert Y so touch matches display
 
-  loadSettings(model);
-  i18n::init(model.settings.language);
-
-  // UI Manager setup (config-driven)
-  uiManager.pageHome().setWeatherIconFn(getWeatherIcon);
-  applyHomeConfig(
-    uiManager.pageHome(),
-    kHomePageConfig,
-    onHomeButtonClick,
-    nullptr,
-    onAllOffButtonClick,
-    nullptr,
-    onSettingsButtonClick,
-    &uiManager,
-    onDayNightSelect,
-    &model
-  );
-
-  applySettingsConfig(
-    uiManager.pageSettings(),
-    kSettingsPageConfig,
-    onBrightnessChange,
-    &model,
-    onSoundChange,
-    &model,
-    onSettingsBackClick,
-    nullptr
-  );
-
-  applyLoadingConfig(uiManager.pageLoading(), kLoadingPageConfig);
-  model.setLoadingActive(true);
-  model.setLoadingReason(i18n::loading().reasonDefault);
-
-  // Start on Loading page
-  uiManager.begin(PageId::Loading);
+  setupUI(uiManager, model, onSettingsBackClick, nullptr, &proto);
 
   Serial.println("Boot OK");
   
@@ -395,7 +258,7 @@ void loop() {
       if (langId != model.settings.language) {
         model.setLanguage(langId);
         saveSettingsIfChanged(model);
-        rebuildPageAfterLanguageChange(langId);
+        rebuildPageAfterLanguageChange(langId, uiManager);
         Serial.printf("[cmd] language set to %s\n", langId == 0 ? "FR" : "EN");
       }
       return;
