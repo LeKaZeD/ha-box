@@ -47,8 +47,10 @@ class Translator:
             Language code string.
         """
         if language:
-            if language in SUPPORTED_LANGUAGES:
-                return language
+            # Normalize e.g. "fr-FR" -> "fr", "en-US" -> "en"
+            lang_code = language.split("-")[0].lower() if "-" in language else language.lower()
+            if lang_code in SUPPORTED_LANGUAGES:
+                return lang_code
             logger.warning(
                 "Unsupported language '%s', falling back to %s",
                 language,

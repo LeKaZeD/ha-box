@@ -137,15 +137,13 @@ class ConnectionManager:
         
         try:
             if self.state == ConnectionState.CONNECTED:
-                logger.info("Sending STATUS heartbeat to ESP32")
-                msg_id = self.esp32_comm.send_command("STATUS")
-                logger.debug("STATUS command sent with msg_id=%d", msg_id)
-            else:
-                # CONNECTING, RECONNECTING, DISCONNECTED: send READY
-                logger.info("Sending READY to ESP32 (state: %s)", self.state.value)
-                msg_id = self.esp32_comm.send_command("READY")
-                logger.debug("READY command sent with msg_id=%d", msg_id)
-            
+                # STATUS with optional KV is sent by StatusHandler; do not send here
+                logger.debug("CONNECTED: STATUS is sent by StatusHandler, skipping")
+                return
+            # CONNECTING, RECONNECTING, DISCONNECTED: send READY
+            logger.info("Sending READY to ESP32 (state: %s)", self.state.value)
+            msg_id = self.esp32_comm.send_command("READY")
+            logger.debug("READY command sent with msg_id=%d", msg_id)
             self.last_message_time = current_time
         except Exception as e:
             logger.error("Failed to send periodic message: %s", e, exc_info=True)

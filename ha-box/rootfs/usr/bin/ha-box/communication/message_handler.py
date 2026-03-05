@@ -13,6 +13,7 @@ from handlers.sensor_handler import SensorHandler
 
 if TYPE_CHECKING:
     from api.ha_api import HomeAssistantAPI
+    from communication.esp32_comm import ESP32Comm
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class MessageHandler:
         self,
         sensor_handler: Optional[SensorHandler] = None,
         ha_api: Optional["HomeAssistantAPI"] = None,
+        esp32_comm: Optional["ESP32Comm"] = None,
     ) -> None:
         """
         Initialize message handler.
@@ -31,9 +33,11 @@ class MessageHandler:
         Args:
             sensor_handler: Optional sensor handler for SENS messages.
             ha_api: Optional HA API client (e.g. for ALL_OFF -> light.turn_off).
+            esp32_comm: Optional ESP32 comm for sending (e.g. SHUTDOWN_ACCEPTED).
         """
         self.sensor_handler = sensor_handler
         self.ha_api = ha_api
+        self.esp32_comm = esp32_comm
         self.last_message_time = 0.0
     
     def handle_message(self, msg: Message) -> None:
@@ -43,8 +47,11 @@ class MessageHandler:
         Args:
             msg: Message received from ESP32.
         """
-        logger.info("Received message from ESP32: verb=%s, id=%d", msg.verb, msg.id)
-        logger.debug("Message details: kv_count=%d", msg.kv_count)
+        kv_str = " ".join(f"{kv.key}={kv.val}" for kv in msg.kv) if msg.kv else ""
+        if kv_str:
+            logger.info("Received message from ESP32: verb=%s, id=%d, %s", msg.verb, msg.id, kv_str)
+        else:
+            logger.info("Received message from ESP32: verb=%s, id=%d", msg.verb, msg.id)
         for i, kv in enumerate(msg.kv):
             logger.debug("  kv[%d]: %s=%s", i, kv.key, kv.val)
         
@@ -78,8 +85,17 @@ class MessageHandler:
             logger.info("NFC event: UID=%s", uid)
         
         elif msg.verb == "SHUTDOWN_REQUEST":
-            logger.warning("ESP32 requested shutdown")
-            # TODO: Implement graceful shutdown
+            logger.info("ESP32 requested host shutdown (power button short press)")
+            if self.ha_api:
+                if self.ha_api.request_host_shutdown():
+                    logger.info("Host shutdown initiated successfully")
+                    if self.esp32_comm:
+                        self.esp32_comm.send_command("SHUTDOWN_ACCEPTED")
+                        logger.debug("SHUTDOWN_ACCEPTED sent to ESP32 (immediate deep sleep)")
+                else:
+                    logger.warning("Host shutdown request failed (check add-on hassio_role)")
+            else:
+                logger.warning("SHUTDOWN_REQUEST received but no HA API configured")
 
         elif msg.verb == "ALL_OFF":
             logger.info("ESP32 requested all lights off")

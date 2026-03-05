@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from core import Config, load_options, setup_logging, get_translator
 from communication import ESP32Comm, Ack, ConnectionManager, ConnectionState, MessageHandler, KV
 from api import HomeAssistantAPI
-from handlers import SensorHandler, WeatherHandler, ClockHandler
+from handlers import SensorHandler, WeatherHandler, ClockHandler, StatusHandler
 
 # Setup logging
 logger = setup_logging()
@@ -51,6 +51,7 @@ def _initialization_loop(
     message_handler: MessageHandler,
     weather_handler: WeatherHandler,
     clock_handler: ClockHandler,
+    status_handler: StatusHandler,
 ) -> None:
     """
     Initialization phase: wait for ESP32 connection.
@@ -84,6 +85,7 @@ def _initialization_loop(
             # Set connection check callbacks for handlers
             weather_handler.set_connection_check(connection_manager.is_connected)
             clock_handler.set_connection_check(connection_manager.is_connected)
+            status_handler.set_connection_check(connection_manager.is_connected)
             
             # Send language from App translator (ESP32: 0 = FR, 1 = EN; default EN if unsupported)
             lang_id = _esp32_lang_id()
@@ -97,10 +99,12 @@ def _initialization_loop(
             logger.info("Sending initial data to ESP32...")
             weather_handler.force_update()
             clock_handler.force_update()
+            status_handler.force_update()
             
             # Start periodic updates (timers will handle subsequent updates)
             weather_handler.start_periodic_updates()
             clock_handler.start_periodic_updates()
+            status_handler.start_periodic_updates()
             
             logger.info("Services initialized. Entering main operation phase...")
             return
@@ -115,7 +119,8 @@ def _main_loop(
     message_handler: MessageHandler,
     sensor_handler: SensorHandler,
     weather_handler: WeatherHandler,
-    clock_handler: ClockHandler
+    clock_handler: ClockHandler,
+    status_handler: StatusHandler,
 ) -> bool:
     """
     Main operation phase: normal operation with periodic service updates.
@@ -154,6 +159,8 @@ def _main_loop(
             # Stop periodic updates
             weather_handler.stop_periodic_updates()
             clock_handler.stop_periodic_updates()
+            if status_handler:
+                status_handler.stop_periodic_updates()
             
             # Reset connection manager state to CONNECTING
             connection_manager.state = ConnectionState.CONNECTING
@@ -177,6 +184,7 @@ def main() -> None:
     sensor_handler: Optional[SensorHandler] = None
     weather_handler: Optional[WeatherHandler] = None
     clock_handler: Optional[ClockHandler] = None
+    status_handler: Optional[StatusHandler] = None
     message_handler: Optional[MessageHandler] = None
     connection_manager: Optional[ConnectionManager] = None
     
@@ -186,15 +194,16 @@ def main() -> None:
         options = load_options()
         config = Config.from_options(options)
         logger.info("Configuration loaded")
-        
-        # Initialize translator
-        translator = get_translator()
-        logger.info("Language: %s", translator.language)
-        
-        # Initialize Home Assistant API
+
+        # Initialize Home Assistant API (needed to get Core language)
         logger.info("Initializing Home Assistant API...")
         ha_api = HomeAssistantAPI()
         logger.info("Home Assistant API client initialized")
+
+        # Language: prefer Home Assistant Core default (Settings > System > General)
+        ha_language = ha_api.get_core_language()
+        translator = get_translator(ha_language)
+        logger.info("Language: %s%s", translator.language, " (from HA Core)" if ha_language else " (from env/default)")
         
         # Initialize handlers
         logger.info("Initializing handlers...")
@@ -209,12 +218,18 @@ def main() -> None:
             esp32_comm=None,  # Will be set after ESP32 init
             update_interval=60.0  # 60 seconds default
         )
-        message_handler = MessageHandler(sensor_handler, ha_api=ha_api)
+        status_handler = StatusHandler(
+            esp32_comm=None,
+            ha_api=ha_api,
+            update_interval=30.0,  # 30 seconds
+        )
+        # ESP32 comm created before message_handler (needed for SHUTDOWN_ACCEPTED)
+        esp32_comm = ESP32Comm()
+        message_handler = MessageHandler(sensor_handler, ha_api=ha_api, esp32_comm=esp32_comm)
         
         # Initialize ESP32 communication
         logger.info("Initializing ESP32 communication...")
         try:
-            esp32_comm = ESP32Comm()
             esp32_comm.set_authorize_callback(message_handler.authorize_message)
             esp32_comm.set_message_callback(message_handler.handle_message)
             esp32_comm.set_ack_callback(handle_esp32_ack)
@@ -224,6 +239,7 @@ def main() -> None:
             # Update handlers with ESP32 comm
             weather_handler.esp32_comm = esp32_comm
             clock_handler.esp32_comm = esp32_comm
+            status_handler.esp32_comm = esp32_comm
             
             # Initialize connection manager
             connection_manager = ConnectionManager(esp32_comm)
@@ -252,6 +268,7 @@ def main() -> None:
                         message_handler,
                         weather_handler,
                         clock_handler,
+                        status_handler,
                     )
                     
                     # Phase 2: Main operation - normal operation
@@ -261,7 +278,8 @@ def main() -> None:
                         message_handler,
                         sensor_handler,
                         weather_handler,
-                        clock_handler
+                        clock_handler,
+                        status_handler,
                     )
                     
                     # If main loop returns False, restart initialization
@@ -278,6 +296,8 @@ def main() -> None:
                     weather_handler.stop_periodic_updates()
                 if clock_handler:
                     clock_handler.stop_periodic_updates()
+                if status_handler:
+                    status_handler.stop_periodic_updates()
         else:
             logger.warning("ESP32 communication not available. Exiting.")
         

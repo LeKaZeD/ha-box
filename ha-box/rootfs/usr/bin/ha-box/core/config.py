@@ -192,7 +192,7 @@ class Config:
             ha_opts = options["home_assistant"]
             config.home_assistant = HomeAssistantConfig(
                 weather_entity=ha_opts.get("weather_entity", "weather.home"),
-                update_interval=ha_opts.get("update_interval", 30)
+                update_interval=ha_opts.get("update_interval", 30),
             )
         
         return config

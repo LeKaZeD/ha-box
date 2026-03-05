@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/apps/configuration
 name: HA Box
-version: "0.1.36"
+version: "0.1.38"
 slug: ha-box
 description: Physical interface for Home Assistant with E-Paper display, sensors and controllers
 url: "https://github.com/LeKaZeD/ha-box"
@@ -11,6 +11,7 @@ startup: services
 boot: auto
 apparmor: true
 hassio_api: true
+hassio_role: manager
 homeassistant_api: true
 map:
   - share:rw
