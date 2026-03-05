@@ -33,7 +33,12 @@ struct Model
   void setLoadingAnimFrame(uint8_t frame);
 
   // ---- Home setters ----
+  void setCore(bool ok);   // stored, no UI yet
+  void setSup(bool ok);   // stored, no UI yet
+  void setNet(bool ok);
+  void setLan(bool ok);
   void setWifi(bool wifi_ok);
+  void setExt(bool ok);   // web icon in status bar
   void setBLE(bool ble_ok);
   void setZigbee(bool zigbee_ok);
   void setThread(bool thread_ok);

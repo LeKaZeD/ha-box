@@ -12,8 +12,10 @@ public:
     uint32_t j2ResetMs = 5500;  // Durée d'appui virtuel sur J2 pour reset le pi (hard stop)
     uint32_t debounceMs = 30;   // Minimal debounce
     uint32_t minClickMs = 120;  // Too short press => ignore
+    uint32_t maxClickMs = 2000; // Too long for click (2s max) => ignore (only long press 5s+)
     uint32_t longPressMs = 5000; // Long press threshold
-    uint32_t hbTimeoutMs = 5000;// Heartbeat lost => Pi considered OFF
+    uint32_t hbTimeoutMs = 5000;// Heartbeat lost => Pi considered OFF (startup, involuntary disconnect)
+    uint32_t shutdownPendingTimeoutMs = 60000; // Fallback if SHUTDOWN_ACCEPTED never arrives
     const char* token = nullptr;// Token expected by your bridge (optional)
   };
 
@@ -49,8 +51,6 @@ private:
   void pulseJ2();
   void resetJ2();
   void enterDeepSleep();
-
-  bool isPiAliveNow(uint32_t nowMs) const;
 
 private:
   static PowerButton* s_instance;

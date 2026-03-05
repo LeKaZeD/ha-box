@@ -79,6 +79,32 @@ void Model::setLoadingAnimFrame(uint8_t frame)
 
 // -------- Home --------
 
+void Model::setCore(bool ok)
+{
+  if (home.core_ok == ok) return;
+  home.core_ok = ok;
+}
+
+void Model::setSup(bool ok)
+{
+  if (home.sup_ok == ok) return;
+  home.sup_ok = ok;
+}
+
+void Model::setNet(bool ok)
+{
+  if (home.net_ok == ok) return;
+  home.net_ok = ok;
+  dirty |= DK_HM_Wifi;
+}
+
+void Model::setLan(bool ok)
+{
+  if (home.lan_ok == ok) return;
+  home.lan_ok = ok;
+  dirty |= DK_HM_Wifi;
+}
+
 void Model::setWifi(bool wifi_ok)
 {
   if (home.wifi_ok == wifi_ok) return;
@@ -86,11 +112,17 @@ void Model::setWifi(bool wifi_ok)
   dirty |= DK_HM_Wifi;
 }
 
+void Model::setExt(bool ok)
+{
+  if (home.ext_ok == ok) return;
+  home.ext_ok = ok;
+  dirty |= DK_HM_Ext;
+}
+
 void Model::setBLE(bool ble_ok)
 {
   if (home.ble_ok == ble_ok) return;
   home.ble_ok = ble_ok;
-  dirty |= DK_HM_BLE;
 }
 
 void Model::setZigbee(bool zigbee_ok)

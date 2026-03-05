@@ -4,9 +4,14 @@
 // Home: dashboard data
 struct HomeState
 {
-  // connectivity
-  bool wifi_ok = false;
-  bool ble_ok  = false;
+  // connectivity (STATUS: core/sup stored for later; net/lan/wifi/ext drive status bar)
+  bool core_ok = false;  // HA Core (stored, no UI yet)
+  bool sup_ok  = false;  // Supervisor (stored, no UI yet)
+  bool net_ok  = false;  // local network
+  bool lan_ok  = false;  // connected via LAN
+  bool wifi_ok = false;  // connected via WiFi
+  bool ext_ok  = false;  // exposed to internet (web icon in status bar)
+  bool ble_ok  = false;  // unused in status bar (icon kept in assets)
   bool zigbee_ok = false;
   bool thread_ok = false;
   bool ir_ok = false;

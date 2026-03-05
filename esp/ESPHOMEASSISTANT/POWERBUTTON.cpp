@@ -55,15 +55,13 @@ void IRAM_ATTR PowerButton::onBtnEdgeISR() {
   uint32_t dt = now - m_edgeMs;
   m_upDurationMs = dt;
 
-  // On marque un event côté loop (décision ensuite)
-  // On marque un event côté loop (décision ensuite)
+  // Classification: click 120ms-2s, long press >=5s, entre 2s-5s => ignore
   if (dt >= m_cfg.longPressMs) {
     m_evLong = true;
-  } else if (dt >= m_cfg.minClickMs) {
+  } else if (dt >= m_cfg.minClickMs && dt <= m_cfg.maxClickMs) {
     m_evClick = true;
-  } else {
-    // dt trop court => ignore
   }
+  // dt trop court ou entre maxClick et longPress => ignore
 
   m_isrFired = false;
 }
@@ -94,39 +92,31 @@ void PowerButton::update() {
   // 3) Toujours exécuter la logique de timeout / état
   uint32_t now = millis();
 
-  // Pi considéré OFF si plus de "vie" pendant hbTimeout (ou activité UART)
-  if (m_piState != PiState::OFF && !isPiAliveNow(now)) {
-    setPiState(PiState::OFF);
-    enterDeepSleep();
-    return;
-  }
-
-  // Optional: this block is redundant with the one above;
-  // keep it if you want the intent to be more explicit.
-  if (m_piState == PiState::SHUTDOWN_PENDING && !isPiAliveNow(now)) {
-    setPiState(PiState::OFF);
-    enterDeepSleep();
-    return;
+  // Pi considéré OFF si plus de "vie" (heartbeat ou SHUTDOWN_ACCEPTED reçu via onUartLine)
+  if (m_piState != PiState::OFF) {
+    uint32_t timeoutMs = (m_piState == PiState::SHUTDOWN_PENDING)
+        ? m_cfg.shutdownPendingTimeoutMs
+        : m_cfg.hbTimeoutMs;
+    if ((now - m_lastHbMs) > timeoutMs) {
+      setPiState(PiState::OFF);
+      enterDeepSleep();
+      return;
+    }
   }
 }
 
-bool PowerButton::isPiAliveNow(uint32_t nowMs) const {
-  if (m_cfg.hbTimeoutMs == 0) return true;
-  return (nowMs - m_lastHbMs) <= m_cfg.hbTimeoutMs;
-}
 
 void PowerButton::onUartLine(const char* line) {
   if (!line || !line[0]) return;
 
-  // Toute activité UART peut être considérée comme heartbeat
+  // Toute activité UART = heartbeat
   m_lastHbMs = millis();
 
-  if (strcmp(line, "HB") == 0) {
-    // heartbeat explicite
-    return;
-  }
+  if (strstr(line, "HB")) return;  // heartbeat explicite
 
-  if (strcmp(line, "HALTED") == 0 || strcmp(line, "PI_HALTED") == 0) {
+  // SHUTDOWN_ACCEPTED: add-on a accepté le shutdown → sleep immédiat
+  // HALTED / PI_HALTED: Pi a halté
+  if (strstr(line, "SHUTDOWN_ACCEPTED") || strstr(line, "HALTED")) {
     setPiState(PiState::OFF);
     enterDeepSleep();
     return;

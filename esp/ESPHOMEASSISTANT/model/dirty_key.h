@@ -16,8 +16,8 @@ enum DirtyKey : uint32_t
   DK_LD_Active    = 1u << 4,   // loading screen active state changed (optional)
 
   // -------- Home --------
-  DK_HM_Wifi      = 1u << 5,   // wifi icon
-  DK_HM_BLE       = 1u << 6,   // ble icon
+  DK_HM_Wifi      = 1u << 5,   // network slot (wifi or lan icon)
+  DK_HM_Ext       = 1u << 6,   // ext slot (web icon)
   DK_HM_Zigbee    = 1u << 7,   // zigbee icon
   DK_HM_Thread    = 1u << 8,   // thread icon
   DK_HM_Ir        = 1u << 9,   // ir icon

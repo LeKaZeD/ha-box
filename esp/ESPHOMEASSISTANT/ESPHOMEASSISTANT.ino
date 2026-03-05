@@ -44,8 +44,10 @@ PowerButton::Config pbCfg{
   .j2PulseMs = 150,
   .debounceMs = 30,
   .minClickMs = 120,
+  .maxClickMs = 2000,
   .longPressMs = 5000,
   .hbTimeoutMs = 300000,
+  .shutdownPendingTimeoutMs = 60000,
   .token = "changeme"
 };
 
@@ -69,6 +71,7 @@ static bool authorizeIncoming(const AsciiProto::Message& msg, void* user, const 
   // Allowlist des commandes autorisées depuis le Pi
   if (strcmp(msg.verb, "READY") == 0) return true;
   if (strcmp(msg.verb, "HALTED") == 0) return true;
+  if (strcmp(msg.verb, "SHUTDOWN_ACCEPTED") == 0) return true;
   if (strcmp(msg.verb, "STATUS") == 0) return true;
   if (strcmp(msg.verb, "WEATHER") == 0) return true;
   if (strcmp(msg.verb, "CLOCK") == 0) return true;
@@ -87,7 +90,6 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
 
   if (strcmp(msg.verb, "READY") == 0) {
     powerBtn.setPiState(PowerButton::PiState::ON);
-    model.setWifi(true); // WiFi OK (Pi alive)
     
     // Si on est en loading, passer à Home
     if (uiManager.getCurrentPageId() == PageId::Loading) {
@@ -98,7 +100,10 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
 
   if (strcmp(msg.verb, "HALTED") == 0) {
     powerBtn.setPiState(PowerButton::PiState::OFF);
+    model.setNet(false);
+    model.setLan(false);
     model.setWifi(false);
+    model.setExt(false);
     return;
   }
   
@@ -143,10 +148,30 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
     }
     return;
   }
+
+  // STATUS: optional KV (core, sup, net, lan, wifi, ext, zigbee, thread, matter). If no KV, heartbeat only.
+  if (strcmp(msg.verb, "STATUS") == 0) {
+    if (msg.kvCount > 0) {
+      for (uint8_t i = 0; i < msg.kvCount; i++) {
+        bool ok = (atoi(msg.kv[i].val) != 0);
+        if (strcmp(msg.kv[i].key, "core") == 0) model.setCore(ok);
+        else if (strcmp(msg.kv[i].key, "sup") == 0) model.setSup(ok);
+        else if (strcmp(msg.kv[i].key, "net") == 0) model.setNet(ok);
+        else if (strcmp(msg.kv[i].key, "lan") == 0) model.setLan(ok);
+        else if (strcmp(msg.kv[i].key, "wifi") == 0) model.setWifi(ok);
+        else if (strcmp(msg.kv[i].key, "ext") == 0) model.setExt(ok);
+        else if (strcmp(msg.kv[i].key, "zigbee") == 0) model.setZigbee(ok);
+        else if (strcmp(msg.kv[i].key, "thread") == 0) model.setThread(ok);
+        else if (strcmp(msg.kv[i].key, "matter") == 0) model.setMatter(ok);
+      }
+    }
+    return;
+  }
 }
 
 static void onRawLine(const char* line, void* user) {
   Serial.printf("[RX raw] %s\n", line);
+  powerBtn.onUartLine(line);
 }
 
 static void onSettingsBackClick(void* user) {
@@ -171,7 +196,10 @@ static void onPiStateChange(PowerButton::PiState st) {
   }
   else if (st == PowerButton::PiState::OFF) {
     Serial.println("PiState=OFF");
+    model.setNet(false);
+    model.setLan(false);
     model.setWifi(false);
+    model.setExt(false);
     
     // Retour à la page loading si on était sur Home
     if (uiManager.getCurrentPageId() == PageId::Home) {
@@ -295,8 +323,9 @@ void loop() {
         Serial.println("[cmd] sleep");
         break;
       case 'j':
+        model.setNet(true);
         model.setWifi(true);
-        model.setBLE(true);
+        model.setExt(true);
         model.setZigbee(true);
         model.setThread(true);
         model.setIr(true);
