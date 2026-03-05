@@ -10,7 +10,7 @@ HA Box is a Home Assistant OS App that allows creating a physical interface for 
 
 - **3.7" E-Paper Display** (GDEY037T03-FT21) with integrated front-light
 - **Touch Interface** (FT6336U integrated)
-- **NFC Reader** (PN532)
+- **NFC Reader** (PN7161, on ESP32)
 - **Environmental Sensor** (BME280 - temperature, humidity, pressure)
 - **LED Strip** (WS2812B - optional)
 - **PWM Fan** (optional)
@@ -31,7 +31,7 @@ See the complete documentation in the main repository for detailed configuration
 - Raspberry Pi 4 or 5
 - GDEY037T03-FT21 E-Paper Display
 - BME280 Sensor
-- PN532 NFC Module (optional)
+- PN7161 NFC Module (optional, on ESP32)
 - WS2812B LED Strip (optional)
 - 5V PWM Fan (optional)
 

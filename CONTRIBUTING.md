@@ -16,9 +16,8 @@ Welcome! This document describes the rules and process for contributing to the H
 - Raspberry Pi 4 or 5 with Home Assistant OS
 - Compatible SPI display (model to be defined)
 - I2C touch controller
-- I2C NFC sensor (ex: PN532)
-- I2C temperature sensor (ex: BME280, DS18B20)
-- Addressable LED strip (WS2812B or similar)
+- I2C NFC sensor (e.g. PN7161 on ESP32)
+- I2C temperature sensor (BME280)
 - 5V PWM fan
 
 ### Development Environment

@@ -151,65 +151,58 @@ Touch input management via the FT6336U controller integrated in the E-Paper disp
 
 ---
 
-## F003 - PN532 NFC Sensor
+## F003 - PN7161 NFC Sensor
 
 | Attribute | Value |
 |----------|-------|
 | **Priority** | Medium |
-| **Status** | Planned |
-| **Interface** | I2C (`/dev/i2c-1`) |
-| **Hardware** | PN532 (NXP) |
+| **Status** | Planned (ESP32 firmware; add-on receives `NFC` over UART) |
+| **Interface** | I2C on ESP32 |
+| **Hardware** | PN7161 (NXP) |
 
 ### Description
 
-NFC tag reading via PN532 module to trigger actions in Home Assistant:
-- Tag identification
+NFC tag reading via PN7161 module on the ESP32. The ESP32 sends `NFC` messages (UID, and later NDEF) over UART; the add-on can trigger automations or onboarding flows in Home Assistant.
+
+- Tag identification (UID)
 - Automation triggering
-- Simple authentication
+- Simple authentication / onboarding
 - Support for multiple NFC protocols
 
 ### Technical Specifications
 
 | Parameter | Value |
 |-----------|-------|
-| **Model** | PN532 |
+| **Model** | PN7161 |
 | **Interface** | I2C |
-| **I2C Address** | 0x24 (typical) |
-| **Protocols** | MIFARE Classic, NTAG21x, ISO14443 Type A/B |
+| **I2C Address** | 0x24 or 0x48 (configurable in add-on options) |
+| **Protocols** | MIFARE Classic, NTAG, ISO14443 Type A/B, etc. |
 | **Range** | ~5cm |
-| **Voltage** | 3.3V or 5V (depending on module) |
+| **Voltage** | 3.3V |
 
-**Libraries considered:**
-- `adafruit-circuitpython-pn532` (Adafruit)
-- `nfcpy` (generic Python driver)
-- `libnfc` (via Python bindings)
+**Implementation:** Driver and polling on **ESP32** (I2C). Add-on only receives `NFC` verb over UART; no Python NFC library on the Pi.
 
-**Reading mode:**
-- Continuous polling (tag detection)
-- Interrupt mode (if supported by module)
-- Scan frequency: 1-2 Hz (configurable)
+**Reading mode (ESP32):**
+- Polling or interrupt; scan frequency configurable (e.g. 1–2 Hz).
 
 ### Acceptance Criteria
 
-- [ ] MIFARE Classic tag reading
-- [ ] NTAG21x tag reading
-- [ ] ISO14443 Type A tag reading
-- [ ] Send event to Home Assistant with tag UID
+- [ ] MIFARE Classic tag reading (ESP32)
+- [ ] NTAG / ISO14443 Type A tag reading (ESP32)
+- [ ] ESP32 sends `NFC` message with UID to add-on
+- [ ] Add-on forwards event to Home Assistant or triggers automation
 - [ ] Reading time < 500ms
-- [ ] Automatic tag presence detection
+- [ ] Optional: NDEF payload in `NFC` message
 
 ### Dependencies
 
-- I2C configuration enabled
-- Home Assistant API accessible
-- PN532 module configured in I2C mode (jumpers/selectors)
+- ESP32 I2C configured for PN7161 (address 0x24 or 0x48)
+- UART link add-on <-> ESP32 (see [ESP32_RASP_COM.md](ESP32_RASP_COM.md))
 
 ### Technical Notes
 
-- PN532 can operate in I2C, SPI or UART depending on configuration
-- Check jumpers/selectors on module for I2C mode
-- I2C address may vary by module (0x24 or 0x48)
-- Consumption: ~15mA in active mode
+- PN7161 is an NXP NFC controller (successor to PN532); I2C address 0x24 or 0x48 depending on module.
+- Hardware is on the **ESP32**; the add-on does not access I2C for NFC.
 
 ---
 

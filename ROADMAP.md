@@ -41,7 +41,7 @@ This document describes the current state of the project and the next developmen
 | `requests` | HTTP communication with HA | `pip install requests` |
 | `Pillow` | E-Paper graphic rendering | `pip install Pillow` |
 | `adafruit-circuitpython-bme280` | BME280 sensor | `pip install adafruit-circuitpython-bme280` |
-| `adafruit-circuitpython-pn532` | PN532 NFC module | `pip install adafruit-circuitpython-pn532` |
+| `adafruit-circuitpython-pn7160` or NXP lib | PN7161 NFC (on ESP32) | Not used on add-on; ESP32 sends NFC over UART |
 | `RPi.GPIO` or `gpiozero` | GPIO access | `pip install RPi.GPIO` |
 | `spidev` | SPI access | `pip install spidev` |
 | `smbus2` | I2C access | `pip install smbus2` |
@@ -134,11 +134,11 @@ This document describes the current state of the project and the next developmen
 
 **Objective**: Add complementary features.
 
-#### 4.1 NFC PN532
+#### 4.1 NFC PN7161
 
 | Task | Status | Notes |
 |------|--------|-------|
-| PN532 driver | To do | I2C communication |
+| PN7161 driver (ESP32) | To do | I2C communication; UID/NDEF to add-on via UART |
 | Tag detection | To do | Continuous polling |
 | HA integration | To do | HA events |
 | Protocol support | To do | MIFARE, NTAG |

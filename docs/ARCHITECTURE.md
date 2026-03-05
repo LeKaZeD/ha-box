@@ -1,289 +1,255 @@
 # Technical Architecture - HA Box
 
-This document describes the technical architecture of the HA Box App.
+This document describes the technical architecture of the HA Box App and its link to the ESP32 firmware.
 
 ## Overview
 
+The HA Box App runs on Home Assistant OS (Raspberry Pi) inside a Supervisor-managed container. It does **not** drive display, sensors, or actuators directly on the Pi. Instead, it talks to an **ESP32** over **UART** (serial). The ESP32 runs the E-Paper display, touch, BME280, NFC (PN7161), fan, and power-button logic; the App provides Home Assistant integration (Supervisor/Core API), status aggregation, and data push/pull over the ASCII protocol.
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Home Assistant OS                            │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │                    Supervisor                              │  │
-│  │  ┌─────────────────────────────────────────────────────┐  │  │
-│  │  │              HA Box Add-on (Container)              │  │  │
-│  │  │                                                     │  │  │
-│  │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐            │  │  │
-│  │  │  │ Display │  │ Sensors │  │ Control │            │  │  │
-│  │  │  │ Manager │  │ Manager │  │ Manager │            │  │  │
-│  │  │  └────┬────┘  └────┬────┘  └────┬────┘            │  │  │
-│  │  │       │            │            │                  │  │  │
-│  │  │  ┌────┴────────────┴────────────┴────┐            │  │  │
-│  │  │  │         Hardware Abstraction       │            │  │  │
-│  │  │  │              Layer (HAL)           │            │  │  │
-│  │  │  └────────────────┬───────────────────┘            │  │  │
-│  │  └───────────────────┼───────────────────────────────┘  │  │
-│  └──────────────────────┼──────────────────────────────────┘  │
-│                         │                                      │
-│  ┌──────────────────────┼──────────────────────────────────┐  │
-│  │                 Linux Kernel                             │  │
-│  │    /dev/spidev0.0  /dev/i2c-1  /sys/class/gpio          │  │
-│  └──────────────────────┼──────────────────────────────────┘  │
-└─────────────────────────┼───────────────────────────────────────┘
-                          │
-    ┌─────────────────────┼─────────────────────┐
-    │              Raspberry Pi                  │
-    │  ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ │
-    │  │Display│ │  NFC  │ │ Temp  │ │  LED  │ │
-    │  │  SPI  │ │  I2C  │ │  I2C  │ │  PWM  │ │
-    │  └───────┘ └───────┘ └───────┘ └───────┘ │
-    │  ┌───────┐ ┌───────┐                     │
-    │  │Touch  │ │ Fan   │                     │
-    │  │  I2C  │ │  PWM  │                     │
-    │  └───────┘ └───────┘                     │
-    └───────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Home Assistant OS (Raspberry Pi)                  │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                         Supervisor                                │  │
+│  │  ┌─────────────────────────────────────────────────────────────┐  │  │
+│  │  │              HA Box Add-on (Container)                       │  │  │
+│  │  │                                                              │  │  │
+│  │  │  ┌─────────────┐  ┌──────────────────────────────────────┐  │  │  │
+│  │  │  │   Handlers  │  │  Communication (UART)                │  │  │  │
+│  │  │  │  Weather    │  │  esp32_comm, message_handler,         │  │  │  │
+│  │  │  │  Clock      │  │  connection_manager                    │  │  │  │
+│  │  │  │  Status     │  └──────────────────┬───────────────────┘  │  │  │
+│  │  │  │  Sensor     │                       │                      │  │  │
+│  │  │  └──────┬─────┘                       │                      │  │  │
+│  │  │         │                             │                      │  │  │
+│  │  │  ┌──────┴─────────────────────────────┴──────────────────┐  │  │  │
+│  │  │  │  API (Supervisor + Core): config, states, services,    │  │  │  │
+│  │  │  │  host shutdown, status fetchers                        │  │  │  │
+│  │  │  └────────────────────────────┬───────────────────────────┘  │  │  │
+│  │  └───────────────────────────────┼──────────────────────────────┘  │  │
+│  └──────────────────────────────────┼──────────────────────────────────┘  │
+│                                     │                                      │
+│  ┌──────────────────────────────────┼──────────────────────────────────┐  │
+│  │  Linux kernel                     │   /dev/serial0, /dev/ttyAMA0      │  │
+│  └──────────────────────────────────┼──────────────────────────────────┘  │
+└─────────────────────────────────────┼───────────────────────────────────────┘
+                                      │ UART (115200 8N1)
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              ESP32                                           │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  AsciiProto (UART)  ◄──────────────────────────────────────────────►  │  │
+│  │  PowerButton (GPIO btn + J2), Model, UI (Loading / Home / Settings)   │  │
+│  └───────┬───────────────────────────────────────────────────────────────┘  │
+│          │                                                                  │
+│  ┌───────┴───────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌─────┐  ┌──────┐  │
+│  │ E-Paper (SPI) │  │ Touch  │  │ BME280 │  │ NFC    │  │ Fan │  │ J2   │  │
+│  │ GDEY037T03    │  │ FT6336 │  │ I2C    │  │ PN7161 │  │ PWM │  │Power │  │
+│  └───────────────┘  └────────┘  └────────┘  └────────┘  └─────┘  └──────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Main Components
+See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for the UART protocol and responsibilities split between Pi and ESP32.
 
-### 1. Display Manager
+## Main Components (Add-on)
 
-Responsible for display on the SPI screen.
+### 1. API Layer (`api/ha_api.py`)
 
-**Responsibilities:**
-- Screen initialization
-- Graphic rendering (text, images, icons)
-- Page/screen management
-- Optimized refresh
-
-**Technologies considered:**
-- Python + Pillow for rendering (1-bit conversion)
-- Dedicated E-Paper library (waveshare-epd or custom driver)
-- UC8253 driver based on datasheet
-- Front-light management via PWM (MOSFET)
-
-**E-Paper specifics:**
-- 1-bit rendering (black/white)
-- Full refresh: ~2-3 seconds
-- Partial refresh: ~1 second (if supported)
-- Strategy: Refresh only on significant changes
-- Deep sleep mode for energy saving
-
-### 2. Sensors Manager
-
-Manages sensor reading.
+Client for the Supervisor API and Home Assistant Core API.
 
 **Responsibilities:**
-- Periodic reading of I2C sensors
-- Value caching
-- Publication to Home Assistant
-- Reading error handling
+- Supervisor: info, network, addons list/info, host shutdown
+- Core: config (e.g. language), entity states, services (e.g. `light.turn_off`)
+- Aggregation of system status (core, supervisor, network, Zigbee/Thread/Matter via add-ons and Core entities) for the STATUS message to the ESP32
 
-**Sensors managed:**
-- BME280: Temperature, Humidity, Pressure (I2C)
-- NFC: PN532 (I2C)
-- Touch FT6336U: Integrated in display (I2C)
+**Authentication:** `SUPERVISOR_TOKEN` and `SUPERVISOR_URL` from the environment.
 
-### 3. Control Manager
+### 2. Communication (`communication/`)
 
-Manages outputs and actuators.
+UART link to the ESP32.
 
-**Responsibilities:**
-- PWM fan control
-- LED strip control
-- Automatic regulation
-- Response to HA commands
+**Components:**
+- **esp32_comm**: Serial open/close, line framing, parsing of ASCII protocol (`<id> VERB [key=val ...]` and `ACK <id> OK|ERR`), send commands, optional send-with-ACK, background poll thread
+- **message_handler**: Routes incoming messages (READY, SENS, STATUS, TOUCH, NFC, ALL_OFF, SHUTDOWN_REQUEST) to handlers; authorizes incoming verbs; triggers host shutdown and sends SHUTDOWN_ACCEPTED when shutdown is accepted
+- **connection_manager**: State machine (CONNECTING, CONNECTED, RECONNECTING, DISCONNECTED); periodic READY when not connected; relies on StatusHandler for STATUS when connected
 
-### 4. Hardware Abstraction Layer (HAL)
+### 3. Handlers (`handlers/`)
 
-Abstraction layer for hardware access.
+**SensorHandler:** Receives SENS (tC, hum, pPa) from the ESP32 and updates Home Assistant sensors (or creates them via Core API).
 
-**Responsibilities:**
-- Bus abstraction (I2C, SPI, GPIO)
-- Permission management
-- Hardware detection
-- Fallback and error handling
+**WeatherHandler:** Fetches weather entity from Core, sends WEATHER (code, tOut) to the ESP32 on a timer when connected.
+
+**ClockHandler:** Sends CLOCK (hh, mm, ss) to the ESP32 on a timer when connected.
+
+**StatusHandler:** Uses status fetchers (core, supervisor, network, addons for Zigbee/Thread/Matter, etc.) to build a status dict and sends STATUS with key/values to the ESP32 on a timer when connected. Acts as the heartbeat in CONNECTED state.
+
+### 4. Core (`core/`)
+
+- **config**: Load options from `SUPERVISOR_OPTIONS` (e.g. `/data/options.json`), build `Config` (display, sensors, control, home_assistant)
+- **i18n**: Translator; language from HA Core config when available, else env (LANG, SUPERVISOR_LANGUAGE), else default English
+- **logger**: Logging setup
+
+The add-on does **not** include a Hardware Abstraction Layer (HAL) for I2C/SPI/GPIO on the Pi. All display, touch, BME280, NFC, fan, and power-button handling run on the **ESP32**. Pin and bus details are in [docs/HARDWARE.md](HARDWARE.md) and the ESP32 firmware (e.g. `esp/ESPHOMEASSISTANT/`).
 
 ## Communication with Home Assistant
 
-### Supervisor API
+### Supervisor and Core API
 
-The App communicates with Home Assistant via the Supervisor API:
+The App communicates with the Supervisor and Home Assistant Core via HTTP/REST using the Supervisor proxy:
 
 ```
 ┌─────────────┐     HTTP/REST      ┌─────────────┐
 │   HA Box    │ ◄────────────────► │  Supervisor │
-│   Add-on    │                    │     API     │
+│   Add-on    │   SUPERVISOR_TOKEN  │     API     │
 └─────────────┘                    └──────┬──────┘
-                                          │
-                                   ┌──────┴──────┐
-                                   │  HA Core    │
-                                   │   (API)     │
-                                   └─────────────┘
+                                           │
+                                    ┌──────┴──────┐
+                                    │ Core API    │
+                                    │ (e.g. /core/api/config, states, services)
+                                    └─────────────┘
 ```
 
-### Endpoints Used
+### Endpoints used
 
 | Endpoint | Usage |
-|----------|-------|
-| `/core/api/states` | Reading entity states |
-| `/core/api/services` | Calling services |
-| `/core/api/events` | Sending events (NFC) |
-| `/addons/self/options` | Reading configuration |
+|----------|--------|
+| `/core/api/config` | Read Core config (e.g. language for i18n) |
+| `/core/api/states` | Read or write entity states (sensors, weather) |
+| `/core/api/services/light/turn_off` | Call services (e.g. all lights off) |
+| `/host/shutdown` | Request host shutdown (power button short press) |
+| `/supervisor/info` | Supervisor status |
+| `/network/info` | Network interfaces |
+| `/addons`, `/addons/<slug>/info` | Add-on list and options (status, Zigbee/Thread/Matter detection) |
 
-### Authentication
+### UART link to ESP32
 
-- Supervisor token via `SUPERVISOR_TOKEN` environment variable
-- Automatic access from App container
+The add-on talks to the ESP32 over a serial device (`/dev/serial0` or `/dev/ttyAMA0`) at 115200 8N1. Protocol: ASCII lines `<id> VERB [key=value ...]` with ACK lines `ACK <id> OK|ERR <code>`. See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for the verb list and responsibilities.
 
-## File Structure
+## File structure (add-on)
 
 ```
 ha-box/
-├── config.yaml           # Add-on configuration
-├── build.yaml            # Build configuration
+├── config.yaml           # Add-on configuration (options, schema, devices)
+├── build.yaml            # Build configuration (if used)
 ├── Dockerfile            # Docker image
-├── apparmor.txt          # AppArmor profile
-├── CHANGELOG.md          # Version history
-├── DOCS.md               # User documentation
-├── README.md             # Presentation
-├── icon.png              # 256x256 icon
-├── logo.png              # 256x256 logo
+├── apparmor.txt          # AppArmor profile (when enabled)
+├── CHANGELOG.md
+├── README.md
+├── icon.png
+├── logo.png
 ├── translations/
-│   ├── en.yaml           # English translations
-│   └── fr.yaml           # French translations
+│   ├── en.yaml
+│   └── fr.yaml
 └── rootfs/
     ├── etc/
     │   └── services.d/
     │       └── ha-box/
-    │           ├── run       # Startup script
-    │           └── finish    # Shutdown script
+    │           ├── run       # Startup script (s6)
+    │           └── finish    # Shutdown script (s6)
     └── usr/
         └── bin/
             └── ha-box/
-                ├── main.py           # Entry point
-                ├── config.py         # Configuration management
-                ├── display/
+                ├── main.py              # Entry point
+                ├── core/
                 │   ├── __init__.py
-                │   ├── manager.py    # Display Manager
-                │   ├── screens/      # Screens/pages
-                │   └── drivers/      # Display drivers
-                ├── sensors/
+                │   ├── config.py        # Options, Config
+                │   ├── i18n.py          # Translator, language detection
+                │   └── logger.py
+                ├── api/
                 │   ├── __init__.py
-                │   ├── manager.py    # Sensors Manager
-                │   ├── temperature.py
-                │   ├── nfc.py
-                │   └── touch.py
-                ├── control/
+                │   └── ha_api.py        # Supervisor + Core API client
+                ├── communication/
                 │   ├── __init__.py
-                │   ├── manager.py    # Control Manager
-                │   ├── fan.py
-                │   └── led.py
-                ├── hal/
-                │   ├── __init__.py
-                │   ├── i2c.py
-                │   ├── spi.py
-                │   └── gpio.py
-                └── ha/
+                │   ├── esp32_comm.py    # UART, protocol, ACK
+                │   ├── message_handler.py
+                │   └── connection_manager.py
+                └── handlers/
                     ├── __init__.py
-                    └── client.py     # HA API client
+                    ├── sensor_handler.py
+                    ├── weather_handler.py
+                    ├── clock_handler.py
+                    ├── status_handler.py
+                    └── status_fetchers/
+                        ├── __init__.py
+                        ├── core.py
+                        ├── supervisor.py
+                        ├── network.py
+                        ├── addons.py
+                        ├── zigbee.py
+                        ├── thread.py
+                        └── matter.py
 ```
 
-## Required Hardware Configuration
+## Required hardware configuration
 
-### Raspberry Pi config.txt
+### Raspberry Pi (HAOS)
 
-The user must add to `/mnt/boot/config.txt`:
+The add-on uses only **UART** to talk to the ESP32. No I2C, SPI, or GPIO are required on the Pi for the App.
+
+Add to `/mnt/boot/config.txt`:
 
 ```ini
-# Enable I2C
-dtparam=i2c_arm=on
-dtparam=i2c1=on
-
-# Enable SPI
-dtparam=spi=on
-
-# PWM for fan (GPIO 18)
-dtoverlay=pwm,pin=18,func=2
-
-# SPI for E-Paper display (if necessary)
-# dtoverlay=spi0-1cs
+enable_uart=1
+dtoverlay=disable-bt
 ```
 
-### Planned I2C Addresses
+Then reboot. The serial device will appear as `/dev/serial0` or `/dev/ttyAMA0`. See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for wiring (Pi TXD/RXD to ESP32 RX2/TX2) and testing.
 
-| Device | Address | Notes |
-|--------|---------|-------|
-| Touch (FT6336U) | 0x38 | Integrated in GDEY037T03-FT21 |
-| NFC (PN532) | 0x24 | PN532 in I2C mode |
-| BME280 | 0x76 or 0x77 | Depending on module configuration |
+### ESP32 (firmware)
 
-### GPIO Pins Used
+Display (SPI), touch (I2C), BME280 (I2C), NFC PN7161 (I2C), fan (PWM), and power button (GPIO + J2) are on the **ESP32** side. Pin assignments, I2C addresses, and bus layout are documented in [docs/HARDWARE.md](HARDWARE.md). Summary:
 
-| Pin | Function | Device | Notes |
-|-----|----------|--------|-------|
-| GPIO 10 (SPI MOSI) | Data | E-Paper Display | SPI 4-wire |
-| GPIO 11 (SPI SCLK) | Clock | E-Paper Display | SPI |
-| GPIO 8 (SPI CE0) | Chip Select | E-Paper Display | SPI |
-| GPIO (TBD) | DC | E-Paper Display | Data/Command |
-| GPIO (TBD) | Reset | E-Paper Display | Reset |
-| GPIO (TBD) | BUSY | E-Paper Display | Status (read) |
-| GPIO 2 (SDA) | I2C Data | Touch, NFC, BME280 | Shared I2C bus |
-| GPIO 3 (SCL) | I2C Clock | Touch, NFC, BME280 | Shared I2C bus |
-| GPIO 18 | PWM | Fan | Hardware PWM |
-| GPIO 21 | Data | WS2812 LED | Optional |
-| GPIO (TBD) | Front-light PWM | E-Paper Display | MOSFET front-light control (PWM) |
+| Device | Interface | Address / pin (ESP32) | Notes |
+|--------|-----------|------------------------|-------|
+| Touch (FT6336U) | I2C | 0x38 | Integrated in GDEY037T03-FT21 |
+| NFC (PN7161) | I2C | 0x24 or 0x48 | Configurable in add-on options |
+| BME280 | I2C | 0x76 or 0x77 | Configurable in add-on options |
+| E-Paper | SPI | CS, DC, RST, BUSY, etc. | See HARDWARE.md and firmware |
+| Fan | PWM | Configurable (e.g. GPIO 18) | Local control on ESP32 |
+| Power button | GPIO | e.g. GPIO 33 | ext0 wake; J2 pulse (e.g. GPIO 26) for Pi power |
 
-**Note**: The exact pins for the E-Paper display (DC, Reset, BUSY) depend on the breakout board used. To be verified during hardware integration.
-
-## Startup Sequence
+## Startup sequence
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│ 1. Supervisor starts the container                             │
+│ 1. Supervisor starts the container                              │
 ├────────────────────────────────────────────────────────────────┤
-│ 2. s6-overlay initializes services                             │
+│ 2. s6-overlay runs the 'run' script                             │
 ├────────────────────────────────────────────────────────────────┤
-│ 3. 'run' script executes main.py                              │
+│ 3. main.py: load options, build Config                          │
 ├────────────────────────────────────────────────────────────────┤
-│ 4. HAL: Hardware detection and initialization                  │
-│    - Check I2C available                                       │
-│    - Check SPI available                                       │
-│    - Scan devices                                              │
+│ 4. Initialize HA API client (Supervisor URL, token)             │
 ├────────────────────────────────────────────────────────────────┤
-│ 5. Display Manager: Display initialization                    │
-│    - Display boot screen                                       │
+│ 5. Language: get_core_language() or env fallback, get_translator│
 ├────────────────────────────────────────────────────────────────┤
-│ 6. Sensors Manager: Start readings                             │
-│    - First temperature reading                                 │
-│    - NFC initialization                                        │
-│    - Touch calibration                                         │
+│ 6. Handlers: SensorHandler, WeatherHandler, ClockHandler,       │
+│    StatusHandler; ESP32 comm and connection_manager             │
 ├────────────────────────────────────────────────────────────────┤
-│ 7. Control Manager: Output initialization                     │
-│    - PWM fan configuration                                     │
-│    - LED initialization                                        │
+│ 7. Open serial port, start poll thread, set callbacks            │
 ├────────────────────────────────────────────────────────────────┤
-│ 8. Connect to Home Assistant API                               │
-│    - Wait if HA not ready yet                                  │
-│    - Retrieve configured entities                              │
+│ 8. Initialization loop: send READY periodically until           │
+│    connection_manager.is_connected() (recent message from ESP32) │
 ├────────────────────────────────────────────────────────────────┤
-│ 9. Main loop                                                   │
-│    - Update display                                            │
-│    - Read sensors                                              │
-│    - Process touch/NFC events                                  │
-│    - Fan regulation                                            │
+│ 9. Once connected: send LANG, force weather/clock/status update,  │
+│    start periodic timers for weather, clock, status             │
+├────────────────────────────────────────────────────────────────┤
+│10. Main loop: connection_manager.update(), send READY/STATUS   │
+│    as needed; sensor_handler.update_home_assistant() from SENS  │
+│    If connection lost, return to step 8                         │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-## Error Handling
+## Error handling
 
-### Fallback Strategy
+### Fallback strategy
 
 | Error | Behavior |
 |-------|----------|
-| Display not detected | Log warning, headless mode |
-| I2C unavailable | Log error, disable I2C sensors |
-| HA not accessible | Retry with backoff, degraded display mode |
-| Sensor error | Skip reading, use last value |
+| Core not available at startup | Language falls back to env or default; API calls (e.g. weather, config) fail until Core is up; handlers retry or skip |
+| Serial port missing or open failure | App logs error and exits or runs without ESP32 (depending on startup path) |
+| ESP32 disconnection (no recent message) | connection_manager moves to RECONNECTING then DISCONNECTED; READY sent periodically; when message received again, CONNECTED and services resume |
+| Host shutdown request fails (e.g. 403) | Log warning; ESP32 does not receive SHUTDOWN_ACCEPTED and may use shutdownPendingTimeoutMs then deep sleep |
+| Sensor/weather/status API failure | Handlers log and skip or use cached data; next cycle retries |
 
 ### Logging
 
@@ -304,53 +270,36 @@ Levels:
 
 ## Security
 
-### Required Permissions
+### Permissions (current)
+
+The add-on uses only serial devices for the ESP32 link. Example from `config.yaml`:
 
 ```yaml
-# config.yaml
 devices:
-  - /dev/i2c-1
-  - /dev/spidev0.0
-  - /dev/gpiomem
-gpio: true
-kernel_modules: true
+  - /dev/ttyAMA0
+  - /dev/serial0
 ```
 
-### AppArmor
-
-Custom AppArmor profile to limit access:
-- Read/write access to declared devices
-- Network access limited to Supervisor API
-- No access to host filesystem
+No `gpio`, `kernel_modules`, or I2C/SPI devices are required on the Pi for the App. If AppArmor is enabled, the profile must allow access to the chosen serial device(s) and to Supervisor/network as used by the API client. See [ha-box/SECURITY.md](../ha-box/SECURITY.md) and [docs/HA_APPS_COMPLIANCE.md](HA_APPS_COMPLIANCE.md).
 
 ---
 
-## Multilingual Support (i18n)
+## Multilingual support (i18n)
 
-HA Box supports multiple languages for the configuration interface and user messages.
+- **Translation files**: `ha-box/translations/{language}.yaml` (e.g. en, fr) for configuration UI labels/descriptions (used by Home Assistant).
+- **Python**: `core/i18n.py` provides a `Translator` and `get_translator()`. Language is chosen in this order: explicit from HA Core config (`/core/api/config` → `language`), then `LANG` or `SUPERVISOR_LANGUAGE` from the environment, then default English.
+- **ESP32**: The App sends `LANG` with `id=0` (French) or `id=1` (English) so the firmware can show text in the correct language.
 
-### Structure
+See [docs/I18N.md](I18N.md) for full details if present.
 
-- **Translation files**: `translations/{language}.yaml` (fr, en, etc.)
-- **Python module**: `ha-box/i18n.py` to load and use translations
-- **Automatic detection**: Language detected from Home Assistant or environment variable
+## Future evolutions
 
-### Usage
-
-- **Configuration**: Labels and descriptions in `config.yaml` automatically translated by HA
-- **Python code**: `translator.get("common.temperature")` to retrieve translations
-- **E-Paper display**: Displayed texts translated according to configured language
-
-**See [docs/I18N.md](I18N.md) for complete details**
-
-## Future Evolutions
-
-- [ ] Support for multiple display types
-- [ ] Plugin system for additional drivers
-- [ ] Simulation mode for development without hardware
-- [ ] Advanced web configuration interface
-- [ ] Support for additional languages (DE, ES, etc.)
+- Support for multiple display types or resolutions on the ESP32
+- NFC (PN7161) integration: full UID/NDEF handling and onboarding flows
+- Optional WebSocket or REST endpoint for real-time HA events to the ESP32
+- Simulation or test mode for development without hardware
+- Additional languages (e.g. DE, ES) in translations and LANG id mapping
 
 ---
 
-*Last updated: 2026-01-17*
+*Last updated: 2026-03-05*

@@ -41,7 +41,7 @@ configuration:
             description: Intervalle de lecture du capteur en secondes (10-300)
       nfc:
         name: Lecteur NFC
-        description: Configuration du lecteur NFC PN532
+        description: Configuration du lecteur NFC PN7161
         fields:
           enabled:
             name: Activer NFC

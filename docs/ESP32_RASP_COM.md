@@ -1,72 +1,123 @@
-# Connection between ESP32 and Raspberry
+# ESP32 ↔ Raspberry Pi UART Link
 
-## Tableau fonctionnalités
+This document describes how the ESP32 firmware and the Raspberry Pi (running Home Assistant OS and the HA Box App) communicate over UART, and which responsibilities live on each side.
 
-| Fonction | Où ça vit (responsable) | Communication ESP32 ↔ Pi | Sens | Détails / remarques |
-|---|---|---:|---:|---|
-| **Bouton poussoir “Power” (déporté)** | ESP32 lit le bouton | **J2 (power button)** | ESP32 → Pi | L’ESP32 simule un appui (contact bref ~100–300 ms). |
-| **Extinction propre (PC-like)** | Pi/HAOS gère le shutdown | **J2 (power button)** *(recommandé)* + UART *(optionnel)* | ESP32 → Pi | Le plus fiable : appui bouton via J2, le Pi exécute l’arrêt propre. UART peut servir à demander un shutdown “logique”. |
-| **Allumage / Wake** (sans couper l’alim) | Pi se réveille | **J2 (power button)** | ESP32 → Pi | Indispensable. Pas de wake via UART si le Pi est éteint. |
-| **Reboot / maintenance** | Pi/HAOS | UART | ESP32 → Pi | L’ESP32 envoie une commande “whitelistée” (ex: reboot). Le Pi exécute `ha host reboot` ou équivalent via un bridge. |
-| **Écran e-paper (SPI)** | ESP32 pilote l’affichage | UART | Pi → ESP32 | Le Pi envoie des “screens” (ex: page onboarding, dashboard minimal). L’ESP32 affiche même pendant le boot du Pi. |
-| **Tactile (I2C)** | ESP32 lit l’input | UART | ESP32 → Pi | L’ESP32 remonte des actions UI (tap, swipe, next, back) que HA transforme en events/automations. |
-| **NFC (PN532 puis contrôleur avec émulation)** | ESP32 | UART | ESP32 → Pi | L’ESP32 remonte UID/NDEF + actions (pairing, onboarding). |
-| **Onboarding “add device”** | Home Assistant (logique), ESP32 (UI) | UART | bidirectionnel | HA décide des étapes, ESP32 affiche + collecte inputs (NFC / touch). |
-| **Capteurs temp/hum** | ESP32 | UART | ESP32 → Pi | Remontée vers HA pour dashboards et automatisations. |
-| **Temp dédiée pour refroidissement + fan PWM** | ESP32 | UART *(optionnel)* | ESP32 → Pi | Contrôle ventilo autonome (sécurité) + télémétrie vers HA si souhaité. |
-| **États Wi-Fi / BT / Zigbee / Thread / Matter / 433MHz** (opérationnels ?) | Pi/HA (source de vérité) | UART | Pi → ESP32 | HA agrège l’état des intégrations/Apps et envoie un “status bundle” à l’ESP32 pour affichage. |
-| **Health check Apps** (Zigbee2MQTT, Thread, etc.) | Pi/HAOS Supervisor + HA | UART | Pi → ESP32 | Le Pi lit l’état via Supervisor/HA, push vers ESP32. |
+## High-level responsibilities
 
+| Function | Owner (side) | Link (ESP32 ↔ Pi) | Direction | Notes |
+|---------|--------------|--------------------|-----------|-------|
+| Front “Power” push button | ESP32 reads button | **J2 (power button)** | ESP32 → Pi | ESP32 simulates a power-button press on J2 (pulse ~150 ms). Short press = 120 ms–2 s, long press ≥ 5 s. |
+| Graceful shutdown (PC-like) | Pi / HAOS | **UART** (short press) + **J2** (long press) | ESP32 → Pi | **Short press**: ESP32 sends `SHUTDOWN_REQUEST` → App calls Supervisor host shutdown API (see HA docs) → App sends `SHUTDOWN_ACCEPTED` → ESP32 enters deep sleep. **Long press**: ESP32 pulses J2 for a hard shutdown. |
+| Wake / power on (without cutting power) | Pi wakes | **J2 (power button)** | ESP32 → Pi | ESP32 is woken by `ext0` on the button, then `powerBtn.begin()` triggers `pulseJ2()` to power on the Pi. |
+| Reboot / maintenance | Pi / HAOS | UART | ESP32 → Pi | Reserved for future: ESP32 sends a whitelisted command (for example `REBOOT`), App triggers `ha host reboot` or equivalent. Not implemented yet. |
+| E‑Paper display (SPI) | ESP32 drives display | UART | Pi → ESP32 | Pi sends **data** (`WEATHER`, `CLOCK`, `STATUS`, `LANG`, …). ESP32 updates the model and renders the UI pages (Loading, Home, Settings). |
+| Touch (I2C) | ESP32 reads touch | UART | ESP32 → Pi | ESP32 sends `TOUCH` and high‑level actions (Home / All Off / Settings). The App can convert these into automations or service calls. |
+| NFC (PN7161, I2C) | ESP32 | UART | ESP32 → Pi | PN7161 on I²C (address `0x24` or `0x48`). ESP32 will send `NFC` messages with UID (and later payload); the App can use them for pairing/onboarding. |
+| Onboarding “add device” | HA logic, ESP32 UI | UART | Bidirectional | HA decides the flow; ESP32 displays steps and collects inputs (NFC, touch). Planned, not fully implemented yet. |
+| Temperature / humidity / pressure (BME280) | ESP32 | UART | ESP32 → Pi | ESP32 sends `SENS` (tC, hum, pPa); the App publishes values as sensors in Home Assistant. |
+| Fan PWM (cooling) | ESP32 | — | — | Fan control is local on ESP32 based on temperature thresholds. Optional telemetry to Pi can be added later. |
+| Core / Supervisor / Network / Zigbee / Thread / Matter status | Pi / HA (source of truth) | UART | Pi → ESP32 | Implemented: the App sends `STATUS` with key/value fields (`core`, `sup`, `net`, `lan`, `wifi`, `ext`, `zigbee`, `thread`, `matter`); ESP32 maps these to icons. |
+| Health check of Apps (Zigbee2MQTT, etc.) | Pi / Supervisor + HA | UART | Pi → ESP32 | The App queries Supervisor and Core entities; results are aggregated into the same `STATUS` payload. |
 
-## Hardware connection
+See `docs/HA_STATUS_TO_ESP32.md` for a deeper description of the status payload and fetchers.
 
-ESP32 serial2, 0 is used by USB.
-Pi TXD (GPIO14) → ESP32 RX2 (GPIO16)
-Pi RXD (GPIO15) → ESP32 TX2 (GPIO17)
-GND on GND to sync ground. (required)
-Pi 5V → ESP32 5V (if connect without USB)
+## Hardware wiring
 
-## Activate UART on Pi HAOS
+- **UART**: ESP32 uses `Serial2` (the board’s USB debug port is `Serial`).  
+  - Pi TXD (GPIO 14) → ESP32 RX2 (GPIO 16)  
+  - Pi RXD (GPIO 15) → ESP32 TX2 (GPIO 17)  
+  - GND → GND (required for a common reference)  
+  - Pi 5 V → ESP32 5 V (if powering the ESP32 from the Pi without USB)
 
-On root ssh or direct: exit ha command prompt
+- **NFC (PN7161)**: connected on the ESP32 I²C bus.  
+  - I²C address: typically `0x24` or `0x48` (configurable in the App options).  
+  - See `docs/HARDWARE.md` and `ha-box/config.yaml` for the exact wiring and configuration.
 
-```
+## UART protocol (summary)
+
+The protocol is ASCII-based, with one message per line:
+
+- Command format:  
+  `<id> VERB [key=value ...]`
+- ACK format:  
+  `ACK <id> OK` or `ACK <id> ERR <code>`
+
+### Verbs from Pi → ESP32
+
+- `READY` – Pi is up and the App is running.
+- `HALTED` – Pi / App is shutting down or going offline.
+- `SHUTDOWN_ACCEPTED` – The App accepted a shutdown request and asked the Supervisor to stop the host; ESP32 can enter deep sleep immediately.
+- `STATUS` – Heartbeat + optional key/values:
+  - `core`, `sup`, `net`, `lan`, `wifi`, `ext`, `zigbee`, `thread`, `matter` (all `0` or `1`).
+- `WEATHER` – Weather code and outdoor temperature.
+- `CLOCK` – Time sync (`hh`, `mm`, `ss`).
+- `LANG` – UI language for the ESP32: `id=0` (French), `id=1` (English).
+
+### Verbs from ESP32 → Pi
+
+- `READY` – ESP32 is up.
+- `SENS` – Sensor payload from BME280:
+  - `tC`, `hum`, `pPa`.
+- `STATUS` – Heartbeat when the App does not send a `STATUS` with key/values (legacy / degraded mode).
+- `TOUCH` – Touch / button actions (for example navigation, “All Off”).
+- `NFC` – NFC events (UID, and later NDEF/metadata).
+- `ALL_OFF` – User pressed “All Off” on the E‑Paper UI; the App can call `light.turn_off` on Home Assistant.
+- `SHUTDOWN_REQUEST` – User short-pressed the physical power button; the App should trigger a host shutdown.
+
+Protocol implementation details:
+
+- ESP32 side: `esp/ESPHOMEASSISTANT/AsciiProto.*` and `POWERBUTTON.*`.
+- App side: `ha-box/rootfs/usr/bin/ha-box/communication/esp32_comm.py` and `message_handler.py`.
+
+## Enabling UART on Home Assistant OS (Pi)
+
+From a root shell on the host (not inside the container), exit the `ha` prompt:
+
+```bash
 login
 ```
 
-Edit boot config file `vi /mnt/boot/config.txt` and change those line:
+Edit `/mnt/boot/config.txt`:
 
-```
+```ini
 enable_uart=1
 dtoverlay=disable-bt
 ```
-note: i to switch in insert mode, esc then :wq to save en quite
 
-Then reboot : `ha host reboot` or `reboot`
+Notes:
 
-To know if it's enable use:
-```
+- In `vi`, press `i` to enter insert mode, then `Esc`, then `:wq` to save and quit.
+- Reboot the host using `ha host reboot` or `reboot`.
+
+Check that UART is enabled:
+
+```bash
 ls -l /dev/serial*
 ```
-If there is something like that: `/dev/serial0` or `/dev/ttyAMA0` it's good
 
-The serial have to be configured:
-```
+If you see `/dev/serial0` or `/dev/ttyAMA0`, the UART device is available.
+
+For **manual tests only** (without the App), you can configure the serial port:
+
+```bash
 stty -F /dev/serial0 115200 cs8 -cstopb -parenb -ixon -ixoff -crtscts raw -echo
 ```
 
-To read use `cat /dev/serial0` 
-To write use `echo "hello from haos" > /dev/serial0`
+When the HA Box App is running, it opens the serial device itself at 115200 8N1; you do not need to run `stty` manually.
 
+Quick manual test:
 
-## Activate UART on ESP32
+- Read: `cat /dev/serial0`  
+- Write: `echo "hello from haos" > /dev/serial0`
 
-Use this code to test the connection:
+## Example UART test sketch for ESP32
 
-```
+The following sketch can be used on the ESP32 to test the UART wiring independently from the App:
+
+```cpp
 #include <Arduino.h>
 
-// ESP32 UART2 pins (classique)
+// ESP32 UART2 pins
 // TX2 = GPIO17, RX2 = GPIO16
 static const int UART2_TX = 17;
 static const int UART2_RX = 16;
@@ -80,7 +131,7 @@ String uartLine;
 void setup() {
   Serial.begin(BAUD_USB);
 
-  // UART vers Raspberry (3.3V TTL)
+  // UART to Raspberry Pi (3.3 V TTL)
   Serial2.begin(BAUD_UART, SERIAL_8N1, UART2_RX, UART2_TX);
 
   Serial.println("ESP32 <-> Raspberry bridge ready");
@@ -93,14 +144,14 @@ static void pumpSerialToUart() {
     if (c == '\r') continue;  // ignore CR
     if (c == '\n') {
       if (usbLine.length() > 0) {
-        Serial2.println(usbLine);           // envoie au Raspberry
+        Serial2.println(usbLine);           // send to Raspberry Pi
         Serial.print("USB -> UART: ");
         Serial.println(usbLine);
         usbLine = "";
       }
     } else {
       usbLine += c;
-      if (usbLine.length() > 512) usbLine = ""; // garde-fou
+      if (usbLine.length() > 512) usbLine = ""; // safety guard
     }
   }
 }
@@ -126,7 +177,7 @@ void loop() {
   pumpSerialToUart();
   pumpUartToSerial();
 
-  // Optionnel: heartbeat toutes les 2s
+  // Optional: heartbeat every 2 s
   static uint32_t last = 0;
   if (millis() - last > 2000) {
     last = millis();
@@ -134,6 +185,3 @@ void loop() {
   }
 }
 ```
-
-
-

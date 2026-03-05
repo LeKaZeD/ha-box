@@ -31,7 +31,7 @@ This document lists all hardware components used in the HA Box project with thei
 
 - **Bi-stable**: Image remains displayed without power
 - **Full refresh**: ~2-3 seconds
-- **Partial refresh**: ~1 second (if supported)
+- **Partial refresh**: ~1 second
 - **High contrast**: Excellent in ambient light
 - **Ultra-low consumption**: Ideal for embedded applications
 - **1-bit**: Black/white display only
@@ -112,10 +112,10 @@ The front-light consists of 9 LEDs (2.8V typical) controlled by a MOSFET. The MO
 
 ---
 
-### 3. PN532 NFC Module
+### 3. PN7161 NFC Module
 
 **Manufacturer**: NXP  
-**Model**: PN532  
+**Model**: PN7161  
 **Type**: 13.56 MHz NFC controller
 
 #### Specifications
@@ -123,7 +123,7 @@ The front-light consists of 9 LEDs (2.8V typical) controlled by a MOSFET. The MO
 | Parameter | Value |
 |-----------|-------|
 | Interface | I2C (or SPI/UART depending on configuration) |
-| I2C Address | 0x24 (typical, may vary by module) |
+| I2C Address | 0x24 or 0x48 (configurable in add-on options) |
 | Protocols | MIFARE Classic, NTAG21x, ISO14443 Type A/B |
 | Range | ~5cm |
 | Voltage | 3.3V or 5V (depending on module) |
@@ -139,14 +139,14 @@ The front-light consists of 9 LEDs (2.8V typical) controlled by a MOSFET. The MO
 
 #### Connection
 
-| Pin | Function | Raspberry Pi |
-|-----|----------|--------------|
-| VCC | Power | 3.3V or 5V (depending on module) |
+| Pin | Function | ESP32 (NFC on firmware side) |
+|-----|----------|------------------------------|
+| VCC | Power | 3.3V |
 | GND | Ground | GND |
-| SDA | I2C Data | GPIO 2 (SDA) |
-| SCL | I2C Clock | GPIO 3 (SCL) |
+| SDA | I2C Data | I2C bus (e.g. GPIO 21) |
+| SCL | I2C Clock | I2C bus (e.g. GPIO 22) |
 
-**Note**: Verify that the module is configured in I2C mode (jumpers/selectors on breakout board).
+**Note**: The PN7161 is used on the **ESP32** I2C bus. The add-on receives `NFC` messages (UID, etc.) over UART. Verify module I2C mode if applicable.
 
 #### Documentation
 
@@ -262,7 +262,7 @@ Raspberry Pi 4/5
 | Front-light | ~20-30mA | 9 LEDs at 2.8V (controlled by MOSFET PWM) |
 | BME280 | ~3.6µA | Sleep mode |
 | Touch FT6336U | ~10µA | Sleep mode |
-| NFC (PN532) | ~15mA | Active mode |
+| NFC (PN7161) | ~15mA | Active mode |
 | WS2812B LED | ~60mA/LED | White max |
 | Fan | ~100-200mA | 5V PWM |
 

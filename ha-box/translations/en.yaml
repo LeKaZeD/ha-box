@@ -41,7 +41,7 @@ configuration:
             description: Sensor reading interval in seconds (10-300)
       nfc:
         name: NFC Reader
-        description: PN532 NFC reader configuration
+        description: PN7161 NFC reader configuration
         fields:
           enabled:
             name: Enable NFC

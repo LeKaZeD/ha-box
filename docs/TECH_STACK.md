@@ -1,33 +1,31 @@
 # Technical Stack - HA Box
 
-This document details all technologies, languages and libraries used in the project.
+This document details the technologies, languages, and libraries used in the project. The **Application** (Python) runs on the Raspberry Pi and talks to the **ESP32** over UART; the ESP32 runs the display, sensors, touch, NFC, fan, and power-button logic (see [docs/ARCHITECTURE.md](ARCHITECTURE.md)).
 
 ## Languages
 
 ### Python 3.9+
 
-**Main usage**: Business application, hardware drivers, communication with Home Assistant.
+**Usage (Application):** Business logic, Supervisor/Core API client, UART communication with the ESP32, configuration, i18n. No direct hardware access (no I2C, SPI, or GPIO on the Pi).
 
 **Reasons for choice:**
-- Excellent hardware library support (GPIO, I2C, SPI)
-- Adafruit libraries available
+- Standard in Home Assistant images
+- Good library support for HTTP and serial
 - Easy to maintain and debug
-- Native support in Home Assistant images
 
 **Standards:**
 - PEP 8 for style
-- Type hints mandatory
-- Google style docstrings
+- Type hints for public APIs
+- Google-style docstrings
 - Python 3.9+ minimum (Home Assistant compatibility)
+
+### C++ (Arduino / ESP-IDF)
+
+**Usage (ESP32 firmware):** Display driver (GxEPD2), touch (FT6336), BME280, NFC (PN7161 planned), fan PWM, power button, UART protocol (AsciiProto). See the `esp/ESPHOMEASSISTANT/` firmware and [docs/HARDWARE.md](HARDWARE.md).
 
 ### Bash 5.x
 
-**Usage**: s6-overlay startup/shutdown scripts.
-
-**Reasons for choice:**
-- Standard for Linux system scripts
-- Native integration with s6-overlay
-- Access to bashio for Supervisor API
+**Usage:** s6-overlay startup/shutdown scripts in the add-on container.
 
 **Standards:**
 - Shebang: `#!/usr/bin/with-contenv bashio`
@@ -36,12 +34,12 @@ This document details all technologies, languages and libraries used in the proj
 
 ### YAML
 
-**Usage**: Add-on configuration, build, translations.
+**Usage:** Add-on configuration, build, translations.
 
 **Files:**
-- `config.yaml`: Add-on configuration
-- `build.yaml`: Multi-arch build configuration
-- `translations/*.yaml`: Translations
+- `ha-box/config.yaml`: Add-on options and schema
+- `ha-box/build.yaml`: Multi-arch build (if used)
+- `ha-box/translations/*.yaml`: UI translations (en, fr)
 
 ---
 
@@ -75,61 +73,44 @@ This document details all technologies, languages and libraries used in the proj
 
 ---
 
-## Python Libraries
+## Python libraries (add-on)
 
-### Communication with Home Assistant
-
-| Library | Version | Usage | Installation |
-|---------|---------|-------|--------------|
-| `bashio` | Included | Supervisor API | Included in HA images |
-| `requests` | Latest | HTTP client for HA API | `pip install requests` |
-
-### Hardware - Communication Buses
+### Communication
 
 | Library | Version | Usage | Installation |
 |---------|---------|-------|--------------|
-| `smbus2` | Latest | I2C access | `pip install smbus2` |
-| `spidev` | Latest | SPI access | `pip install spidev` |
-| `RPi.GPIO` | Latest | GPIO access | `pip install RPi.GPIO` |
-| `gpiozero` | Latest | Alternative GPIO (higher level) | `pip install gpiozero` |
+| `requests` | >=2.31.0 | HTTP client for Supervisor and Core API | `pip install requests` |
+| `pyserial` | >=3.5 | UART serial link to ESP32 (`/dev/serial0`, 115200 8N1) | `pip install pyserial` |
 
-### Hardware - Devices
+### Configuration and i18n
 
 | Library | Version | Usage | Installation |
 |---------|---------|-------|--------------|
-| `adafruit-circuitpython-bme280` | Latest | BME280 sensor | `pip install adafruit-circuitpython-bme280` |
-| `adafruit-circuitpython-pn532` | Latest | PN532 NFC module | `pip install adafruit-circuitpython-pn532` |
+| `PyYAML` | >=6.0 | Load translation files (`core/i18n.py`) | `pip install PyYAML` |
 
-### Graphics
+### Not used on the add-on
 
-| Library | Version | Usage | Installation |
-|---------|---------|-------|--------------|
-| `Pillow` | Latest | Graphic rendering, image conversion | `pip install Pillow` |
+The add-on does **not** use I2C, SPI, or GPIO on the Pi. Display, BME280, touch, NFC (PN7161), and fan are on the **ESP32**. If future features require hardware on the Pi, the following could be added (and must go through a HAL if one is introduced):
 
-### Utilities
-
-| Library | Version | Usage | Installation |
-|---------|---------|-------|--------------|
-| `python-dateutil` | Latest | Date/time management | `pip install python-dateutil` |
+- `smbus2` / `spidev` / `RPi.GPIO`: buses and GPIO
+- `adafruit-circuitpython-bme280`: BME280 (currently on ESP32)
+- `adafruit-circuitpython-pn7160` or equivalent: PN7161 (currently planned on ESP32)
+- `Pillow`: image rendering (currently on ESP32 via GxEPD2)
 
 ---
 
-## Alternatives Considered
+## Alternatives considered
 
-### GPIO
+### UART / serial
 
-- **RPi.GPIO**: Main choice (standard, well documented)
-- **gpiozero**: Higher level alternative, can be used to simplify some cases
+- **pyserial**: Used for the ESP32 link; standard and well supported.
+- **Alternative**: Raw `open()` on `/dev/serial0` with termios; more work for framing and timeouts.
 
-### E-Paper
+### ESP32 firmware (E-Paper, NFC)
 
-- **waveshare-epd**: If compatible with GDEY037T03-FT21
-- **Custom driver**: Probably necessary (based on UC8253 datasheet)
-
-### NFC
-
-- **nfcpy**: Generic alternative, but Adafruit simpler
-- **libnfc**: Via Python bindings, more complex
+- **E-Paper**: GxEPD2 driver for GDEY037T03; custom panel class in firmware.
+- **NFC**: PN7161 on ESP32 (I2C); driver to be integrated. Add-on only receives `NFC` messages over UART.
+- **BME280**: Implemented on ESP32 (e.g. BME280Min or similar); add-on receives `SENS` and pushes to HA.
 
 ---
 
@@ -153,28 +134,21 @@ This document details all technologies, languages and libraries used in the proj
 
 ---
 
-## Dependency Structure
+## Dependency structure (add-on)
 
-### requirements.txt (to be created)
+### requirements.txt
+
+The add-on uses a minimal set of dependencies (see `ha-box/requirements.txt`):
 
 ```txt
-# Communication
+# Communication with Supervisor and Core API
 requests>=2.31.0
 
-# Hardware - Buses
-smbus2>=0.4.3
-spidev>=3.6
-RPi.GPIO>=0.7.1
+# Configuration and i18n (translation files)
+PyYAML>=6.0
 
-# Hardware - Devices
-adafruit-circuitpython-bme280>=2.5.11
-adafruit-circuitpython-pn532>=1.4.0
-
-# Graphics
-Pillow>=10.0.0
-
-# Utilities
-python-dateutil>=2.8.2
+# Serial communication with ESP32 (UART)
+pyserial>=3.5
 ```
 
 ### Installation in Dockerfile
@@ -182,6 +156,8 @@ python-dateutil>=2.8.2
 ```dockerfile
 RUN pip3 install --no-cache-dir -r requirements.txt
 ```
+
+`bashio` is provided by the Home Assistant base image and is used by the s6 scripts, not by Python.
 
 ---
 
@@ -205,26 +181,20 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 ---
 
-## Performance and Constraints
+## Performance and constraints
 
-### E-Paper
+### Add-on (Pi)
 
-- **Slow refresh**: Optimize updates
-- **1-bit only**: Image conversion necessary
-- **Consumption**: Very low, ideal for embedded
+- **API calls**: Timeouts and bounded retries on all Supervisor/Core requests (see `api/ha_api.py`). Core availability is cached for a short interval to avoid excessive checks.
+- **Serial**: Polling thread reads UART in a loop; line-based protocol keeps parsing simple. No blocking on single-byte reads for long periods.
+- **Handlers**: Weather, clock, and status run on timers (e.g. 5 min, 1 min, 30 s); sensor updates to HA are triggered by incoming SENS messages.
 
-### I2C
+### ESP32 (firmware)
 
-- **Shared bus**: All devices on same bus
-- **Speed**: 100kHz standard, 400kHz fast mode
-- **Management**: Polling or interrupt depending on device
-
-### GPIO/PWM
-
-- **Hardware PWM**: Preferred for precision (GPIO 18)
-- **Software PWM**: Alternative if hardware unavailable
-- **Critical timing**: WS2812B requires precise timing
+- **E-Paper**: Slow refresh; updates are optimized (full vs partial, dirty regions). Display logic and rendering are entirely on the ESP32.
+- **I2C**: Shared bus for touch, BME280, NFC (PN7161); addresses and timing are device-specific (see [docs/HARDWARE.md](HARDWARE.md)).
+- **UART**: 115200 8N1; ASCII protocol with optional ACK for critical commands (e.g. SHUTDOWN_REQUEST, SENS).
 
 ---
 
-*Last updated: 2026-01-17*
+*Last updated: 2026-02*

@@ -9,6 +9,6 @@ pyserial>=3.5
 
 # Note: Other dependencies will be added when corresponding features are implemented:
 # - smbus2, spidev, RPi.GPIO: for I2C/SPI/GPIO hardware access
-# - adafruit-circuitpython-bme280, adafruit-circuitpython-pn532: for sensors
+# - adafruit-circuitpython-bme280, adafruit-circuitpython-pn7160: for sensors (BME280/NFC on ESP32)
 # - Pillow: for E-Paper display graphics
 # - python-dateutil: for advanced date/time handling
