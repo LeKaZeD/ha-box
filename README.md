@@ -9,6 +9,16 @@
 
 Display and interact with Home Assistant information via a touchscreen connected to the Raspberry Pi, while managing local sensors and actuators.
 
+## Hardware overview
+
+The HA Box project includes a custom 3D-printed enclosure and a dedicated `haboxesp` PCB designed to host an ESP module and simplify connections to external devices.
+
+![HA Box enclosure – front](hardware/3D%20plan/images/Home_assistant_box_Face.png)
+![HA Box enclosure – inside](hardware/3D%20plan/images/Home_assistant_box_inside.png)
+
+![HABoxESP PCB – front](hardware/haboxesp/images/espPcbFront.png)
+![HABoxESP PCB – back](hardware/haboxesp/images/espPcbBack.png)
+
 ## Features (current state)
 
 | Feature | Interface | Hardware | Status |
