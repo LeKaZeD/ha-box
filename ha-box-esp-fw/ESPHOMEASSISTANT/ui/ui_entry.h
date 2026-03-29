@@ -3,6 +3,9 @@
 // UI entry point: all includes, configs, callbacks, setup and rebuild.
 // Must be included by the main sketch AFTER: display, model, uiManager, powerBtn, proto are defined.
 
+#include "../config.h"
+#include "driver/gpio.h"
+
 #include "../AsciiProto.h"
 #include "../model/model.h"
 #include "ui_manager.h"
@@ -22,6 +25,7 @@
 #include "assets/icons_min.h"
 #include "assets/icons/global/arrow_back.h"
 #include "assets/icons/global/arrow_forward.h"
+#include "assets/icons/global/light_off.h"
 #include "../weather_icons.h"
 
 // -----------------------------------------------------------------------------
@@ -90,12 +94,32 @@ static void onSettingsButtonClick(void* user) {
   if (mgr) mgr->navigateTo(PageId::Settings);
 }
 
+// PWM duty per brightness level (0=off, 1-4=25/50/75/100%).
+static const uint8_t kBrightnessDuty[5] = {0, 64, 128, 192, 255};
+
+static void applyFrontLight(uint8_t level) {
+  if (level > 4) level = 4;
+  uint8_t duty = kBrightnessDuty[level];
+  if (duty == 0) {
+    // Detach LEDC, then drive the gate LOW directly via ESP-IDF.
+    // gpio_reset_pin is intentionally NOT used: it puts the pin in INPUT/floating
+    // state which lets the MOSFET gate capacitance hold charge and keep it on.
+    ledcDetach(PIN_FRONT_LIGHT);
+    gpio_set_direction((gpio_num_t)PIN_FRONT_LIGHT, GPIO_MODE_OUTPUT);
+    gpio_set_level((gpio_num_t)PIN_FRONT_LIGHT, 0);
+  } else {
+    ledcAttach(PIN_FRONT_LIGHT, FRONT_LIGHT_FREQ_HZ, FRONT_LIGHT_RES_BITS);
+    ledcWrite(PIN_FRONT_LIGHT, duty);
+  }
+}
+
 static void onBrightnessChange(int delta, void* user) {
   Model* m = (Model*)user;
   int v = (int)m->settings.brightness + delta;
   if (v < 0) v = 0;
   if (v > 4) v = 4;
   m->setBrightness((uint8_t)v);
+  applyFrontLight((uint8_t)v);
 }
 
 static void onSoundChange(bool enabled, void* user) {
@@ -137,6 +161,8 @@ static void setupUI(
     backUser
   );
   applyLoadingConfig(uiManager.pageLoading(), kLoadingPageConfig);
+  uiManager.pageShutdown().setFonts(&Roboto_Bold20pt7b, &Roboto_Bold16pt7b, &Roboto_Bold12pt7b);
+  uiManager.pageShutdown().setIcon(LIGHT_OFF_24x24);
   model.setLoadingActive(true);
   model.setLoadingReason(i18n::loading().reasonDefault);
   uiManager.begin(PageId::Loading);

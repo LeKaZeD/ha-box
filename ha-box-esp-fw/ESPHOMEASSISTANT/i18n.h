@@ -8,4 +8,5 @@ namespace i18n
   const LangHome& home();
   const LangSettings& settings();
   const LangLoading& loading();
+  const LangShutdown& shutdown();
 }

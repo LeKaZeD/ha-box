@@ -6,6 +6,7 @@
 #include "page_loading.h"
 #include "page_home.h"
 #include "page_settings.h"
+#include "page_shutdown.h"
 
 enum class PageId : uint8_t
 {
@@ -13,7 +14,8 @@ enum class PageId : uint8_t
   Onboarding,
   Loading,
   Home,
-  Settings
+  Settings,
+  Shutdown
 };
 
 template<typename DisplayT>
@@ -77,6 +79,9 @@ public:
       case PageId::Settings:
         currentPage_ = &pageSettings_;
         break;
+      case PageId::Shutdown:
+        currentPage_ = &pageShutdown_;
+        break;
       default:
         currentPageId_ = PageId::None;
         return;
@@ -111,6 +116,7 @@ public:
   auto& pageLoading()    { return pageLoading_; }
   auto& pageHome()       { return pageHome_; }
   auto& pageSettings()   { return pageSettings_; }
+  auto& pageShutdown()   { return pageShutdown_; }
 
 private:
   DisplayT& display_;
@@ -124,4 +130,5 @@ private:
   PageLoading<DisplayT>    pageLoading_;
   PageHome<DisplayT>       pageHome_;
   PageSettings<DisplayT>   pageSettings_;
+  PageShutdown<DisplayT>   pageShutdown_;
 };

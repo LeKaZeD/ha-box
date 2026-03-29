@@ -1,9 +1,13 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include "driver/rtc_io.h"
 #include "config.h"
 #include "settings_persistence.h"
 #include "buzzer.h"
 #include "BME280.h"
+#if ENABLE_TMP102
+#include "TMP102.h"
+#endif
 #include "POWERBUTTON.h"
 #include "FANCONTROLLER.h"
 
@@ -36,6 +40,10 @@ static char pBuf[16];
 AsciiProto proto(Serial2);
 
 BME280Min bme(0x76);
+#if ENABLE_TMP102
+TMP102    tmp102(TMP102_ADDR);
+static bool s_tmp102Ok = false;
+#endif
 
 PowerButton::Config pbCfg{
   .btnPin = BTN_PIN,
@@ -90,9 +98,9 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
 
   if (strcmp(msg.verb, "READY") == 0) {
     powerBtn.setPiState(PowerButton::PiState::ON);
-    
-    // Si on est en loading, passer à Home
-    if (uiManager.getCurrentPageId() == PageId::Loading) {
+    model.setLoadingReason(i18n::loading().reasonDefault);
+    const PageId cur = uiManager.getCurrentPageId();
+    if (cur == PageId::Loading || cur == PageId::Shutdown) {
       uiManager.navigateTo(PageId::Home);
     }
     return;
@@ -104,6 +112,8 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
     model.setLan(false);
     model.setWifi(false);
     model.setExt(false);
+    fan.setEnabled(false);
+    uiManager.navigateTo(PageId::Shutdown);
     return;
   }
   
@@ -193,6 +203,9 @@ static void onPiStateChange(PowerButton::PiState st) {
   if (st == PowerButton::PiState::ON) {
     Serial.println("PiState=ON");
     model.setWifi(true);
+    // Release the RTC hold set before deep sleep so LEDC can drive the pin again.
+    rtc_gpio_hold_dis((gpio_num_t)PWM_PIN);
+    fan.setEnabled(true);
   }
   else if (st == PowerButton::PiState::OFF) {
     Serial.println("PiState=OFF");
@@ -200,14 +213,29 @@ static void onPiStateChange(PowerButton::PiState st) {
     model.setLan(false);
     model.setWifi(false);
     model.setExt(false);
-    
-    // Retour à la page loading si on était sur Home
-    if (uiManager.getCurrentPageId() == PageId::Home) {
-      uiManager.navigateTo(PageId::Loading);
+
+    // Stop fan and hold PWM_PIN LOW during deep sleep.
+    // LEDC stops when the ESP enters deep sleep; without holding the pin it floats
+    // and the MOSFET gate can rise above Vth, keeping the fan on.
+    // GPIO 25 is RTC-capable so rtc_gpio_hold_en retains the LOW state during sleep.
+    fan.setEnabled(false);
+    ledcDetach(PWM_PIN);
+    gpio_set_direction((gpio_num_t)PWM_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level((gpio_num_t)PWM_PIN, 0);
+    rtc_gpio_hold_en((gpio_num_t)PWM_PIN);
+
+    // Navigate to Shutdown from any page (condition was previously Home/Settings only,
+    // which failed when the page was already Loading after SHUTDOWN_PENDING).
+    if (uiManager.getCurrentPageId() != PageId::Shutdown) {
+      uiManager.navigateTo(PageId::Shutdown);
     }
   }
   else {
     Serial.println("PiState=SHUTDOWN_PENDING");
+    // Show loading page immediately with shutdown reason so the screen updates
+    // without waiting for HALTED (which can take up to shutdownPendingTimeoutMs).
+    model.setLoadingReason(i18n::loading().reasonShutdown);
+    uiManager.navigateTo(PageId::Loading);
   }
 }
 
@@ -227,14 +255,25 @@ void setup() {
 
   bme.beginWire(Wire, 21, 22, 100000);
   if (!bme.begin()) {
-    Serial.println("BME280 init failed");
-    while (1) delay(10);
+    Serial.println("BME280 init failed - continuing without ambient sensor");
   }
+
+#if ENABLE_TMP102
+  tmp102.beginWire(Wire);
+  s_tmp102Ok = tmp102.begin();
+  if (!s_tmp102Ok) {
+    Serial.println("TMP102 init failed - fan will use BME280 temperature or safe mode");
+  }
+#endif
 
   powerBtn.setOnStateChange(onPiStateChange);
   powerBtn.begin();
 
   fan.begin();
+
+  // Front-light starts off; applyFrontLight will set the correct level after setupUI.
+  pinMode(PIN_FRONT_LIGHT, OUTPUT);
+  digitalWrite(PIN_FRONT_LIGHT, LOW);
 
   SPI.begin(PIN_SCK, -1, PIN_MOSI, PIN_CS);
   display.init(115200);
@@ -255,6 +294,7 @@ void setup() {
   touch.setDisplayHeight(display.height());  // invert Y so touch matches display
 
   setupUI(uiManager, model, onSettingsBackClick, nullptr, &proto);
+  applyFrontLight(model.settings.brightness);  // restore saved brightness
 
   Serial.println("Boot OK");
   
@@ -278,6 +318,56 @@ void loop() {
     
     char cmd = input.charAt(0);
     
+    // Front-light test: f<0-4>  e.g. f0=off, f4=max
+    if (cmd == 'f' && input.length() > 1)
+    {
+      uint8_t level = (uint8_t)constrain(input.substring(1).toInt(), 0, 4);
+      applyFrontLight(level);
+      Serial.printf("[cmd] front-light level=%u/4\n", level);
+      return;
+    }
+
+    // Raw GPIO test: g0=LOW, g1=HIGH (no LEDC, direct digitalWrite)
+    if (cmd == 'g' && input.length() > 1)
+    {
+      int val = input.substring(1).toInt();
+      ledcDetach(PIN_FRONT_LIGHT);
+      pinMode(PIN_FRONT_LIGHT, OUTPUT);
+      digitalWrite(PIN_FRONT_LIGHT, val ? HIGH : LOW);
+      Serial.printf("[cmd] GPIO%d -> %s\n", PIN_FRONT_LIGHT, val ? "HIGH" : "LOW");
+      return;
+    }
+
+    // TMP102 read: 't' -> print current temperature
+#if ENABLE_TMP102
+    if (cmd == 't' && input.length() == 1)
+    {
+      float tC = 0.0f;
+      if (!s_tmp102Ok) {
+        Serial.println("[cmd] TMP102 not initialized");
+      } else if (!tmp102.read(tC)) {
+        Serial.println("[cmd] TMP102 read failed");
+      } else {
+        Serial.printf("[cmd] TMP102 = %.2f C\n", tC);
+      }
+      return;
+    }
+#endif
+
+    // Fan manual control: v<0-255>  e.g. v0=stop, v128=50%, v255=full
+    // Bypasses temperature logic; the automatic loop will resume control on next sensor read.
+    if (cmd == 'v' && input.length() > 1)
+    {
+      uint8_t duty = (uint8_t)constrain(input.substring(1).toInt(), 0, 255);
+      if (duty == 0) {
+        fan.stop();
+      } else {
+        ledcWrite(PWM_PIN, duty);
+      }
+      Serial.printf("[cmd] fan duty=%u/255\n", duty);
+      return;
+    }
+
     // Language: l0 = FR, l1 = EN. Only if language actually changed: save and rebuild.
     if (cmd == 'l' && input.length() > 1)
     {
@@ -354,20 +444,41 @@ void loop() {
     }
   }
 
-  // BME + model + fan: every 5 s only
+  // Sensors + model + fan: every 5 s.
+  // TMP102 -> box temperature -> fan control.
+  // BME280 -> ambient temperature/humidity/pressure -> display + SENS.
   if (now - lastBmeMs >= BME_PERIOD_MS) {
     lastBmeMs = now;
+
+#if ENABLE_TMP102
+    // TMP102: box temperature drives the fan
+    float boxTc = 0.0f;
+    if (s_tmp102Ok) {
+      if (!tmp102.read(boxTc)) {
+        Serial.println("TMP102 read failed -> fan safe 100%");
+        fan.safeMode();
+      } else {
+        fan.updateFromTemperature(boxTc);
+      }
+    }
+#endif
+
+    // BME280: ambient temperature/humidity/pressure for display and Pi
     float tC, pPa, hPct;
-    if (!bme.read(tC, pPa, hPct)) {
-      Serial.println("BME read failed -> fan safe 100%");
-      fan.safeMode();
-    } else {
+    if (bme.read(tC, pPa, hPct)) {
       lastTc = tC;
       lastPPa = pPa;
       lastHPct = hPct;
       model.setTempInX10((int16_t)(tC * 10.0f));
       model.setHumidity((uint8_t)hPct);
+#if !ENABLE_TMP102
       fan.updateFromTemperature(tC);
+#endif
+    } else {
+#if !ENABLE_TMP102
+      Serial.println("BME read failed -> fan safe 100%");
+      fan.safeMode();
+#endif
     }
   }
 

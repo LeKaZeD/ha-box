@@ -23,3 +23,8 @@ const LangLoading& i18n::loading()
 {
   return s_current->loading;
 }
+
+const LangShutdown& i18n::shutdown()
+{
+  return s_current->shutdown;
+}

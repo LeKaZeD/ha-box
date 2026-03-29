@@ -10,7 +10,7 @@ PowerButton::PowerButton(const Config& cfg,  AsciiProto& proto)
 void PowerButton::begin() {
   s_instance = this;
 
-  pinMode(m_cfg.btnPin, INPUT_PULLUP);
+  pinMode(m_cfg.btnPin, INPUT);
 
   pinMode(m_cfg.j2Pin, OUTPUT);
   if (m_cfg.j2ActiveHigh) digitalWrite(m_cfg.j2Pin, LOW);
