@@ -66,3 +66,6 @@ coverage.xml
 .dev/
 *.dev.yaml
 *.dev.yml
+
+
+TODO_GETTING_STARTED.md
