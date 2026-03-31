@@ -18,7 +18,7 @@ The add-on does not access any hardware directly. All sensors, display, touch, N
 
 ```ini
 enable_uart=1
-dtoverlay=disable-bt
+dtoverlay=minimal-bt #on Raspberry PI4 only
 ```
 
 Reboot after editing. See [docs/ESP32_RASP_COM.md](../docs/ESP32_RASP_COM.md) for details.

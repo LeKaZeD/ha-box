@@ -1,7 +1,13 @@
 """
-Status fetcher: add-ons list (exposed on internet: DuckDNS, Cloudflare, etc.).
-exposed_ok is True only if an exposed add-on is started AND its external URL (from addon options) responds.
-URL is read from Supervisor: DuckDNS options["domains"], Cloudflare options["external_hostname"].
+Status fetcher: add-ons list (exposed on internet: DuckDNS, Cloudflare tunnel, etc.).
+
+Detection strategy per add-on type:
+- Cloudflare tunnel (cloudflared, cloudflare): if the add-on is started, the tunnel is
+  established. No outbound HTTP check is performed because the container cannot reliably
+  resolve or reach the external hostname from inside the Supervisor network, and the
+  tunnel health is implicitly guaranteed by the cloudflared process being up.
+- DuckDNS: add-on started AND external URL responds (HTTP check kept because DuckDNS is
+  dynamic DNS only, not a tunnel proxy; URL reachability is the meaningful signal).
 """
 
 import logging
@@ -10,13 +16,18 @@ import requests
 from urllib3.exceptions import InsecureRequestWarning
 from api.ha_api import HomeAssistantAPI, DEFAULT_EXPOSED_ADDON_SLUGS
 
-# Suppress warning when verify=False (self-signed certs)
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
 EXPOSED_CHECK_TIMEOUT = 10
 EXPOSED_CHECK_ALLOWED_CODES = (200, 201, 301, 302, 307, 308)
+
+
+def _is_tunnel_slug(slug: str) -> bool:
+    """Return True for add-ons that act as tunnel proxies (Cloudflare tunnel variants)."""
+    s = slug.lower()
+    return "cloudflare" in s
 
 
 def _check_url_reachable(url: str) -> bool:
@@ -29,35 +40,25 @@ def _check_url_reachable(url: str) -> bool:
             allow_redirects=True,
         )
         ok = r.status_code in EXPOSED_CHECK_ALLOWED_CODES
-        if ok:
-            logger.info("exposed check: %s -> %d (reachable)", url, r.status_code)
-        else:
-            logger.info("exposed check: %s -> %d (not in 2xx/3xx)", url, r.status_code)
+        logger.info(
+            "exposed check: %s -> %d (%s)",
+            url, r.status_code, "reachable" if ok else "not in 2xx/3xx",
+        )
         return ok
     except Exception as e:
         logger.info("exposed check: %s -> unreachable (%s)", url, e)
         return False
 
 
-def _url_from_addon_options(slug: str, options: Optional[Dict[str, Any]]) -> Optional[str]:
-    """
-    Build https URL from add-on options. Returns None if not supported or missing.
-    DuckDNS: options["domains"] = ["myhome.duckdns.org"]
-    Cloudflare: options["external_hostname"] = "ha.example.com"
-    """
+def _duckdns_url(options: Optional[Dict[str, Any]]) -> Optional[str]:
+    """Build DuckDNS URL from add-on options["domains"]."""
     if not options:
         return None
-    slug_lower = slug.lower()
-    if "duckdns" in slug_lower:
-        domains = options.get("domains")
-        if isinstance(domains, list) and domains and isinstance(domains[0], str):
-            host = domains[0].strip()
-            if host:
-                return f"https://{host}"
-    if "cloudflare" in slug_lower:
-        host = options.get("external_hostname")
-        if isinstance(host, str) and host.strip():
-            return f"https://{host.strip()}"
+    domains = options.get("domains")
+    if isinstance(domains, list) and domains and isinstance(domains[0], str):
+        host = domains[0].strip()
+        if host:
+            return f"https://{host}"
     return None
 
 
@@ -67,8 +68,10 @@ def fetch_addons(
     addons_list: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
-    Fetch exposed-on-internet status: exposed_ok is True only when an exposed add-on
-    is started AND its external URL (from addon options) responds.
+    Fetch exposed-on-internet status.
+
+    - Cloudflare tunnel: exposed_ok=True as soon as the add-on is started.
+    - DuckDNS: exposed_ok=True only if the add-on is started AND the external URL responds.
 
     Args:
         ha_api: API client.
@@ -86,35 +89,48 @@ def fetch_addons(
         if not isinstance(addons_list, list):
             logger.debug("exposed: get_addons_list() not available or not a list")
             return out
+
         running_exposed: List[Tuple[str, Dict[str, Any]]] = []
         for addon in addons_list:
             if not isinstance(addon, dict):
                 continue
-            if addon.get("slug") in slugs and addon.get("state") in ("started", "running"):
-                running_exposed.append((addon.get("slug", ""), addon))
+            slug = addon.get("slug", "")
+            slug_l = slug.lower()
+            in_explicit = slug in slugs
+            in_substring = "cloudflare" in slug_l or "duckdns" in slug_l
+            if (in_explicit or in_substring) and addon.get("state") in ("started", "running"):
+                running_exposed.append((slug, addon))
+
         if not running_exposed:
             logger.debug("exposed: no running exposed add-on found")
             return out
-        logger.info("exposed: running add-on(s) %s", [s for s, _ in running_exposed])
-        # Get URL from running exposed addon options (DuckDNS domains, Cloudflare external_hostname) and verify reachability
+
+        logger.info("exposed: running add-on(s): %s", [s for s, _ in running_exposed])
+
         for slug, _ in running_exposed:
-            info = ha_api.get_addon_info(slug)
-            if not info:
-                logger.debug("exposed: get_addon_info(%s) failed or empty", slug)
-                continue
-            options = info.get("options") if isinstance(info.get("options"), dict) else None
-            url = _url_from_addon_options(slug, options)
-            if url:
-                logger.info("exposed: checking URL for %s -> %s", slug, url)
-                if _check_url_reachable(url):
-                    out["exposed_ok"] = True
-                    break
-            else:
-                # Addon running but no URL in options (unknown schema): consider exposed
-                logger.info("exposed: %s running but no URL in options -> exposed_ok=True (fallback)", slug)
+            slug_l = slug.lower()
+
+            # Cloudflare tunnel: trust Supervisor state, no outbound HTTP check.
+            if _is_tunnel_slug(slug):
+                logger.info("exposed: %s is a tunnel add-on and is started -> exposed_ok=True", slug)
                 out["exposed_ok"] = True
                 break
-        # If we had URLs to check and none were reachable, exposed_ok stays False
+
+            # DuckDNS: verify the external URL is reachable.
+            if "duckdns" in slug_l:
+                info = ha_api.get_addon_info(slug)
+                options = info.get("options") if isinstance(info, dict) and isinstance(info.get("options"), dict) else None
+                url = _duckdns_url(options)
+                if url:
+                    logger.info("exposed: checking DuckDNS URL for %s -> %s", slug, url)
+                    if _check_url_reachable(url):
+                        out["exposed_ok"] = True
+                        break
+                else:
+                    logger.info("exposed: %s started, no domain in options -> exposed_ok=True (fallback)", slug)
+                    out["exposed_ok"] = True
+                    break
+
         logger.debug("exposed: result exposed_ok=%s", out["exposed_ok"])
     except Exception as e:
         logger.debug("fetch_addons failed: %s", e)

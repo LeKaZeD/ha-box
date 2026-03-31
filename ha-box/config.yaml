@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/apps/configuration
 name: HA Box
-version: "0.1.38"
+version: "0.1.45"
 slug: ha-box
 description: Physical interface for Home Assistant with E-Paper display, sensors and controllers
 url: "https://github.com/LeKaZeD/ha-box"
@@ -48,18 +48,13 @@ options:
     touch:
       enabled: true
   
-  # Control devices configuration
-  control:
+  # ESP32 configuration – sent on add-on startup, persisted on the ESP32.
+  # Restart the add-on to apply changes.
+  esp32:
     fan:
       enabled: false
-      pin: 18
-      auto_control: true
-      min_temp: 40
+      min_temp: 28
       max_temp: 60
-    led:
-      enabled: false
-      pin: 21
-      count: 10
 
 schema:
   home_assistant:
@@ -83,16 +78,10 @@ schema:
       polling_interval: "int(1,10)?"
     touch:
       enabled: "bool"
-  control:
+  esp32:
     fan:
       enabled: "bool"
-      pin: "int(1,40)?"
-      auto_control: "bool"
       min_temp: "int(0,100)?"
       max_temp: "int(0,100)?"
-    led:
-      enabled: "bool"
-      pin: "int(1,40)?"
-      count: "int(1,100)?"
 
 #image: "ghcr.io/lekazed/{arch}-addon-ha-box"

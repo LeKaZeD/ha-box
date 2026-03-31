@@ -87,31 +87,19 @@ class SensorsConfig:
 
 @dataclass
 class FanConfig:
-    """Fan control configuration."""
+    """Fan control configuration (sent to ESP32 on connection via FAN verb)."""
     enabled: bool = False
-    pin: int = 18
-    auto_control: bool = True
-    min_temp: float = 40.0  # Celsius
-    max_temp: float = 60.0  # Celsius
+    min_temp: float = 28.0  # tOn  – fan starts at this temperature (°C)
+    max_temp: float = 60.0  # tFull – fan at full speed at this temperature (°C)
 
 @dataclass
-class LEDConfig:
-    """LED strip configuration."""
-    enabled: bool = False
-    pin: int = 21
-    count: int = 10
-
-@dataclass
-class ControlConfig:
-    """Control devices configuration."""
+class ESP32Config:
+    """ESP32 configuration sent to the ESP32 on add-on startup."""
     fan: FanConfig = None
-    led: LEDConfig = None
     
     def __post_init__(self):
         if self.fan is None:
             self.fan = FanConfig()
-        if self.led is None:
-            self.led = LEDConfig()
 
 
 @dataclass
@@ -119,7 +107,7 @@ class Config:
     """Main configuration class."""
     display: DisplayConfig = None
     sensors: SensorsConfig = None
-    control: ControlConfig = None
+    esp32: ESP32Config = None
     home_assistant: HomeAssistantConfig = None
     
     def __post_init__(self):
@@ -127,8 +115,8 @@ class Config:
             self.display = DisplayConfig()
         if self.sensors is None:
             self.sensors = SensorsConfig()
-        if self.control is None:
-            self.control = ControlConfig()
+        if self.esp32 is None:
+            self.esp32 = ESP32Config()
         if self.home_assistant is None:
             self.home_assistant = HomeAssistantConfig()
     
@@ -169,22 +157,15 @@ class Config:
                 )
             )
         
-        # Control config
-        if "control" in options:
-            control_opts = options["control"]
-            config.control = ControlConfig(
+        # ESP32 config
+        if "esp32" in options:
+            esp32_opts = options["esp32"]
+            config.esp32 = ESP32Config(
                 fan=FanConfig(
-                    enabled=control_opts.get("fan", {}).get("enabled", False),
-                    pin=control_opts.get("fan", {}).get("pin", 18),
-                    auto_control=control_opts.get("fan", {}).get("auto_control", True),
-                    min_temp=control_opts.get("fan", {}).get("min_temp", 40),
-                    max_temp=control_opts.get("fan", {}).get("max_temp", 60)
+                    enabled=esp32_opts.get("fan", {}).get("enabled", False),
+                    min_temp=float(esp32_opts.get("fan", {}).get("min_temp", 28)),
+                    max_temp=float(esp32_opts.get("fan", {}).get("max_temp", 60)),
                 ),
-                led=LEDConfig(
-                    enabled=control_opts.get("led", {}).get("enabled", False),
-                    pin=control_opts.get("led", {}).get("pin", 21),
-                    count=control_opts.get("led", {}).get("count", 10)
-                )
             )
         
         # Home Assistant config

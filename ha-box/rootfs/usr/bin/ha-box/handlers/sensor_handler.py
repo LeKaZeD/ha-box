@@ -1,8 +1,8 @@
 """
-Sensor data handler for ESP32 BME280 sensor.
+Sensor data handler for ESP32 sensors.
 
-This module handles incoming SENS messages from the ESP32 and manages
-sensor data updates to Home Assistant.
+This module handles incoming SENS (BME280) and CASE (TMP102) messages from the
+ESP32 and manages sensor data updates to Home Assistant.
 """
 
 import logging
@@ -14,17 +14,18 @@ logger = logging.getLogger(__name__)
 
 
 class SensorHandler:
-    """Handler for ESP32 sensor data (BME280)."""
+    """Handler for ESP32 sensor data (BME280 + TMP102 case temperature)."""
     
     def __init__(self, ha_api: Optional[HomeAssistantAPI] = None) -> None:
         """
         Initialize sensor handler.
-        
+
         Args:
             ha_api: Optional Home Assistant API client for sensor updates.
         """
         self.ha_api = ha_api
         self.latest_data: Optional[Dict[str, float]] = None
+        self.latest_case_temp: Optional[float] = None
     
     def handle_sens_message(self, msg: Message) -> None:
         """
@@ -60,38 +61,64 @@ class SensorHandler:
         except ValueError as e:
             logger.error("Failed to parse sensor data: %s", e)
     
+    def handle_case_message(self, msg: Message) -> None:
+        """
+        Handle CASE message from ESP32 (TMP102 case temperature).
+
+        Args:
+            msg: CASE message with tC key (temperature in Celsius).
+        """
+        temp_str = msg.get("tC")
+        if temp_str:
+            try:
+                self.latest_case_temp = float(temp_str)
+                logger.info("Case temperature: %.2f°C", self.latest_case_temp)
+            except ValueError as e:
+                logger.error("Failed to parse CASE tC value: %s", e)
+        else:
+            logger.warning("CASE message missing tC key")
+
     def update_home_assistant(self) -> bool:
         """
         Update Home Assistant sensors with latest data.
+
+        Pushes BME280 data (SENS) and TMP102 case temperature (CASE) to HA.
+        Each sensor type is updated independently; a missing value is silently
+        skipped rather than blocking the other.
         
         Returns:
-            True if update was successful, False otherwise.
+            True if all available updates succeeded, False if any failed.
         """
-        logger.debug("SensorHandler.update_home_assistant() called: latest_data=%s, ha_api=%s",
-                    self.latest_data is not None, self.ha_api is not None)
-        
-        if not self.latest_data:
-            logger.debug("SensorHandler.update_home_assistant() skipped: no latest_data")
-            return False
-        
+        logger.debug("SensorHandler.update_home_assistant() called: latest_data=%s, latest_case_temp=%s",
+                    self.latest_data is not None, self.latest_case_temp is not None)
+
         if not self.ha_api:
             logger.debug("SensorHandler.update_home_assistant() skipped: no HA API client")
             return False
-        
-        logger.debug("Updating HA sensors: T=%.2f°C, H=%.2f%%, P=%.0fPa",
-                    self.latest_data['temperature'],
-                    self.latest_data['humidity'],
-                    self.latest_data['pressure'])
-        
-        result = self.ha_api.update_esp32_sensors(
-            self.latest_data['temperature'],
-            self.latest_data['humidity'],
-            self.latest_data['pressure']
-        )
-        
-        logger.debug("SensorHandler.update_home_assistant() result: %s", result)
-        return result
+
+        success = True
+
+        if self.latest_data:
+            logger.debug("Updating BME280 sensors: T=%.2f°C, H=%.2f%%, P=%.0fPa",
+                        self.latest_data['temperature'],
+                        self.latest_data['humidity'],
+                        self.latest_data['pressure'])
+            result = self.ha_api.update_esp32_sensors(
+                self.latest_data['temperature'],
+                self.latest_data['humidity'],
+                self.latest_data['pressure']
+            )
+            success &= result
+
+        if self.latest_case_temp is not None:
+            logger.debug("Updating case temperature: %.2f°C", self.latest_case_temp)
+            result = self.ha_api.update_case_sensor(self.latest_case_temp)
+            success &= result
+
+        logger.debug("SensorHandler.update_home_assistant() result: %s", success)
+        return success
     
     def clear_latest_data(self) -> None:
-        """Clear the latest sensor data after processing."""
+        """Clear all latest sensor data after processing."""
         self.latest_data = None
+        self.latest_case_temp = None

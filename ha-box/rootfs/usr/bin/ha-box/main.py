@@ -52,6 +52,7 @@ def _initialization_loop(
     weather_handler: WeatherHandler,
     clock_handler: ClockHandler,
     status_handler: StatusHandler,
+    fan_config=None,
 ) -> None:
     """
     Initialization phase: wait for ESP32 connection.
@@ -65,6 +66,7 @@ def _initialization_loop(
         message_handler: Message handler for tracking last message time.
         weather_handler: Weather handler to initialize.
         clock_handler: Clock handler to initialize.
+        fan_config: Optional fan configuration to send to the ESP32 on connect.
     """
     logger.info("Entering initialization phase: waiting for ESP32 connection...")
     
@@ -94,7 +96,22 @@ def _initialization_loop(
                 logger.info("LANG sent to ESP32 (id=%d, lang_id=%d)", msg_id, lang_id)
             except Exception as e:
                 logger.warning("Failed to send LANG: %s", e)
-            
+
+            # Send fan configuration (enable flag + temperature curve)
+            if fan_config is not None:
+                try:
+                    msg_id = esp32_comm.send_command("FAN", [
+                        KV("en",    "1" if fan_config.enabled else "0"),
+                        KV("tOn",   str(fan_config.min_temp)),
+                        KV("tFull", str(fan_config.max_temp)),
+                    ])
+                    logger.info(
+                        "FAN config sent to ESP32 (id=%d, enabled=%s, tOn=%g, tFull=%g)",
+                        msg_id, fan_config.enabled, fan_config.min_temp, fan_config.max_temp,
+                    )
+                except Exception as e:
+                    logger.warning("Failed to send FAN config: %s", e)
+
             # Force initial updates (send immediately)
             logger.info("Sending initial data to ESP32...")
             weather_handler.force_update()
@@ -269,6 +286,7 @@ def main() -> None:
                         weather_handler,
                         clock_handler,
                         status_handler,
+                        fan_config=config.esp32.fan,
                     )
                     
                     # Phase 2: Main operation - normal operation

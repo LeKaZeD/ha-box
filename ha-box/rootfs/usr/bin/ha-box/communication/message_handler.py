@@ -70,6 +70,12 @@ class MessageHandler:
             else:
                 logger.warning("SENS message received but no sensor handler configured")
         
+        elif msg.verb == "CASE":
+            if self.sensor_handler:
+                self.sensor_handler.handle_case_message(msg)
+            else:
+                logger.warning("CASE message received but no sensor handler configured")
+        
         elif msg.verb == "STATUS":
             # STATUS is a heartbeat from ESP32 - just acknowledge receipt
             logger.debug("ESP32 STATUS heartbeat received")
@@ -124,6 +130,7 @@ class MessageHandler:
         allowed_verbs = [
             "READY",
             "SENS",
+            "CASE",
             "STATUS",
             "TOUCH",
             "NFC",

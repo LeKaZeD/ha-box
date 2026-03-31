@@ -8,12 +8,17 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-# Slugs of add-ons that indicate "exposed on internet" when started (DuckDNS, Cloudflare, etc.)
+# Slugs of add-ons that indicate "exposed on internet" when started.
+# Exact slugs for known variants; substring matching in fetch_addons covers other repos.
 DEFAULT_EXPOSED_ADDON_SLUGS = frozenset({
+    # DuckDNS
     "a0d7b954_duckdns",
     "core_duckdns",
+    # Cloudflare Tunnel (hassio-addons)
     "a0d7b954_cloudflare",
     "core_cloudflare",
+    # cloudflared by brenner-tobias
+    "9b69fd20_cloudflared",
 })
 
 class HomeAssistantAPI:
@@ -416,6 +421,33 @@ class HomeAssistantAPI:
             logger.debug("Some ESP32 sensor updates failed")
         
         return success
+
+    def update_case_sensor(self, temperature: float) -> bool:
+        """
+        Update the case (box) temperature sensor in Home Assistant.
+
+        This sensor reflects the TMP102 reading forwarded from the ESP32 via CASE.
+
+        Args:
+            temperature: Case temperature in Celsius.
+
+        Returns:
+            True if update successful, False otherwise.
+        """
+        if not self._check_core_available():
+            logger.debug("Skipping case sensor update, Home Assistant Core not ready")
+            return False
+
+        return self.update_sensor(
+            "sensor.ha_box_case_temperature",
+            f"{temperature:.2f}",
+            {
+                "unit_of_measurement": "°C",
+                "device_class": "temperature",
+                "friendly_name": "HA Box Case Temperature",
+                "state_class": "measurement",
+            },
+        )
 
     # -------------------------------------------------------------------------
     # Supervisor / system status (for STATUS message to ESP32)

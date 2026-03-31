@@ -92,6 +92,11 @@ When documents conflict, apply the following priority:
 - No fictitious examples or unverified code snippets.
 - Any change to configuration options requires updating relevant documentation.
 - Any hardware-related change requires updating docs/HARDWARE.md.
+- Any significant change to the HA Box add-on must be reflected in ha-box/CHANGELOG.md:
+  - Add an entry under the current version (or create a new version block if needed).
+  - Use sections: Added, Changed, Fixed, Removed.
+  - One line per change; keep entries concise and factual.
+  - Do not document internal refactors unless they affect observable behavior or configuration.
 
 ## Output and formatting rules
 - Do not use emojis in code, comments, documentation, or responses.
