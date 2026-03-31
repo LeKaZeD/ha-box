@@ -6,11 +6,9 @@
 template<typename DisplayT>
 struct PageLoading : public Page<DisplayT>
 {
-  static constexpr int16_t SCREEN_W = 240;
-  static constexpr int16_t CONTENT_H = 416;
   static constexpr int16_t BOX_SIZE = LoadingWidget::ICON_SIZE + LoadingWidget::BOX_PADDING * 2;
 
-  LoadingWidget loading { Rect{ (SCREEN_W - BOX_SIZE) / 2, (CONTENT_H - BOX_SIZE) / 2, BOX_SIZE, BOX_SIZE } };
+  LoadingWidget loading { Rect{ (DISPLAY_W - BOX_SIZE) / 2, (DISPLAY_H - BOX_SIZE) / 2, BOX_SIZE, BOX_SIZE } };
 
   const GFXfont* fontTitle = nullptr;
   const GFXfont* fontSubtitle = nullptr;
@@ -101,7 +99,7 @@ private:
       int16_t x1, y1;
       uint16_t tw, th;
       display.getTextBounds(L.title, 0, 0, &x1, &y1, &tw, &th);
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, titleY - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, titleY - y1);
       display.print(L.title);
       subtitleY = titleY - y1 + (int16_t)th;
     }
@@ -112,10 +110,10 @@ private:
       uint16_t tw, th;
       display.getTextBounds(L.subtitleLine1, 0, 0, &x1, &y1, &tw, &th);
       const int16_t subtitleLineH = (int16_t)th;
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, subtitleY - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, subtitleY - y1);
       display.print(L.subtitleLine1);
       display.getTextBounds(L.subtitleLine2, 0, 0, &x1, &y1, &tw, &th);
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, subtitleY + subtitleLineH + SUBTITLE_LINE_GAP - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, subtitleY + subtitleLineH + SUBTITLE_LINE_GAP - y1);
       display.print(L.subtitleLine2);
     }
 
@@ -125,13 +123,13 @@ private:
       uint16_t tw, th;
       const char* reason = model.loading.reason[0] ? model.loading.reason : " ";
       display.getTextBounds(reason, 0, 0, &x1, &y1, &tw, &th);
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, reasonY - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, reasonY - y1);
       display.print(reason);
       if (model.loading.reason[0]) {
         static constexpr int16_t REASON_LINE_GAP = 6;
         const int16_t enCoursY = reasonY - y1 + (int16_t)th + REASON_LINE_GAP;
         display.getTextBounds(L.reasonSuffixInProgress, 0, 0, &x1, &y1, &tw, &th);
-        display.setCursor((SCREEN_W - (int16_t)tw) / 2, enCoursY);
+        display.setCursor((DISPLAY_W - (int16_t)tw) / 2, enCoursY);
         display.print(L.reasonSuffixInProgress);
       }
     }
@@ -146,16 +144,16 @@ private:
       display.getTextBounds(line1, 0, 0, &x1, &y1, &tw, &th);
       const int16_t warningLineH = (int16_t)th;
       const int16_t baselineStep = warningLineH + WARNING_LINE_GAP;
-      const int16_t baseline3 = CONTENT_H - BOTTOM_MARGIN - warningLineH;
+      const int16_t baseline3 = DISPLAY_H - BOTTOM_MARGIN - warningLineH;
       const int16_t baseline2 = baseline3 - baselineStep;
       const int16_t baseline1 = baseline2 - baselineStep;
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, baseline1 - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, baseline1 - y1);
       display.print(line1);
       display.getTextBounds(line2, 0, 0, &x1, &y1, &tw, &th);
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, baseline2 - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, baseline2 - y1);
       display.print(line2);
       display.getTextBounds(line3, 0, 0, &x1, &y1, &tw, &th);
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, baseline3 - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, baseline3 - y1);
       display.print(line3);
     }
   }

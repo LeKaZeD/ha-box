@@ -15,7 +15,8 @@ This document describes how the ESP32 firmware and the Raspberry Pi (running Hom
 | NFC (PN7161, I2C) | ESP32 | UART | ESP32 → Pi | PN7161 on I²C (address `0x24` or `0x48`). ESP32 will send `NFC` messages with UID (and later payload); the App can use them for pairing/onboarding. |
 | Onboarding “add device” | HA logic, ESP32 UI | UART | Bidirectional | HA decides the flow; ESP32 displays steps and collects inputs (NFC, touch). Planned, not fully implemented yet. |
 | Temperature / humidity / pressure (BME280) | ESP32 | UART | ESP32 → Pi | ESP32 sends `SENS` (tC, hum, pPa); the App publishes values as sensors in Home Assistant. |
-| Fan PWM (cooling) | ESP32 | — | — | Fan control is local on ESP32 based on temperature thresholds. Optional telemetry to Pi can be added later. |
+| Case temperature (TMP102) | ESP32 | UART | ESP32 → Pi | ESP32 sends `CASE` (tC) every 30 s; the App publishes it as `sensor.ha_box_case_temperature`. |
+| Fan PWM (cooling) | ESP32 | UART | Pi → ESP32 | App sends `FAN` (en, tOn, tFull) once on connection; ESP32 applies the curve and persists it in NVS. Fan runs autonomously using TMP102 temperature. |
 | Core / Supervisor / Network / Zigbee / Thread / Matter status | Pi / HA (source of truth) | UART | Pi → ESP32 | Implemented: the App sends `STATUS` with key/value fields (`core`, `sup`, `net`, `lan`, `wifi`, `ext`, `zigbee`, `thread`, `matter`); ESP32 maps these to icons. |
 | Health check of Apps (Zigbee2MQTT, etc.) | Pi / Supervisor + HA | UART | Pi → ESP32 | The App queries Supervisor and Core entities; results are aggregated into the same `STATUS` payload. |
 
@@ -52,12 +53,14 @@ The protocol is ASCII-based, with one message per line:
 - `WEATHER` – Weather code and outdoor temperature.
 - `CLOCK` – Time sync (`hh`, `mm`, `ss`).
 - `LANG` – UI language for the ESP32: `id=0` (French), `id=1` (English).
+- `FAN` – Fan configuration: `en=0/1`, `tOn=<°C>`, `tFull=<°C>`. Sent once on connection; ESP32 applies immediately and persists in NVS. Values survive deep sleep and are restored on next boot before the Pi reconnects.
 
 ### Verbs from ESP32 → Pi
 
 - `READY` – ESP32 is up.
-- `SENS` – Sensor payload from BME280:
+- `SENS` – Ambient sensor payload from BME280:
   - `tC`, `hum`, `pPa`.
+- `CASE` – Case (box) temperature from TMP102: `tC`. Sent every 30 s in the same block as `SENS`. The App publishes this as `sensor.ha_box_case_temperature`.
 - `STATUS` – Heartbeat when the App does not send a `STATUS` with key/values (legacy / degraded mode).
 - `TOUCH` – Touch / button actions (for example navigation, “All Off”).
 - `NFC` – NFC events (UID, and later NDEF/metadata).

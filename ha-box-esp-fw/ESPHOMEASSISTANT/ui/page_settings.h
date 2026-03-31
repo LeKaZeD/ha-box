@@ -5,26 +5,21 @@
 #include "widgets/widget_brightness_slider.h"
 #include "widgets/widget_sound_switch.h"
 #include "assets/icons_draw.h"
-#include "assets/icons/global/arrow_back_rounded.h"
-#include "assets/icons/global/arrow_back.h"
-#include "assets/icons/global/arrow_forward.h"
+#include "assets/icons_min.h"
 
 template<typename DisplayT>
 struct PageSettings : public Page<DisplayT>
 {
-  static constexpr int16_t MARGIN = 8;
-  static constexpr int16_t HEADER_HEIGHT = 40;
-  static constexpr int16_t SCREEN_WIDTH = 240;
   static constexpr int16_t BACK_BTN_SIZE = 32;
   static constexpr int16_t BACK_BTN_RADIUS = 16;
   static constexpr int16_t TITLE_GAP = 8;
   static constexpr int16_t COMPONENT_GAP = 8;
   static constexpr int16_t LABEL_GAP = 6;
 
-  StatusIconsWidget status { Rect{ MARGIN, 10, SCREEN_WIDTH - MARGIN*2, 24 } };
+  StatusIconsWidget status { Rect{ MARGIN, 10, DISPLAY_W - MARGIN*2, 24 } };
   Rect backBtnRect { MARGIN, HEADER_HEIGHT + COMPONENT_GAP, BACK_BTN_SIZE, BACK_BTN_SIZE };
-  BrightnessSliderWidget brightness { Rect{ MARGIN, 0, SCREEN_WIDTH - MARGIN*2, 36 } };
-  SoundSwitchWidget soundSwitch { Rect{ MARGIN, 0, SCREEN_WIDTH - MARGIN*2, SoundSwitchWidget::ROW_HEIGHT } };
+  BrightnessSliderWidget brightness { Rect{ MARGIN, 0, DISPLAY_W - MARGIN*2, 36 } };
+  SoundSwitchWidget soundSwitch { Rect{ MARGIN, 0, DISPLAY_W - MARGIN*2, SoundSwitchWidget::ROW_HEIGHT } };
 
   const GFXfont* labelFont = nullptr;
   using BackFn = void (*)(void* user);
@@ -74,7 +69,7 @@ struct PageSettings : public Page<DisplayT>
     display.firstPage();
     do {
       display.fillScreen(GxEPD_WHITE);
-      display.drawLine(0, HEADER_HEIGHT, SCREEN_WIDTH - 1, HEADER_HEIGHT, GxEPD_BLACK);
+      display.drawLine(0, HEADER_HEIGHT, DISPLAY_W - 1, HEADER_HEIGHT, GxEPD_BLACK);
 
       status.renderFull(display, model);
 
@@ -86,7 +81,7 @@ struct PageSettings : public Page<DisplayT>
         if (n <= sizeof(iconBuf)) {
           int16_t ix = backBtnRect.x + (BACK_BTN_SIZE - iw) / 2;
           int16_t iy = backBtnRect.y + (BACK_BTN_SIZE - ih) / 2;
-          drawIcon_0Black(display, ix, iy, ARROW_BACK_ROUNDED, iw, ih, GxEPD_WHITE, GxEPD_BLACK, iconBuf);
+          drawIcon_0Black(display, ix, iy, ARROW_BACK_ROUNDED_24x24, iw, ih, GxEPD_WHITE, GxEPD_BLACK, iconBuf);
         }
       }
 

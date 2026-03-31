@@ -54,3 +54,42 @@ void saveSettingsIfChanged(const Model& model)
   s_prefs.putUChar("lang", s_lastLanguage);
   s_prefs.end();
 }
+
+// ---------------------------------------------------------------------------
+// Fan configuration persistence
+// Keys: fan_en (bool), fan_ton (float), fan_tfl (float)
+// ---------------------------------------------------------------------------
+
+bool loadFanConfig(FanPersistConfig& out)
+{
+  if (!s_prefs.begin(SETTINGS_NAMESPACE, true)) {
+    Serial.println("[NVS] loadFanConfig: begin failed");
+    return false;
+  }
+  const bool exists = s_prefs.isKey("fan_en");
+  if (exists) {
+    out.enabled = s_prefs.getBool("fan_en",  false);
+    out.tOn     = s_prefs.getFloat("fan_ton", 28.0f);
+    out.tFull   = s_prefs.getFloat("fan_tfl", 60.0f);
+  }
+  s_prefs.end();
+  if (exists) {
+    Serial.printf("[NVS] fan loaded: en=%d tOn=%.1f tFull=%.1f\n",
+                  (int)out.enabled, out.tOn, out.tFull);
+  }
+  return exists;
+}
+
+void saveFanConfig(const FanPersistConfig& cfg)
+{
+  if (!s_prefs.begin(SETTINGS_NAMESPACE, false)) {
+    Serial.println("[NVS] saveFanConfig: begin failed");
+    return;
+  }
+  s_prefs.putBool("fan_en",   cfg.enabled);
+  s_prefs.putFloat("fan_ton", cfg.tOn);
+  s_prefs.putFloat("fan_tfl", cfg.tFull);
+  s_prefs.end();
+  Serial.printf("[NVS] fan saved: en=%d tOn=%.1f tFull=%.1f\n",
+                (int)cfg.enabled, cfg.tOn, cfg.tFull);
+}

@@ -23,9 +23,6 @@
 #include "assets/fonts/RobotoBold12.h"
 #include "assets/fonts/RobotoBold8.h"
 #include "assets/icons_min.h"
-#include "assets/icons/global/arrow_back.h"
-#include "assets/icons/global/arrow_forward.h"
-#include "assets/icons/global/light_off.h"
 #include "../weather_icons.h"
 
 // -----------------------------------------------------------------------------
@@ -46,8 +43,8 @@ static const HomePageConfig kHomePageConfig = {
 };
 static const SettingsPageConfig kSettingsPageConfig = {
   &Roboto_Bold16pt7b,
-  ARROW_BACK,
-  ARROW_FORWARD,
+  ARROW_BACK_24x24,
+  ARROW_FORWARD_24x24,
   VOLUME_UP_24x24,
   VOLUME_OFF_24x24
 };
@@ -162,7 +159,7 @@ static void setupUI(
   );
   applyLoadingConfig(uiManager.pageLoading(), kLoadingPageConfig);
   uiManager.pageShutdown().setFonts(&Roboto_Bold20pt7b, &Roboto_Bold16pt7b, &Roboto_Bold12pt7b);
-  uiManager.pageShutdown().setIcon(LIGHT_OFF_24x24);
+  uiManager.pageShutdown().setIcon(POWER_PLUG_OFF_72x72);
   model.setLoadingActive(true);
   model.setLoadingReason(i18n::loading().reasonDefault);
   uiManager.begin(PageId::Loading);

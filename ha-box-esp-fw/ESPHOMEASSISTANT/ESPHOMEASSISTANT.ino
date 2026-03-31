@@ -5,9 +5,7 @@
 #include "settings_persistence.h"
 #include "buzzer.h"
 #include "BME280.h"
-#if ENABLE_TMP102
 #include "TMP102.h"
-#endif
 #include "POWERBUTTON.h"
 #include "FANCONTROLLER.h"
 
@@ -36,14 +34,13 @@ static float lastTc = 0.0f, lastPPa = 0.0f, lastHPct = 0.0f;
 static char tBuf[16];
 static char hBuf[16];
 static char pBuf[16];
+static char boxTcBuf[16];
 
 AsciiProto proto(Serial2);
 
 BME280Min bme(0x76);
-#if ENABLE_TMP102
 TMP102    tmp102(TMP102_ADDR);
 static bool s_tmp102Ok = false;
-#endif
 
 PowerButton::Config pbCfg{
   .btnPin = BTN_PIN,
@@ -84,6 +81,7 @@ static bool authorizeIncoming(const AsciiProto::Message& msg, void* user, const 
   if (strcmp(msg.verb, "WEATHER") == 0) return true;
   if (strcmp(msg.verb, "CLOCK") == 0) return true;
   if (strcmp(msg.verb, "LANG") == 0) return true;
+  if (strcmp(msg.verb, "FAN") == 0) return true;
   *err = "unknown_cmd";
   return false;
 }
@@ -155,6 +153,35 @@ static void onMsg(const AsciiProto::Message& msg, void* user) {
         Serial.printf("[cmd] LANG set to %s (id=%u)\n", langId == 0 ? "FR" : "EN", (unsigned)langId);
         break;
       }
+    }
+    return;
+  }
+
+  // FAN: runtime fan configuration from Pi (sent once on connection).
+  // Keys: en=0/1, tOn=<Celsius>, tFull=<Celsius>
+  // Values are applied immediately and persisted to NVS.
+  if (strcmp(msg.verb, "FAN") == 0) {
+    bool hasEn = false, hasTOn = false, hasTFull = false;
+    bool en = false;
+    float tOn = 0.0f, tFull = 0.0f;
+    for (uint8_t i = 0; i < msg.kvCount; i++) {
+      if (strcmp(msg.kv[i].key, "en") == 0) {
+        en = atoi(msg.kv[i].val) != 0;
+        hasEn = true;
+      } else if (strcmp(msg.kv[i].key, "tOn") == 0) {
+        tOn = atof(msg.kv[i].val);
+        hasTOn = true;
+      } else if (strcmp(msg.kv[i].key, "tFull") == 0) {
+        tFull = atof(msg.kv[i].val);
+        hasTFull = true;
+      }
+    }
+    if (hasEn) fan.setEnabled(en);
+    if (hasTOn && hasTFull && tFull > tOn) fan.setCurve(tOn, tFull);
+    Serial.printf("[FAN] en=%d tOn=%.1f tFull=%.1f\n", (int)en, tOn, tFull);
+    // Persist only when we have a complete config (all three keys present).
+    if (hasEn && hasTOn && hasTFull && tFull > tOn) {
+      saveFanConfig({ .enabled = en, .tOn = tOn, .tFull = tFull });
     }
     return;
   }
@@ -258,18 +285,26 @@ void setup() {
     Serial.println("BME280 init failed - continuing without ambient sensor");
   }
 
-#if ENABLE_TMP102
   tmp102.beginWire(Wire);
   s_tmp102Ok = tmp102.begin();
   if (!s_tmp102Ok) {
-    Serial.println("TMP102 init failed - fan will use BME280 temperature or safe mode");
+    Serial.println("TMP102 init failed - fan will run at safe duty");
   }
-#endif
 
   powerBtn.setOnStateChange(onPiStateChange);
   powerBtn.begin();
 
   fan.begin();
+
+  // Restore fan config from NVS (set by Pi on previous connection).
+  // This ensures the correct curve is applied before the Pi reconnects.
+  {
+    FanPersistConfig fanNvs{};
+    if (loadFanConfig(fanNvs)) {
+      fan.setEnabled(fanNvs.enabled);
+      fan.setCurve(fanNvs.tOn, fanNvs.tFull);
+    }
+  }
 
   // Front-light starts off; applyFrontLight will set the correct level after setupUI.
   pinMode(PIN_FRONT_LIGHT, OUTPUT);
@@ -304,9 +339,9 @@ void setup() {
 }
 
 void loop() {
-  uint32_t now = millis();
   proto.poll();
   powerBtn.update();
+  uint32_t now = millis(); // captured after poll so setClock's clockReceivedAtMs <= now
   model.updateClockDisplay(now);
 
   if (Serial.available() > 0)
@@ -339,7 +374,6 @@ void loop() {
     }
 
     // TMP102 read: 't' -> print current temperature
-#if ENABLE_TMP102
     if (cmd == 't' && input.length() == 1)
     {
       float tC = 0.0f;
@@ -352,7 +386,6 @@ void loop() {
       }
       return;
     }
-#endif
 
     // Fan manual control: v<0-255>  e.g. v0=stop, v128=50%, v255=full
     // Bypasses temperature logic; the automatic loop will resume control on next sensor read.
@@ -450,7 +483,6 @@ void loop() {
   if (now - lastBmeMs >= BME_PERIOD_MS) {
     lastBmeMs = now;
 
-#if ENABLE_TMP102
     // TMP102: box temperature drives the fan
     float boxTc = 0.0f;
     if (s_tmp102Ok) {
@@ -461,7 +493,6 @@ void loop() {
         fan.updateFromTemperature(boxTc);
       }
     }
-#endif
 
     // BME280: ambient temperature/humidity/pressure for display and Pi
     float tC, pPa, hPct;
@@ -471,21 +502,15 @@ void loop() {
       lastHPct = hPct;
       model.setTempInX10((int16_t)(tC * 10.0f));
       model.setHumidity((uint8_t)hPct);
-#if !ENABLE_TMP102
-      fan.updateFromTemperature(tC);
-#endif
-    } else {
-#if !ENABLE_TMP102
-      Serial.println("BME read failed -> fan safe 100%");
-      fan.safeMode();
-#endif
     }
   }
 
-  // Send sensors every 30 s to Pi (uses last BME values)
+  // Send sensors every 30 s to Pi (uses last BME values + TMP102 case temp).
   if (powerBtn.getPiState() == PowerButton::PiState::ON) {
     if (now - lastSensMs >= SENS_PERIOD_MS) {
       lastSensMs = now;
+
+      // BME280: ambient temperature, humidity, pressure
       snprintf(tBuf, sizeof(tBuf), "%.2f", lastTc);
       snprintf(hBuf, sizeof(hBuf), "%.2f", lastHPct);
       snprintf(pBuf, sizeof(pBuf), "%.0f", lastPPa);
@@ -497,6 +522,18 @@ void loop() {
       strncpy(kv[2].val, pBuf, sizeof(kv[2].val) - 1);
       bool ackOk = proto.sendWithAck("SENS", kv, 3, 1000, 3);
       if (!ackOk) Serial.println("SENS: No ACK from Pi");
+
+      // TMP102: case (box) temperature – separate verb to avoid mixing with BME280
+      if (s_tmp102Ok) {
+        float caseBoxTc = 0.0f;
+        if (tmp102.read(caseBoxTc)) {
+          snprintf(boxTcBuf, sizeof(boxTcBuf), "%.2f", caseBoxTc);
+          AsciiProto::KV caseKv[] = { {"tC", ""} };
+          strncpy(caseKv[0].val, boxTcBuf, sizeof(caseKv[0].val) - 1);
+          bool caseOk = proto.sendWithAck("CASE", caseKv, 1, 1000, 3);
+          if (!caseOk) Serial.println("CASE: No ACK from Pi");
+        }
+      }
     }
   }
 

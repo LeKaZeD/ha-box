@@ -24,6 +24,10 @@ public:
   void setEnabled(bool enabled);
   bool isEnabled() const;
 
+  // Update temperature curve at runtime (called when Pi sends FAN config).
+  // tFanOff is derived as tOn - 3 °C (fixed hysteresis).
+  void setCurve(float tOn, float tFull);
+
   // Appelle ça à chaque loop avec une température valide
   void updateFromTemperature(float tC);
 

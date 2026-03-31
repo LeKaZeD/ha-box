@@ -10,24 +10,20 @@
 template<typename DisplayT>
 struct PageHome : public Page<DisplayT>
 {
-  // Layout constants (constexpr to save RAM)
-  static constexpr int16_t MARGIN = 8;
-  static constexpr int16_t HEADER_HEIGHT = 40;
-  static constexpr int16_t SCREEN_WIDTH = 240;
   static constexpr int16_t COMPONENT_GAP = 5;
   static constexpr int16_t BUTTON_HEIGHT = 44;
 
   using DayNightFn = void (*)(uint8_t mode, void* user);
 
   // ---- Widgets ----
-  StatusIconsWidget status { Rect{ MARGIN, 10, SCREEN_WIDTH - MARGIN*2, 24 } };
-  ClockWidget       clock  { Rect{ MARGIN, 60, SCREEN_WIDTH - MARGIN*2 - (SCREEN_WIDTH/2), 55 } };
-  WeatherWidget     weather{ Rect{ MARGIN + SCREEN_WIDTH - (SCREEN_WIDTH/2), 60, SCREEN_WIDTH - MARGIN*2 - (SCREEN_WIDTH/2), 55 } };
-  TempWidget           tempIn   { Rect{ MARGIN, 120, SCREEN_WIDTH - MARGIN*2, 55 }, TempWidget::Kind::Indoor };
-  DayNightSwitchWidget dayNight { Rect{ MARGIN, 180, SCREEN_WIDTH - MARGIN*2, 76 } };
-  ButtonWidget         button       { Rect{ MARGIN, 180 + 76 + COMPONENT_GAP, SCREEN_WIDTH - MARGIN*2, BUTTON_HEIGHT } };
-  ButtonWidget         buttonAllOff { Rect{ MARGIN, 180 + 76 + COMPONENT_GAP + BUTTON_HEIGHT + COMPONENT_GAP, SCREEN_WIDTH - MARGIN*2, BUTTON_HEIGHT } };
-  ButtonWidget         buttonSettings { Rect{ MARGIN, 180 + 76 + COMPONENT_GAP + (BUTTON_HEIGHT + COMPONENT_GAP) * 2, SCREEN_WIDTH - MARGIN*2, BUTTON_HEIGHT } };
+  StatusIconsWidget status { Rect{ MARGIN, 10, DISPLAY_W - MARGIN*2, 24 } };
+  ClockWidget       clock  { Rect{ MARGIN, 60, DISPLAY_W - MARGIN*2 - (DISPLAY_W/2), 55 } };
+  WeatherWidget     weather{ Rect{ MARGIN + DISPLAY_W - (DISPLAY_W/2), 60, DISPLAY_W - MARGIN*2 - (DISPLAY_W/2), 55 } };
+  TempWidget           tempIn   { Rect{ MARGIN, 120, DISPLAY_W - MARGIN*2, 55 }, TempWidget::Kind::Indoor };
+  DayNightSwitchWidget dayNight { Rect{ MARGIN, 180, DISPLAY_W - MARGIN*2, 76 } };
+  ButtonWidget         button       { Rect{ MARGIN, 180 + 76 + COMPONENT_GAP, DISPLAY_W - MARGIN*2, BUTTON_HEIGHT } };
+  ButtonWidget         buttonAllOff { Rect{ MARGIN, 180 + 76 + COMPONENT_GAP + BUTTON_HEIGHT + COMPONENT_GAP, DISPLAY_W - MARGIN*2, BUTTON_HEIGHT } };
+  ButtonWidget         buttonSettings { Rect{ MARGIN, 180 + 76 + COMPONENT_GAP + (BUTTON_HEIGHT + COMPONENT_GAP) * 2, DISPLAY_W - MARGIN*2, BUTTON_HEIGHT } };
 
   DayNightFn dayNightCb_ = nullptr;
   void* dayNightUser_ = nullptr;
@@ -93,8 +89,8 @@ struct PageHome : public Page<DisplayT>
       display.fillScreen(GxEPD_WHITE);
 
       // ligne de séparation header
-      display.drawLine(0, HEADER_HEIGHT, SCREEN_WIDTH - 1, HEADER_HEIGHT, GxEPD_BLACK);
-      display.fillRoundRect((SCREEN_WIDTH/2)-2, 65, 4, 45, 16, GxEPD_BLACK);
+      display.drawLine(0, HEADER_HEIGHT, DISPLAY_W - 1, HEADER_HEIGHT, GxEPD_BLACK);
+      display.fillRoundRect((DISPLAY_W/2)-2, 65, 4, 45, 16, GxEPD_BLACK);
 
       // ---- Widgets ----
       status.renderFull(display, model);

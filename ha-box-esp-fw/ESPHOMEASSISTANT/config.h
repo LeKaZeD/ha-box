@@ -32,10 +32,8 @@ static constexpr uint16_t BUZZER_BEEP_MS = 100;
 // Pi start/stop (J2)
 static constexpr uint8_t J2_PULSE_PIN = 33;
 
-// TMP102 case temperature sensor (for fan control)
-// Set to 0 to disable TMP102 entirely (fan falls back to BME280 or safe mode).
+// TMP102 case temperature sensor (for fan control).
 // I2C address: ADD0=GND->0x48, ADD0=V+->0x49, ADD0=SDA->0x4A, ADD0=SCL->0x4B
-#define ENABLE_TMP102 1
 static constexpr uint8_t TMP102_ADDR = 0x48;
 
 // Front-light PWM (AO3400A gate on PIN_FRONT_LIGHT)

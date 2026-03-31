@@ -2,6 +2,14 @@
 #include <stdint.h>
 #include "../model/model.h"
 
+// Physical display dimensions – GDEY037T03-FT21 (3.7", 240×416 px)
+static constexpr int16_t DISPLAY_W     = 240;
+static constexpr int16_t DISPLAY_H     = 416;
+
+// Shared layout constants used across all pages.
+static constexpr int16_t MARGIN        = 8;   // horizontal/vertical page margin (px)
+static constexpr int16_t HEADER_HEIGHT = 40;  // status-bar height (px)
+
 template<typename DisplayT>
 struct Page
 {

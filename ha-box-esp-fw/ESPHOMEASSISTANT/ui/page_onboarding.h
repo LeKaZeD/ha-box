@@ -5,7 +5,7 @@
 template<typename DisplayT>
 struct PageOnboarding : public Page<DisplayT>
 {
-  OnboardingWidget ob { Rect{ 0, 0, 240, 416 } };
+  OnboardingWidget ob { Rect{ 0, 0, DISPLAY_W, DISPLAY_H } };
 
   // Plug in your QR renderer and font
   template<typename QrFn>

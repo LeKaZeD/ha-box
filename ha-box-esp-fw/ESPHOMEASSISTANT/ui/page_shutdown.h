@@ -6,10 +6,10 @@
 template<typename DisplayT>
 struct PageShutdown : public Page<DisplayT>
 {
-  static constexpr int16_t SCREEN_W  = 240;
-  static constexpr int16_t SCREEN_H  = 416;
-  static constexpr int16_t MARGIN    = 16;
-  static constexpr int16_t ICON_SIZE = 24;
+  static constexpr int16_t ICON_SIZE  = 72;
+  static constexpr int16_t BOX_PAD    = 16;
+  static constexpr int16_t BOX_RADIUS = 16;
+  static constexpr int16_t BOX_SIZE   = ICON_SIZE + BOX_PAD * 2;
 
   const GFXfont* fontTitle    = nullptr;
   const GFXfont* fontSubtitle = nullptr;
@@ -54,13 +54,13 @@ private:
       uint16_t tw, th;
       display.getTextBounds(L.title, 0, 0, &x1, &y1, &tw, &th);
       cursorY = 24;
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, cursorY - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, cursorY - y1);
       display.print(L.title);
       cursorY += (int16_t)th + 8;
     }
 
     // Separator line below title
-    display.drawLine(MARGIN, cursorY, SCREEN_W - MARGIN, cursorY, GxEPD_BLACK);
+    display.drawLine(MARGIN, cursorY, DISPLAY_W - MARGIN, cursorY, GxEPD_BLACK);
     cursorY += 16;
 
     // Subtitle lines (centered, below separator)
@@ -70,20 +70,24 @@ private:
       uint16_t tw, th;
 
       display.getTextBounds(L.subtitleLine1, 0, 0, &x1, &y1, &tw, &th);
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, cursorY - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, cursorY - y1);
       display.print(L.subtitleLine1);
       cursorY += (int16_t)th + 6;
 
       display.getTextBounds(L.subtitleLine2, 0, 0, &x1, &y1, &tw, &th);
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, cursorY - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, cursorY - y1);
       display.print(L.subtitleLine2);
     }
 
-    // Power icon centered in the middle of the screen
+    // Power icon centered in the middle of the screen, inside a rounded box
     if (icon) {
-      const int16_t iconX = (SCREEN_W - ICON_SIZE) / 2;
-      const int16_t iconY = SCREEN_H / 2 - ICON_SIZE / 2;
-      static uint8_t iconBuf[72];
+      const int16_t boxX  = (DISPLAY_W - BOX_SIZE) / 2;
+      const int16_t boxY  = DISPLAY_H / 2 - BOX_SIZE / 2;
+      const int16_t iconX = boxX + BOX_PAD;
+      const int16_t iconY = boxY + BOX_PAD;
+      display.drawRoundRect(boxX, boxY, BOX_SIZE, BOX_SIZE, BOX_RADIUS, GxEPD_BLACK);
+      display.fillRect(iconX, iconY, ICON_SIZE, ICON_SIZE, GxEPD_WHITE);
+      static uint8_t iconBuf[648];
       drawIcon_0Black(display, iconX, iconY, icon, ICON_SIZE, ICON_SIZE,
                       GxEPD_BLACK, GxEPD_WHITE, iconBuf);
     }
@@ -96,14 +100,14 @@ private:
 
       display.getTextBounds(L.hintLine1, 0, 0, &x1, &y1, &tw, &th);
       const int16_t lineH  = (int16_t)th + 4;
-      const int16_t hint2Y = SCREEN_H - MARGIN - (int16_t)th;
+      const int16_t hint2Y = DISPLAY_H - MARGIN - (int16_t)th;
       const int16_t hint1Y = hint2Y - lineH;
 
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, hint1Y - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, hint1Y - y1);
       display.print(L.hintLine1);
 
       display.getTextBounds(L.hintLine2, 0, 0, &x1, &y1, &tw, &th);
-      display.setCursor((SCREEN_W - (int16_t)tw) / 2, hint2Y - y1);
+      display.setCursor((DISPLAY_W - (int16_t)tw) / 2, hint2Y - y1);
       display.print(L.hintLine2);
     }
   }

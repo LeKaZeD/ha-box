@@ -12,6 +12,12 @@ void FanController::setEnabled(bool enabled) {
   if (!m_enabled) stop();
 }
 
+void FanController::setCurve(float tOn, float tFull) {
+  m_cfg.tFanOn  = tOn;
+  m_cfg.tFull   = tFull;
+  m_cfg.tFanOff = tOn - 3.0f;
+}
+
 bool FanController::isEnabled() const {
   return m_enabled;
 }
