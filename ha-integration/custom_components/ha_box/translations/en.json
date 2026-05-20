@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HA Box",
+        "description": "Set up the HA Box integration. Make sure the HA Box add-on is installed and running before continuing."
+      }
+    },
+    "abort": {
+      "already_configured": "HA Box is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "ha_box_temperature": {
+        "name": "Temperature"
+      },
+      "ha_box_humidity": {
+        "name": "Humidity"
+      },
+      "ha_box_pressure": {
+        "name": "Pressure"
+      },
+      "ha_box_case_temperature": {
+        "name": "Case Temperature"
+      },
+      "ha_box_day_mode": {
+        "name": "Mode",
+        "state": {
+          "Day": "Day",
+          "Night": "Night"
+        }
+      }
+    }
+  }
+}

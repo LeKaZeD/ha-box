@@ -1,7 +1,8 @@
 """
 Status fetcher: Zigbee (ZHA, Zigbee2MQTT).
-- ZHA (Zigbee Home Automation): Core integration only, no add-on → detected via entities "zha.*".
-- Zigbee2MQTT: add-on (slug contains "zigbee2mqtt", any repo) or entities "zigbee2mqtt.*".
+- ZHA: Core integration → detected via config entry with domain "zha" and state "loaded".
+- Zigbee2MQTT: Supervisor add-on (slug contains "zigbee2mqtt") or config entry domain "mqtt"
+  with title containing "zigbee2mqtt".
 Works with multipan (e.g. ZHA on same stick as Thread).
 """
 
@@ -11,20 +12,15 @@ from api.ha_api import HomeAssistantAPI
 
 logger = logging.getLogger(__name__)
 
-# Entity domain prefixes that indicate Zigbee integration is loaded
-ZIGBEE_ENTITY_PREFIXES = ("zha.", "zigbee2mqtt.")
-
 
 def _addon_slug_matches_zigbee(slug: str) -> bool:
-    """True if this add-on slug indicates a Zigbee stack (Zigbee2MQTT, any repo)."""
-    if not slug:
-        return False
-    return "zigbee2mqtt" in slug.lower()
+    """True if this add-on slug indicates a Zigbee2MQTT stack (any repo)."""
+    return bool(slug) and "zigbee2mqtt" in slug.lower()
 
 
 def fetch_zigbee(ha_api: HomeAssistantAPI, addons_list: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """
-    Detect Zigbee: ZHA (Core entities zha.*) or Zigbee2MQTT add-on / entities.
+    Detect Zigbee: ZHA (config entry) or Zigbee2MQTT (add-on or config entry).
 
     Args:
         ha_api: API client.
@@ -35,24 +31,29 @@ def fetch_zigbee(ha_api: HomeAssistantAPI, addons_list: Optional[List[Dict[str, 
     """
     out: Dict[str, Any] = {"zigbee_ok": False}
     try:
-        # 1) Add-ons: any Zigbee add-on started
+        # 1) Supervisor add-ons: Zigbee2MQTT started
         if addons_list is None:
             addons_list = ha_api.get_addons_list()
         if isinstance(addons_list, list):
             for addon in addons_list:
                 if not isinstance(addon, dict):
                     continue
-                slug = addon.get("slug", "")
-                state = addon.get("state", "")
-                if _addon_slug_matches_zigbee(slug) and state in ("started", "running"):
+                if _addon_slug_matches_zigbee(addon.get("slug", "")) and addon.get("state") in ("started", "running"):
                     out["zigbee_ok"] = True
                     return out
-        # 2) Core: ZHA or Zigbee2MQTT entities present
-        states = ha_api.get_all_states()
-        if isinstance(states, list):
-            for item in states:
-                eid = item.get("entity_id") if isinstance(item, dict) else None
-                if isinstance(eid, str) and eid.startswith(ZIGBEE_ENTITY_PREFIXES):
+
+        # 2) Core config entries: ZHA (domain="zha") loaded and not disabled
+        entries = ha_api.get_config_entries()
+        if isinstance(entries, list):
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                domain = entry.get("domain", "")
+                state = entry.get("state", "")
+                disabled = entry.get("disabled_by")  # None = enabled
+                if disabled:
+                    continue
+                if domain == "zha" and state == "loaded":
                     out["zigbee_ok"] = True
                     return out
     except Exception as e:

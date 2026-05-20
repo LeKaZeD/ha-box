@@ -13,6 +13,8 @@ from handlers.status_fetchers.addons import fetch_addons
 from handlers.status_fetchers.zigbee import fetch_zigbee
 from handlers.status_fetchers.thread import fetch_thread
 from handlers.status_fetchers.matter import fetch_matter
+from handlers.status_fetchers.rf433 import fetch_rf433
+from handlers.status_fetchers.alerts import fetch_alerts
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,8 @@ logger = logging.getLogger(__name__)
 def get_all_status(
     ha_api: HomeAssistantAPI,
     exposed_addon_slugs: Optional[FrozenSet[str]] = None,
-) -> Dict[str, bool]:
+    rf433_spi: Optional[tuple] = None,
+) -> Dict[str, Any]:
     """
     Run all status fetchers and merge into a single status dict.
     GET /addons is called once and the list is passed to fetchers that need it.
@@ -31,9 +34,9 @@ def get_all_status(
 
     Returns:
         Dict with keys: core_ok, supervisor_ok, network_ok, lan_ok, wifi_ok, exposed_ok,
-        zigbee_ok, thread_ok, matter_ok (bool).
+        zigbee_ok, thread_ok, matter_ok (bool), warnings_count, errors_count (int).
     """
-    out: Dict[str, bool] = {
+    out: Dict[str, Any] = {
         "core_ok": False,
         "supervisor_ok": False,
         "network_ok": False,
@@ -43,6 +46,9 @@ def get_all_status(
         "zigbee_ok": False,
         "thread_ok": False,
         "matter_ok": False,
+        "rf433_ok": False,
+        "warnings_count": 0,
+        "errors_count": 0,
     }
     try:
         data = fetch_core(ha_api)
@@ -63,6 +69,11 @@ def get_all_status(
         out.update((k, v) for k, v in data.items() if isinstance(v, bool))
         data = fetch_matter(ha_api, addons_list=addons_list)
         out.update((k, v) for k, v in data.items() if isinstance(v, bool))
+        if rf433_spi is not None:
+            data = fetch_rf433(rf433_spi[0], rf433_spi[1])
+            out.update((k, v) for k, v in data.items() if isinstance(v, bool))
+        data = fetch_alerts(ha_api)
+        out.update({k: v for k, v in data.items() if isinstance(v, int)})
     except Exception as e:
         logger.warning("get_all_status failed: %s", e)
     logger.debug(

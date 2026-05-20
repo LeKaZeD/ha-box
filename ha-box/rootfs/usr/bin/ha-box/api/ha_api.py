@@ -1,10 +1,12 @@
 """Home Assistant API client for HA Box."""
 
+import json
 import logging
 import os
 import time
 from typing import Dict, Any, List, Optional
 import requests
+import websocket
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +191,7 @@ class HomeAssistantAPI:
         """
         url = f"{self.base_url}{endpoint}"
         logger.debug("Making API request: %s %s", method, url)
-        
+        response: Optional[requests.Response] = None
         try:
             response = requests.request(
                 method=method,
@@ -214,8 +216,10 @@ class HomeAssistantAPI:
             return result
             
         except requests.exceptions.HTTPError as e:
+            status = response.status_code if response is not None else 0
+            body = response.text[:200] if response is not None and response.text else "No body"
             logger.error("API HTTP error: %s %s - Status: %d, Response: %s",
-                         method, endpoint, response.status_code, response.text[:200] if response.text else "No body")
+                         method, endpoint, status, body)
             return None
         except requests.exceptions.ConnectionError as e:
             logger.error("API connection error: %s %s - %s", method, endpoint, e)
@@ -289,6 +293,34 @@ class HomeAssistantAPI:
         
         return result
 
+    def update_state(self, entity_id: str, state: str) -> bool:
+        """
+        Set the state of an entity via the Core API (POST /core/api/states/<entity_id>).
+        Used to update input_select or other helper entities.
+
+        Returns:
+            True if successful, False otherwise.
+        """
+        if not self._check_core_available():
+            return False
+        result = self._request("POST", f"/core/api/states/{entity_id}", json={"state": state})
+        return result is not None
+
+    def get_config_entries(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Get all config entries from Home Assistant Core.
+        GET /core/api/config/config_entries/entry
+
+        Returns:
+            List of config entry dicts (each with domain, state, title, ...) or None on error.
+        """
+        if not self._check_core_available():
+            return None
+        result = self._request("GET", "/core/api/config/config_entries/entry")
+        if isinstance(result, list):
+            return result
+        return None
+
     def get_all_states(self) -> Optional[List[Dict[str, Any]]]:
         """
         Get all entity states from Home Assistant Core (GET /core/api/states).
@@ -358,96 +390,36 @@ class HomeAssistantAPI:
         self, temperature: float, humidity: float, pressure: float
     ) -> bool:
         """
-        Update ESP32 sensor data in Home Assistant.
-        
+        Fire ha_box_sensors event with BME280 data.
+
         Args:
             temperature: Temperature in Celsius
             humidity: Humidity in %
             pressure: Pressure in Pa
-            
+
         Returns:
-            True if all updates successful
+            True if event was fired successfully.
         """
-        logger.debug("Updating sensors: T=%.2f°C, H=%.2f%%, P=%.0fPa", 
-                    temperature, humidity, pressure)
-        
-        # Check if Core is available before trying to update
-        if not self._check_core_available():
-            logger.debug("Skipping ESP32 sensor update, Home Assistant Core not ready")
-            return False
-        
-        success = True
-        
-        # Temperature sensor
-        success &= self.update_sensor(
-            "sensor.ha_box_temperature",
-            f"{temperature:.2f}",
+        return self.fire_event(
+            "ha_box_sensors",
             {
-                "unit_of_measurement": "°C",
-                "device_class": "temperature",
-                "friendly_name": "HA Box Temperature",
-                "state_class": "measurement",
+                "tC":  round(temperature, 2),
+                "hum": round(humidity, 2),
+                "pPa": round(pressure, 2),
             },
         )
-        
-        # Humidity sensor
-        success &= self.update_sensor(
-            "sensor.ha_box_humidity",
-            f"{humidity:.2f}",
-            {
-                "unit_of_measurement": "%",
-                "device_class": "humidity",
-                "friendly_name": "HA Box Humidity",
-                "state_class": "measurement",
-            },
-        )
-        
-        # Pressure sensor (convert Pa to hPa)
-        pressure_hpa = pressure / 100.0
-        success &= self.update_sensor(
-            "sensor.ha_box_pressure",
-            f"{pressure_hpa:.2f}",
-            {
-                "unit_of_measurement": "hPa",
-                "device_class": "pressure",
-                "friendly_name": "HA Box Pressure",
-                "state_class": "measurement",
-            },
-        )
-        
-        if success:
-            logger.info("ESP32 sensors updated successfully")
-        else:
-            logger.debug("Some ESP32 sensor updates failed")
-        
-        return success
 
     def update_case_sensor(self, temperature: float) -> bool:
         """
-        Update the case (box) temperature sensor in Home Assistant.
-
-        This sensor reflects the TMP102 reading forwarded from the ESP32 via CASE.
+        Fire ha_box_case_temp event with TMP102 case temperature.
 
         Args:
             temperature: Case temperature in Celsius.
 
         Returns:
-            True if update successful, False otherwise.
+            True if event was fired successfully.
         """
-        if not self._check_core_available():
-            logger.debug("Skipping case sensor update, Home Assistant Core not ready")
-            return False
-
-        return self.update_sensor(
-            "sensor.ha_box_case_temperature",
-            f"{temperature:.2f}",
-            {
-                "unit_of_measurement": "°C",
-                "device_class": "temperature",
-                "friendly_name": "HA Box Case Temperature",
-                "state_class": "measurement",
-            },
-        )
+        return self.fire_event("ha_box_case_temp", {"tC": round(temperature, 2)})
 
     # -------------------------------------------------------------------------
     # Supervisor / system status (for STATUS message to ESP32)
@@ -519,6 +491,80 @@ class HomeAssistantAPI:
         if "data" in result and isinstance(result["data"], dict):
             return result["data"]
         return result
+
+    def get_repair_issues(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Get critical system states from the Supervisor Resolution Center (GET /resolution/info).
+
+        Only "unhealthy" reasons are returned (severity "critical") — these mean the system
+        is truly broken. The Supervisor "issues" array contains internal housekeeping checks
+        (e.g. no_current_backup) that do not appear in the HA Repairs UI and are too noisy.
+
+        Returns:
+            List of dicts with at least {"severity": "critical", "type": str},
+            or None on error.
+        """
+        result = self._request("GET", "/resolution/info")
+        if isinstance(result, dict):
+            data = result.get("data", {})
+            if not isinstance(data, dict):
+                return None
+            out: List[Dict[str, Any]] = []
+            for reason in (data.get("unhealthy") or []):
+                out.append({"type": str(reason), "context": "system", "severity": "critical"})
+            logger.debug("get_repair_issues: %d critical items (unhealthy=%d)",
+                         len(out),
+                         len(data.get("unhealthy") or []))
+            return out
+        logger.debug("get_repair_issues: unexpected response shape %s", type(result))
+        return None
+
+    def get_persistent_notifications(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Get active persistent notifications via the HA WebSocket API.
+
+        In HA 2022.9+, persistent notifications are no longer in the state machine
+        and have no REST endpoint. The WebSocket command "persistent_notification/get"
+        is the only supported way to retrieve them.
+
+        Connects synchronously, authenticates, sends the command, reads the result,
+        then closes the connection immediately.
+
+        Returns:
+            List of notification dicts (each has at least "notification_id"),
+            or None on error.
+        """
+        if not self._check_core_available():
+            return None
+        ws_url = self.base_url.replace("http://", "ws://") + "/core/api/websocket"
+        try:
+            ws = websocket.create_connection(ws_url, timeout=5)
+            try:
+                # 1. Receive auth_required
+                msg = json.loads(ws.recv())
+                if msg.get("type") != "auth_required":
+                    logger.debug("get_persistent_notifications: expected auth_required, got %s", msg.get("type"))
+                    return None
+                # 2. Authenticate
+                ws.send(json.dumps({"type": "auth", "access_token": self.supervisor_token}))
+                msg = json.loads(ws.recv())
+                if msg.get("type") != "auth_ok":
+                    logger.debug("get_persistent_notifications: auth failed, got %s", msg.get("type"))
+                    return None
+                # 3. Request notifications
+                ws.send(json.dumps({"id": 1, "type": "persistent_notification/get"}))
+                msg = json.loads(ws.recv())
+                if not (msg.get("type") == "result" and msg.get("success")):
+                    logger.debug("get_persistent_notifications: unexpected result %s", msg)
+                    return None
+                notifications = msg.get("result", [])
+                logger.debug("get_persistent_notifications: %d notification(s)", len(notifications))
+                return notifications if isinstance(notifications, list) else None
+            finally:
+                ws.close()
+        except Exception as e:
+            logger.debug("get_persistent_notifications: WebSocket error: %s", e)
+            return None
 
     def get_system_status(
         self,
@@ -595,6 +641,35 @@ class HomeAssistantAPI:
             out["core_ok"], out["supervisor_ok"], out["network_ok"], out["lan_ok"], out["wifi_ok"], out["exposed_ok"],
         )
         return out
+
+    def fire_event(self, event_type: str, data: Optional[Dict[str, Any]] = None) -> bool:
+        """
+        Fire a Home Assistant event via the Core API (POST /core/api/events/<event_type>).
+
+        Args:
+            event_type: Event type string (e.g. "ha_box_mode_changed").
+            data: Optional event data dict.
+
+        Returns:
+            True if the event was accepted, False otherwise.
+        """
+        if not self._check_core_available():
+            return False
+        result = self._request("POST", f"/core/api/events/{event_type}", json=data or {})
+        if result is not None:
+            logger.debug("Event fired: %s %s", event_type, data)
+            return True
+        logger.warning("Failed to fire event: %s", event_type)
+        return False
+
+    def update_day_mode_sensor(self, mode: int) -> bool:
+        """
+        No-op: day/night state is handled by the ha_box_mode_changed event
+        consumed by the HA Box integration binary_sensor.
+
+        Kept for compatibility; always returns True.
+        """
+        return True
 
     def call_light_turn_off_all(self) -> bool:
         """

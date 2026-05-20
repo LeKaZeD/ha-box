@@ -1,283 +1,185 @@
 # Hardware - HA Box
 
-This document lists all hardware components used in the HA Box project with their detailed specifications.
+All user-facing peripherals (display, touch, sensors, fan, buzzer, power button) are on the **haboxesp PCB** driven by an **ESP32-WROOM-32**. The Raspberry Pi 5 connects to the ESP32 only via UART0 and two GPIO pins for OTA.
 
-## Main Components
+---
 
-### 1. GDEY037T03-FT21 E-Paper Display
+## Raspberry Pi 5 stack
 
-**Manufacturer**: GooDisplay (Dalian Good Display Co., Ltd.)  
-**Model**: GDEY037T03-FT21  
-**Type**: E-Paper (Electrophoretic Display) with integrated front-light and touch
+| Component | Interface | Notes |
+|-----------|-----------|-------|
+| Raspberry Pi 5 | — | Main compute; runs Home Assistant OS |
+| M.2 SSD hat | PCIe | NVMe storage |
+| HDMI + USB-C extension | — | Rear panel port routing |
+| Sonoff Zigbee 3.0 USB Dongle Plus E | USB | Zigbee + Thread coordinator |
+| CC1101 module | SPI0 (CE0) | 433 MHz radio — RFLink TCP server on :5557 |
 
-#### Specifications
+### Pi GPIO used by the App
+
+| BCM GPIO | Direction | Connected to | Purpose |
+|----------|-----------|-------------|---------|
+| 14 (TXD) | Out | ESP32 GPIO 3 (RX0) | UART0 communication |
+| 15 (RXD) | In | ESP32 GPIO 1 (TX0) | UART0 communication |
+| 23 | Out | ESP32 IO0 | OTA: pull LOW to enter ROM bootloader |
+| 24 | Out | ESP32 EN | OTA: pulse LOW → HIGH to reset chip |
+| 3.3V (pin 1) | Power | ESP32 GPIO5 (via 1kΩ) | Pi alive signal: HIGH = Pi on, LOW = Pi off |
+| 10 (MOSI) | Out | CC1101 MOSI | SPI0 data out |
+| 9 (MISO) | In | CC1101 MISO | SPI0 data in |
+| 11 (SCK) | Out | CC1101 SCK | SPI0 clock |
+| 8 (CE0) | Out | CC1101 CSN | SPI0 chip select |
+| 17 | In | CC1101 GDO0 | RX data / interrupt |
+| 27 | In | CC1101 GDO2 | Carrier detect / FIFO threshold |
+
+### Pi config.txt (HAOS)
+
+Edit `/mnt/boot/config.txt` (boot partition — not accessible via SSH; use physical access or mount the SD card/NVMe on a computer). The UART must be freed from Bluetooth to expose `/dev/ttyAMA0` to the add-on.
+
+**Raspberry Pi 4** — disables Bluetooth entirely:
+```ini
+enable_uart=1
+dtoverlay=disable-bt
+```
+
+**Raspberry Pi 5** — Bluetooth coexists; only `enable_uart=1` is required in most HAOS configurations:
+```ini
+enable_uart=1
+```
+
+For CC1101 433 MHz support (SPI), add on any model:
+```ini
+dtparam=spi=on
+```
+
+After editing, reboot: `ha host reboot`.
+
+---
+
+## haboxesp PCB + ESP32
+
+Custom PCB hosting an ESP32-WROOM-32 with connectors for all peripherals.
+KiCad project files: `hardware/haboxesp/`.
+
+### ESP32 peripherals
+
+| Component | Model | Interface | ESP32 pins | Notes |
+|-----------|-------|-----------|-----------|-------|
+| E-Paper display | GDEY037T03-FT21 (3.7", 240×416) | SPI | See SPI table below | GxEPD2 driver |
+| Touch | FT6336U (integrated in display) | I2C | SDA/SCL | Address 0x38 |
+| Pi alive | — | GPIO | GPIO5 (VEN pad, via 1kΩ pull-down) | Detects Pi power-off; Pi 3.3V → 1kΩ → GPIO5; `INPUT_PULLDOWN` in firmware |
+| Environmental sensor | BME280 | I2C | SDA/SCL | Address 0x76 |
+| Case temperature | TMP102 | I2C | SDA/SCL | Address defined in `config.h` |
+| Fan | 5 V PWM | PWM | GPIO (config.h) | Temperature-based curve |
+| Buzzer | — | GPIO | GPIO (config.h) | 100 ms beep on events |
+| Power button | — | GPIO | GPIO 33 (RTC ext0) | Wake from deep sleep |
+| J2 connector | — | GPIO | GPIO 26 | Pi power control (pulse = power on/off) |
+| UART0 (Pi comm) | — | UART | GPIO 1 (TX) / GPIO 3 (RX) | Pi communication + esptool OTA |
+| UART2 (debug) | — | UART | GPIO 17 (TX) / GPIO 16 (RX) | Debug output only; not connected to Pi |
+
+---
+
+## E-Paper display — GDEY037T03-FT21
+
+**Manufacturer**: GooDisplay  
+**Controller**: UC8253  
+**Datasheet**: `GDEY037T03-FT21.pdf`
 
 | Parameter | Value |
 |-----------|-------|
 | Size | 3.7" |
-| Resolution | 240×416 pixels |
+| Resolution | 240 × 416 pixels |
 | DPI | 130 |
-| Active area | 47.04×81.54 mm |
-| Pixel pitch | 0.196×0.196 mm |
-| Controller | UC8253 |
-| Interface | SPI 4-wire or 3-wire |
-| Front-light | 9 LEDs, 2.8V (typical) |
-| Touch | FT6336U (I2C, 3.0V) |
-| Operating temperature | -25°C to 70°C |
-| Standby consumption | 34µA |
-| Deep sleep consumption | 1.1µA |
+| Active area | 47.04 × 81.54 mm |
+| Interface | SPI 4-wire |
+| Front-light | 9 LEDs, 2.8 V typical, MOSFET PWM |
+| Touch | FT6336U (I2C, address 0x38) |
 
-#### E-Paper Characteristics
+### SPI wiring (ESP32)
 
-- **Bi-stable**: Image remains displayed without power
-- **Full refresh**: ~2-3 seconds
-- **Partial refresh**: ~1 second
-- **High contrast**: Excellent in ambient light
-- **Ultra-low consumption**: Ideal for embedded applications
-- **1-bit**: Black/white display only
+| Signal | ESP32 GPIO |
+|--------|-----------|
+| CS | GPIO 27 |
+| DC | GPIO 14 |
+| RST | GPIO 12 |
+| BUSY | GPIO 13 |
+| SCK | GPIO 18 |
+| MOSI | GPIO 23 |
+| Colors | 1-bit (black / white) |
+| Full refresh | ~2–3 s |
+| Partial refresh | ~1 s |
+| Standby | 34 µA |
+| Deep sleep | 1.1 µA |
+| Operating temp | -25 °C to 70 °C |
 
-#### Connection Pins
-
-| Pin | Name | Function | Notes |
-|-----|------|----------|-------|
-| SPI MOSI | Data | SPI data | GPIO 10 |
-| SPI SCLK | Clock | SPI clock | GPIO 11 |
-| SPI CE0 | CS | Chip Select | GPIO 8 |
-| DC | Data/Command | Selection | GPIO (TBD) |
-| Reset | Reset | Controller reset | GPIO (TBD) |
-| BUSY | Status | Controller state | GPIO (TBD, read) |
-| TSCL | I2C Clock | Touch I2C clock | GPIO 3 |
-| TSDA | I2C Data | Touch I2C data | GPIO 2 |
-| Front-light | PWM | MOSFET front-light control | GPIO (TBD, PWM) |
-| VDD | Power | 3.0V | Main power supply |
-| GND | Ground | 0V | Common ground |
-
-#### Front-light
-
-The front-light consists of 9 LEDs (2.8V typical) controlled by a MOSFET. The MOSFET blocks current by default (low state = off), allowing PWM control to adjust light intensity.
-
-**Characteristics:**
-- 9 integrated LEDs
-- Voltage: 2.8V typical
-- Control: MOSFET with PWM
-- Consumption: ~20-30mA at maximum intensity
-- Interface: GPIO with PWM (Hardware or Software PWM)
-
-**PWM Control:**
-- Recommended frequency: 1-10 kHz (avoid flicker)
-- Resolution: 8-12 bits (256-4096 levels)
-- Duty cycle: 0-100% (0% = off, 100% = max)
-
-#### Documentation
-
-- Datasheet: `GDEY037T03-FT21.pdf`
-- Website: [www.good-display.com](https://www.good-display.com)
+Front-light: MOSFET default-off (low = off); PWM controls brightness.
 
 ---
 
-### 2. BME280 Sensor
-
-**Manufacturer**: Bosch  
-**Model**: BME280  
-**Type**: Environmental sensor (Temperature, Humidity, Pressure)
-
-#### Specifications
+## BME280 — Environmental sensor
 
 | Parameter | Value |
 |-----------|-------|
-| Interface | I2C (or SPI) |
-| I2C Addresses | 0x76 or 0x77 (depending on configuration) |
-| Temperature | -40°C to +85°C |
-| Temperature Accuracy | ±1°C |
-| Humidity | 0-100% RH |
-| Humidity Accuracy | ±3% RH |
-| Pressure | 300-1100 hPa |
-| Pressure Accuracy | ±1 hPa |
-| Voltage | 1.8V to 3.6V |
-| Consumption | ~3.6µA (sleep mode) |
+| Interface | I2C |
+| Address | 0x76 (haboxesp default) |
+| Temperature | -40 °C to +85 °C, ±1 °C |
+| Humidity | 0–100 % RH, ±3 % |
+| Pressure | 300–1100 hPa, ±1 hPa |
 
-#### Connection
-
-| Pin | Function | Raspberry Pi |
-|-----|----------|--------------|
-| VCC | 3.3V Power | 3.3V |
-| GND | Ground | GND |
-| SDA | I2C Data | GPIO 2 (SDA) |
-| SCL | I2C Clock | GPIO 3 (SCL) |
-
-#### Documentation
-
-- Datasheet: Available on Bosch website
-- Amazon module: [BME280](https://www.amazon.fr/Gy-bme280-num%C3%A9rique-pr%C3%A9cision-barom%C3%A9trique-Temp%C3%A9rature/dp/B077PNKCQ6)
+Polled every 5 s on ESP32; sent to Pi every 30 s via `SENS tC hum pPa`.
 
 ---
 
-### 3. PN7161 NFC Module
-
-**Manufacturer**: NXP  
-**Model**: PN7161  
-**Type**: 13.56 MHz NFC controller
-
-#### Specifications
+## TMP102 — Case temperature sensor
 
 | Parameter | Value |
 |-----------|-------|
-| Interface | I2C (or SPI/UART depending on configuration) |
-| I2C Address | 0x24 or 0x48 (configurable in add-on options) |
-| Protocols | MIFARE Classic, NTAG21x, ISO14443 Type A/B |
-| Range | ~5cm |
-| Voltage | 3.3V or 5V (depending on module) |
-| Consumption | ~15mA (active mode) |
-| Frequency | 13.56 MHz |
+| Interface | I2C |
+| Address | Defined in `config.h` |
+| Range | -40 °C to +125 °C, ±0.5 °C |
 
-#### Characteristics
-
-- Support for multiple NFC protocols
-- Polling mode for automatic tag detection
-- NFC tag read/write
-- Compatible with most standard NFC tags
-
-#### Connection
-
-| Pin | Function | ESP32 (NFC on firmware side) |
-|-----|----------|------------------------------|
-| VCC | Power | 3.3V |
-| GND | Ground | GND |
-| SDA | I2C Data | I2C bus (e.g. GPIO 21) |
-| SCL | I2C Clock | I2C bus (e.g. GPIO 22) |
-
-**Note**: The PN7161 is used on the **ESP32** I2C bus. The add-on receives `NFC` messages (UID, etc.) over UART. Verify module I2C mode if applicable.
-
-#### Documentation
-
-- Datasheet: Available on NXP website
-- Amazon modules:
-  - [NFC Module 1](https://www.amazon.fr/dp/B0FB95HMMC/)
-  - [NFC Module 2](https://www.amazon.fr/dp/B0DJP3987K/)
+Polled every 5 s by the fan controller; sent to Pi every 30 s via `CASE tC`.
 
 ---
 
-### 4. WS2812B LED Strip (Optional)
-
-**Type**: Addressable RGB LED  
-**Interface**: GPIO (proprietary protocol)
-
-#### Specifications
+## CC1101 — 433 MHz radio module
 
 | Parameter | Value |
 |-----------|-------|
-| Interface | GPIO (1-wire) |
-| Pin | GPIO 21 (proposed) |
-| Voltage | 5V |
-| Consumption | ~60mA per LED (white max) |
-| Protocol | WS2812B (critical timing) |
+| Interface | SPI0, CE0 (GPIO8) |
+| Frequency | 433.92 MHz (OOK) |
+| GDO0 | GPIO17 (pin 11) — RX data / interrupt |
+| GDO2 | GPIO27 (pin 13) — carrier detect / FIFO threshold |
+| VCC | 3.3 V (pin 1) |
+| GND | GND (pin 6) |
 
-#### Notes
+The add-on exposes a **RFLink-compatible TCP server** on `:5557`.
+Point the HA RFLink integration (or any RFLink-compatible client) at `localhost:5557`.
 
-- Requires dedicated library (rpi_ws281x, neopixel)
-- Precise timing required (DMA recommended)
-- External power supply recommended for >10 LEDs
-
----
-
-### 5. PWM Fan (Optional)
-
-**Type**: 5V fan with PWM control
-
-#### Specifications
-
-| Parameter | Value |
-|-----------|-------|
-| Interface | GPIO PWM |
-| Pin | GPIO 18 (Hardware PWM) |
-| Voltage | 5V |
-| Control | 0-100% speed |
-
-#### Notes
-
-- Uses Raspberry Pi hardware PWM
-- Regulation based on temperature (BME280 or CPU)
-- Can be manually controlled via HA
-
----
-
-## Raspberry Pi Configuration
-
-### Required config.txt
-
-```ini
-# Enable I2C
-dtparam=i2c_arm=on
-dtparam=i2c1=on
-
-# Enable SPI
-dtparam=spi=on
-
-# PWM for fan (GPIO 18)
-dtoverlay=pwm,pin=18,func=2
+**HA configuration (`configuration.yaml`)**:
+```yaml
+rflink:
+  host: localhost
+  port: 5557
 ```
 
-### Linux Devices
-
-| Device | Usage |
-|--------|-------|
-| `/dev/i2c-1` | Main I2C bus (touch, BME280, NFC) |
-| `/dev/spidev0.0` | SPI bus (E-Paper display) |
-| `/dev/gpiomem` | GPIO access (LED, front-light, control) |
-
----
-
-## Connection Diagram (To be completed)
-
-```
-Raspberry Pi 4/5
-├── SPI0
-│   ├── MOSI (GPIO 10) ──> E-Paper Display (Data)
-│   ├── SCLK (GPIO 11) ──> E-Paper Display (Clock)
-│   └── CE0  (GPIO 8)  ──> E-Paper Display (CS)
-│
-├── I2C1
-│   ├── SDA (GPIO 2) ──> Touch FT6336U, BME280, NFC
-│   └── SCL (GPIO 3) ──> Touch FT6336U, BME280, NFC
-│
-├── GPIO
-│   ├── GPIO 18 ──> PWM Fan
-│   ├── GPIO 21 ──> WS2812B LED (optional)
-│   └── GPIO (TBD) ──> E-Paper Display (DC, Reset, BUSY, Front-light PWM)
-│
-└── Power
-    ├── 3.3V ──> BME280, Display (VDD)
-    ├── 5V ──> Fan, LED (optional)
-    └── GND ──> All components
+Enable in the add-on options:
+```yaml
+box:
+  rf433:
+    enabled: true
+    tcp_port: 5557   # default
 ```
 
 ---
 
-## Estimated Power Consumption
+## 3D-printed enclosure
 
-| Component | Consumption | Notes |
-|-----------|-------------|-------|
-| E-Paper Display (standby) | 34µA | Deep sleep: 1.1µA |
-| E-Paper Display (refresh) | ~50mA | During 2-3 seconds |
-| Front-light | ~20-30mA | 9 LEDs at 2.8V (controlled by MOSFET PWM) |
-| BME280 | ~3.6µA | Sleep mode |
-| Touch FT6336U | ~10µA | Sleep mode |
-| NFC (PN7161) | ~15mA | Active mode |
-| WS2812B LED | ~60mA/LED | White max |
-| Fan | ~100-200mA | 5V PWM |
+Designed in Fusion 360, FDM-printable and modular. Each part can be reprinted independently for hardware upgrades.
 
-**Total estimated (standby)**: ~50µA (excellent for embedded applications)  
-**Total estimated (active)**: ~200-300mA (depending on active components)
+**Materials**: PLA body + acrylic window panel + steel backplate.  
+**Fasteners**: M2.5 inserts (3.5 mm OD).  
+**Printable parts** (STL in `hardware/3D plan/`): `Box`, `Top`, `Backplate`, `Support`, `Pied`, `Button`.  
+**Source files**: `hardware/3D plan/Fusion/` (Fusion 360 + STEP).
 
 ---
 
-## Important Notes
-
-1. **E-Paper**: Refresh is slow (~2-3s), adapt user interface accordingly
-2. **I2C**: All I2C components share the same bus, verify addresses
-3. **Power supply**: Raspberry Pi can provide 3.3V and 5V, but check current limits
-4. **Front-light**: Controlled via MOSFET with PWM, 2.8V typical voltage (9 integrated LEDs)
-
----
-
-*Last updated: 2026-01-17*
+*Last updated: 2026-04-03*

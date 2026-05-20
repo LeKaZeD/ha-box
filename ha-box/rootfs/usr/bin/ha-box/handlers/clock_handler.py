@@ -45,11 +45,7 @@ class ClockHandler:
         Returns:
             True if update is needed, False otherwise.
         """
-        time_since_update = current_time - self.last_update
-        should = time_since_update >= self.update_interval
-        logger.debug("Clock should_update: time_since=%.1fs, interval=%.1fs, should=%s", 
-                    time_since_update, self.update_interval, should)
-        return should
+        return (current_time - self.last_update) >= self.update_interval
     
     def set_connection_check(self, callback: Callable[[], bool]) -> None:
         """
@@ -98,7 +94,7 @@ class ClockHandler:
         # Check if still connected
         if self._is_connected_callback and not self._is_connected_callback():
             logger.debug("Clock periodic update skipped: ESP32 not connected")
-            # Don't schedule next update if disconnected
+            self._schedule_next()
             return
         
         # Send clock update
@@ -114,10 +110,8 @@ class ClockHandler:
         Returns:
             True if update was successful, False otherwise.
         """
-        logger.debug("ClockHandler._send_clock() called: esp32_comm=%s", self.esp32_comm is not None)
-        
         if not self.esp32_comm:
-            logger.warning("ClockHandler._send_clock() skipped: esp32_comm is None")
+            logger.debug("ClockHandler._send_clock() skipped: esp32_comm is None")
             return False
         
         try:
@@ -131,9 +125,7 @@ class ClockHandler:
                 KV("mm", str(dt.minute)),
                 KV("ss", str(dt.second)),
             ])
-            
-            logger.debug("Clock command sent with msg_id=%d", msg_id)
-            
+
             self.last_update = time.time()
             return msg_id > 0
         except Exception as e:

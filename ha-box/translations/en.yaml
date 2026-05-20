@@ -1,97 +1,123 @@
 configuration:
-  display:
-    name: E-Paper Display
-    description: Configuration for the E-Paper display
+  general:
+    name: General
+    description: Language and logging settings.
+    fields:
+      log_level:
+        name: Log Level
+        description: Verbosity of add-on logs. Use "trace" to see raw UART frames, "debug" for troubleshooting, "info" for normal use.
+      lang:
+        name: Language
+        description: "Display language. \"auto\" follows the Home Assistant language setting."
+  weather:
+    name: Weather
+    description: Weather data source displayed on the ESP32 screen.
+    fields:
+      weather_entity:
+        name: Weather Entity
+        description: Home Assistant weather entity ID (e.g. weather.forecast_home).
+      update_interval:
+        name: Update Interval (s)
+        description: How often weather data is refreshed, in seconds.
+  bme280:
+    name: BME280 Sensor
+    description: Ambient temperature, humidity and pressure sensor on the ESP32.
     fields:
       enabled:
-        name: Enable Display
-        description: Enable or disable the E-Paper display
-      rotation:
-        name: Rotation
-        description: Display rotation (0=0°, 1=90°, 2=180°, 3=270°)
-      refresh_mode:
-        name: Refresh Mode
-        description: Display refresh mode (full or partial)
-      front_light:
-        name: Front Light
-        description: Front light configuration
-        fields:
-          enabled:
-            name: Enable Front Light
-            description: Enable or disable the front light
-          brightness:
-            name: Brightness
-            description: Front light brightness (0-100)
-  sensors:
-    name: Sensors
-    description: Configuration for environmental and input sensors
+        name: Enable BME280
+        description: Enable or disable the BME280 sensor.
+      address:
+        name: I2C Address
+        description: I2C address of the BME280. Use "auto" for automatic detection.
+      update_interval:
+        name: Update Interval (s)
+        description: How often sensor readings are sent to Home Assistant, in seconds.
+  fan:
+    name: Fan Control
+    description: Temperature curve for the PWM fan, sent to the ESP32 on startup.
     fields:
-      bme280:
-        name: BME280 Sensor
-        description: Temperature, humidity and pressure sensor configuration
-        fields:
-          enabled:
-            name: Enable BME280
-            description: Enable or disable the BME280 sensor
-          address:
-            name: I2C Address
-            description: I2C address (auto, 0x76, or 0x77)
-          update_interval:
-            name: Update Interval
-            description: Sensor reading interval in seconds (10-300)
-      nfc:
-        name: NFC Reader
-        description: PN7161 NFC reader configuration
-        fields:
-          enabled:
-            name: Enable NFC
-            description: Enable or disable the NFC reader
-          address:
-            name: I2C Address
-            description: I2C address (0x24 or 0x48)
-          polling_interval:
-            name: Polling Interval
-            description: NFC tag polling interval in seconds (1-10)
-      touch:
-        name: Touch Interface
-        description: FT6336U touch controller configuration
-        fields:
-          enabled:
-            name: Enable Touch
-            description: Enable or disable the touch interface
-  control:
-    name: Control Devices
-    description: Configuration for output devices (fan, LED)
+      enabled:
+        name: Enable Fan
+        description: Enable or disable automatic fan control.
+      min_temp:
+        name: Start Temperature (°C)
+        description: Temperature at which the fan starts spinning.
+      max_temp:
+        name: Full Speed Temperature (°C)
+        description: Temperature at which the fan reaches full speed.
+  ota:
+    name: OTA Update
+    description: GPIO pins used to enter the ESP32 bootloader for firmware updates over UART.
     fields:
-      fan:
-        name: PWM Fan
-        description: PWM fan control configuration
-        fields:
-          enabled:
-            name: Enable Fan
-            description: Enable or disable the PWM fan
-          pin:
-            name: GPIO Pin
-            description: GPIO pin number for fan control (1-40)
-          auto_control:
-            name: Automatic Control
-            description: Automatically control fan based on temperature
-          min_temp:
-            name: Minimum Temperature
-            description: Minimum temperature threshold in Celsius (0-100)
-          max_temp:
-            name: Maximum Temperature
-            description: Maximum temperature threshold in Celsius (0-100)
-      led:
-        name: LED Strip
-        description: WS2812B LED strip configuration
-        fields:
-          enabled:
-            name: Enable LED
-            description: Enable or disable the LED strip
-          pin:
-            name: GPIO Pin
-            description: GPIO pin number for LED control (1-40)
-          count:
-            name: LED Count
-            description: Number of LEDs in the strip (1-100)
+      io0_gpio:
+        name: IO0 GPIO Pin
+        description: Raspberry Pi BCM GPIO number connected to ESP32 IO0.
+      en_gpio:
+        name: EN GPIO Pin
+        description: Raspberry Pi BCM GPIO number connected to ESP32 EN (reset).
+      force_flash:
+        name: Force Flash
+        description: Flash the firmware on every connection without checking the version. Useful for development testing.
+  daynight:
+    name: Day / Night Mode
+    description: Automatically follows sunrise and sunset via sun.sun. Fires the ha_box_mode_changed event on every mode change so automations can react.
+    fields:
+      update_interval:
+        name: Update Interval (s)
+        description: How often sun.sun is polled to detect sunrise/sunset, in seconds.
+  clock:
+    name: Clock
+    description: Clock synchronisation sent from the Raspberry Pi to the ESP32.
+    fields:
+      update_interval:
+        name: Update Interval (s)
+        description: How often the current time is sent to the ESP32, in seconds.
+  status:
+    name: Status
+    description: System status heartbeat sent to the ESP32 status icons.
+    fields:
+      update_interval:
+        name: Update Interval (s)
+        description: How often the system status is sent to the ESP32, in seconds.
+      exposed_addon_slugs:
+        name: Exposed Add-on Slugs
+        description: Add-on slugs that trigger the "exposed" status icon when running (e.g. cloudflared, duckdns).
+  uart:
+    name: UART Port
+    description: Serial port used to communicate with the ESP32.
+    fields:
+      device:
+        name: Device
+        description: Serial device path. Use "auto" to detect automatically.
+  connection:
+    name: Connection Timeouts
+    description: Timeouts for the ESP32 connection state machine.
+    fields:
+      connected_timeout:
+        name: Connected Timeout (s)
+        description: Seconds without a message before switching to reconnecting state.
+      reconnecting_timeout:
+        name: Reconnecting Timeout (s)
+        description: Seconds without a message before switching to disconnected state.
+  rf433:
+    name: RF 433 MHz Module
+    description: CC1101 module for 433 MHz signal reception and transmission. Exposes a RFLink-compatible TCP server.
+    fields:
+      enabled:
+        name: Enable RF 433 MHz
+        description: Enable or disable the CC1101 module.
+      tcp_port:
+        name: RFLink TCP Port
+        description: Listening port for the RFLink-compatible server (default 5557).
+      spi_bus:
+        name: SPI Bus
+        description: Raspberry Pi SPI bus number (default 0).
+      spi_device:
+        name: SPI Device
+        description: SPI device number (CE0=0, CE1=1 — default 0).
+      gdo0_pin:
+        name: GDO0 Pin
+        description: Raspberry Pi BCM GPIO number connected to CC1101 GDO0.
+      gdo2_pin:
+        name: GDO2 Pin
+        description: Raspberry Pi BCM GPIO number connected to CC1101 GDO2.

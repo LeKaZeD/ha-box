@@ -1,97 +1,123 @@
 configuration:
-  display:
-    name: Affichage E-Paper
-    description: Configuration de l'affichage E-Paper
+  general:
+    name: Général
+    description: Paramètres de langue et de logs.
+    fields:
+      log_level:
+        name: Niveau de logs
+        description: Verbosité des logs de l'add-on. Utiliser "trace" pour voir les trames UART brutes, "debug" pour le diagnostic, "info" pour une utilisation normale.
+      lang:
+        name: Langue
+        description: Langue d'affichage. "auto" suit la langue configurée dans Home Assistant.
+  weather:
+    name: Météo
+    description: Source de données météo affichée sur l'écran ESP32.
+    fields:
+      weather_entity:
+        name: Entité météo
+        description: Identifiant de l'entité météo Home Assistant (ex. weather.forecast_home).
+      update_interval:
+        name: Intervalle de mise à jour (s)
+        description: Fréquence de rafraîchissement des données météo, en secondes.
+  bme280:
+    name: Capteur BME280
+    description: Capteur de température ambiante, humidité et pression sur l'ESP32.
     fields:
       enabled:
-        name: Activer l'affichage
-        description: Activer ou désactiver l'affichage E-Paper
-      rotation:
-        name: Rotation
-        description: Rotation de l'affichage (0=0°, 1=90°, 2=180°, 3=270°)
-      refresh_mode:
-        name: Mode de rafraîchissement
-        description: Mode de rafraîchissement de l'affichage (full ou partial)
-      front_light:
-        name: Éclairage frontal
-        description: Configuration de l'éclairage frontal
-        fields:
-          enabled:
-            name: Activer l'éclairage
-            description: Activer ou désactiver l'éclairage frontal
-          brightness:
-            name: Luminosité
-            description: Luminosité de l'éclairage frontal (0-100)
-  sensors:
-    name: Capteurs
-    description: Configuration des capteurs environnementaux et d'entrée
+        name: Activer le BME280
+        description: Activer ou désactiver le capteur BME280.
+      address:
+        name: Adresse I2C
+        description: Adresse I2C du BME280. Utiliser "auto" pour la détection automatique.
+      update_interval:
+        name: Intervalle de mise à jour (s)
+        description: Fréquence d'envoi des mesures vers Home Assistant, en secondes.
+  fan:
+    name: Ventilateur
+    description: Courbe de température du ventilateur PWM, envoyée à l'ESP32 au démarrage.
     fields:
-      bme280:
-        name: Capteur BME280
-        description: Configuration du capteur de température, humidité et pression
-        fields:
-          enabled:
-            name: Activer BME280
-            description: Activer ou désactiver le capteur BME280
-          address:
-            name: Adresse I2C
-            description: Adresse I2C (auto, 0x76 ou 0x77)
-          update_interval:
-            name: Intervalle de mise à jour
-            description: Intervalle de lecture du capteur en secondes (10-300)
-      nfc:
-        name: Lecteur NFC
-        description: Configuration du lecteur NFC PN7161
-        fields:
-          enabled:
-            name: Activer NFC
-            description: Activer ou désactiver le lecteur NFC
-          address:
-            name: Adresse I2C
-            description: Adresse I2C (0x24 ou 0x48)
-          polling_interval:
-            name: Intervalle de sondage
-            description: Intervalle de sondage des tags NFC en secondes (1-10)
-      touch:
-        name: Interface tactile
-        description: Configuration du contrôleur tactile FT6336U
-        fields:
-          enabled:
-            name: Activer le tactile
-            description: Activer ou désactiver l'interface tactile
-  control:
-    name: Dispositifs de contrôle
-    description: Configuration des dispositifs de sortie (ventilateur, LED)
+      enabled:
+        name: Activer le ventilateur
+        description: Activer ou désactiver le contrôle automatique du ventilateur.
+      min_temp:
+        name: Température de démarrage (°C)
+        description: Température à laquelle le ventilateur commence à tourner.
+      max_temp:
+        name: Température pleine vitesse (°C)
+        description: Température à laquelle le ventilateur atteint sa vitesse maximale.
+  ota:
+    name: Mise à jour OTA
+    description: Broches GPIO utilisées pour entrer en mode bootloader ESP32 et flasher le firmware via UART.
     fields:
-      fan:
-        name: Ventilateur PWM
-        description: Configuration du contrôle du ventilateur PWM
-        fields:
-          enabled:
-            name: Activer le ventilateur
-            description: Activer ou désactiver le ventilateur PWM
-          pin:
-            name: Broche GPIO
-            description: Numéro de broche GPIO pour le contrôle du ventilateur (1-40)
-          auto_control:
-            name: Contrôle automatique
-            description: Contrôler automatiquement le ventilateur selon la température
-          min_temp:
-            name: Température minimale
-            description: Seuil de température minimale en Celsius (0-100)
-          max_temp:
-            name: Température maximale
-            description: Seuil de température maximale en Celsius (0-100)
-      led:
-        name: Ruban LED
-        description: Configuration du ruban LED WS2812B
-        fields:
-          enabled:
-            name: Activer LED
-            description: Activer ou désactiver le ruban LED
-          pin:
-            name: Broche GPIO
-            description: Numéro de broche GPIO pour le contrôle LED (1-40)
-          count:
-            name: Nombre de LED
-            description: Nombre de LED dans le ruban (1-100)
+      io0_gpio:
+        name: Broche GPIO IO0
+        description: Numéro de broche BCM du Raspberry Pi connectée à IO0 de l'ESP32.
+      en_gpio:
+        name: Broche GPIO EN
+        description: Numéro de broche BCM du Raspberry Pi connectée à EN (reset) de l'ESP32.
+      force_flash:
+        name: Forcer le flash
+        description: "Flasher le firmware à chaque connexion sans vérifier la version. Utile pour les tests en développement."
+  daynight:
+    name: Mode Jour / Nuit
+    description: Suit automatiquement le lever et coucher du soleil via sun.sun. Déclenche l'événement ha_box_mode_changed à chaque changement de mode pour les automatisations.
+    fields:
+      update_interval:
+        name: Intervalle de mise à jour (s)
+        description: Fréquence de lecture de sun.sun pour détecter le lever/coucher du soleil, en secondes.
+  clock:
+    name: Horloge
+    description: Synchronisation de l'heure envoyée du Raspberry Pi vers l'ESP32.
+    fields:
+      update_interval:
+        name: Intervalle de synchronisation (s)
+        description: Fréquence d'envoi de l'heure vers l'ESP32, en secondes.
+  status:
+    name: Statut système
+    description: Heartbeat de statut système envoyé aux icônes de l'ESP32.
+    fields:
+      update_interval:
+        name: Intervalle de mise à jour (s)
+        description: Fréquence d'envoi du statut système vers l'ESP32, en secondes.
+      exposed_addon_slugs:
+        name: Slugs d'add-ons exposés
+        description: Slugs des add-ons qui activent l'icône "exposé" lorsqu'ils sont actifs (ex. cloudflared, duckdns).
+  uart:
+    name: Port UART
+    description: Port série utilisé pour communiquer avec l'ESP32.
+    fields:
+      device:
+        name: Périphérique
+        description: Chemin du port série. Utiliser "auto" pour la détection automatique.
+  connection:
+    name: Délais de connexion
+    description: Délais de la machine d'états de connexion ESP32.
+    fields:
+      connected_timeout:
+        name: Délai connecté (s)
+        description: Secondes sans message avant de passer en état "reconnexion".
+      reconnecting_timeout:
+        name: Délai reconnexion (s)
+        description: Secondes sans message avant de passer en état "déconnecté".
+  rf433:
+    name: Module RF 433 MHz
+    description: Module CC1101 pour la réception et l'émission de signaux 433 MHz. Expose un serveur TCP compatible RFLink.
+    fields:
+      enabled:
+        name: Activer le RF 433 MHz
+        description: Activer ou désactiver le module CC1101.
+      tcp_port:
+        name: Port TCP RFLink
+        description: Port d'écoute du serveur RFLink compatible (défaut 5557).
+      spi_bus:
+        name: Bus SPI
+        description: Numéro du bus SPI du Raspberry Pi (défaut 0).
+      spi_device:
+        name: Périphérique SPI
+        description: Numéro du périphérique SPI (CE0=0, CE1=1 — défaut 0).
+      gdo0_pin:
+        name: Broche GDO0
+        description: Numéro de broche BCM du Raspberry Pi connectée à GDO0 du CC1101.
+      gdo2_pin:
+        name: Broche GDO2
+        description: Numéro de broche BCM du Raspberry Pi connectée à GDO2 du CC1101.

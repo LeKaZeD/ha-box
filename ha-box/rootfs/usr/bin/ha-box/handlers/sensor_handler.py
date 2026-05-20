@@ -6,7 +6,7 @@ ESP32 and manages sensor data updates to Home Assistant.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Dict, Optional
 from communication.esp32_comm import Message
 from api.ha_api import HomeAssistantAPI
 
@@ -89,20 +89,13 @@ class SensorHandler:
         Returns:
             True if all available updates succeeded, False if any failed.
         """
-        logger.debug("SensorHandler.update_home_assistant() called: latest_data=%s, latest_case_temp=%s",
-                    self.latest_data is not None, self.latest_case_temp is not None)
-
         if not self.ha_api:
-            logger.debug("SensorHandler.update_home_assistant() skipped: no HA API client")
+            logger.debug("update_home_assistant() skipped: no ha_api configured")
             return False
 
         success = True
 
         if self.latest_data:
-            logger.debug("Updating BME280 sensors: T=%.2f°C, H=%.2f%%, P=%.0fPa",
-                        self.latest_data['temperature'],
-                        self.latest_data['humidity'],
-                        self.latest_data['pressure'])
             result = self.ha_api.update_esp32_sensors(
                 self.latest_data['temperature'],
                 self.latest_data['humidity'],
@@ -111,11 +104,12 @@ class SensorHandler:
             success &= result
 
         if self.latest_case_temp is not None:
-            logger.debug("Updating case temperature: %.2f°C", self.latest_case_temp)
             result = self.ha_api.update_case_sensor(self.latest_case_temp)
             success &= result
 
-        logger.debug("SensorHandler.update_home_assistant() result: %s", success)
+        if not success:
+            logger.warning("update_home_assistant() failed: one or more events could not be fired")
+
         return success
     
     def clear_latest_data(self) -> None:

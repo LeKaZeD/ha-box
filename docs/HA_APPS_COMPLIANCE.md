@@ -32,7 +32,7 @@ References:
 | `version` | OK | String, e.g. "0.1.36" |
 | `slug` | OK | "ha-box", unique identifier |
 | `description` | OK | Present |
-| `url` | Warning | Placeholder "VOTRE_USERNAME" should be replaced before publishing |
+| `url` | OK | Points to `https://github.com/LeKaZeD/ha-box` |
 | `arch` | OK | `aarch64` (Raspberry Pi); consider adding `amd64` for local dev if supported |
 | `options` | OK | Default values for all configuration |
 | `schema` | OK | Validation for all options (str?, int(), list(), match(), etc.) |
@@ -47,7 +47,6 @@ References:
 | `gpio` / `kernel_modules` | OK | `false` when not required |
 
 **Gaps:**
-- Replace `url` with real repository URL before publishing.
 - Ensure `version` in config.yaml stays in sync with tagged image and CHANGELOG when publishing.
 
 ---
@@ -62,7 +61,7 @@ References:
 | No broad filesystem access | OK | No `/** rw` or host mount |
 | Documented in SECURITY.md | OK | SECURITY.md describes rating and permissions |
 
-**Recommendation:** Any new device (e.g. I2C, SPI) or path required by the app must be added explicitly to `apparmor.txt` and reflected in SECURITY.md.
+**Recommendation:** Any new device (e.g. `/dev/spidev0.1`, additional GPIO chips) or path required by the app must be added explicitly to `apparmor.txt` and reflected in SECURITY.md. Current devices: UART (`/dev/ttyAMA0`, `/dev/serial0`), GPIO chardev (`/dev/gpiochip0`), SPI for RF433 (`/dev/spidev0.0`).
 
 ---
 

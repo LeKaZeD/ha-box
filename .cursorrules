@@ -44,7 +44,7 @@ Rules:
 When documents conflict, apply the following priority:
 1. docs/ARCHITECTURE.md
 2. docs/HARDWARE.md
-3. docs/FEATURES.md
+3. docs/FEATURES_STATUS.md
 4. ROADMAP.md
 5. CONTRIBUTING.md
 

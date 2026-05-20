@@ -8,7 +8,7 @@ sending it to the ESP32.
 import logging
 import threading
 import time
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Callable
 from communication.esp32_comm import ESP32Comm, KV
 from api.ha_api import HomeAssistantAPI
 
@@ -71,11 +71,7 @@ class WeatherHandler:
         Returns:
             True if update is needed, False otherwise.
         """
-        time_since_update = current_time - self.last_update
-        should = time_since_update >= self.update_interval
-        logger.debug("Weather should_update: time_since=%.1fs, interval=%.1fs, should=%s", 
-                    time_since_update, self.update_interval, should)
-        return should
+        return (current_time - self.last_update) >= self.update_interval
     
     def set_connection_check(self, callback: Callable[[], bool]) -> None:
         """
@@ -124,7 +120,7 @@ class WeatherHandler:
         # Check if still connected
         if self._is_connected_callback and not self._is_connected_callback():
             logger.debug("Weather periodic update skipped: ESP32 not connected")
-            # Don't schedule next update if disconnected
+            self._schedule_next()
             return
         
         # Send weather update
@@ -140,15 +136,12 @@ class WeatherHandler:
         Returns:
             True if update was successful, False otherwise.
         """
-        logger.debug("WeatherHandler._send_weather() called: esp32_comm=%s, ha_api=%s", 
-                    self.esp32_comm is not None, self.ha_api is not None)
-        
         if not self.esp32_comm:
-            logger.warning("WeatherHandler._send_weather() skipped: esp32_comm is None")
+            logger.debug("WeatherHandler._send_weather() skipped: esp32_comm is None")
             return False
-        
+
         if not self.ha_api:
-            logger.warning("WeatherHandler._send_weather() skipped: ha_api is None")
+            logger.debug("WeatherHandler._send_weather() skipped: ha_api is None")
             return False
         
         try:
@@ -170,16 +163,14 @@ class WeatherHandler:
                 # Convert temperature to x10 format
                 temp_out_x10 = int(temp_out * 10)
                 
-                logger.info("Sending weather to ESP32: code=%d (%s), temp=%.1f°C (tOut=%d)", 
+                logger.info("Sending weather to ESP32: code=%d (%s), temp=%.1f°C (tOut=%d)",
                           weather_code, condition, temp_out, temp_out_x10)
-                
+
                 msg_id = self.esp32_comm.send_command("WEATHER", [
                     KV("code", str(weather_code)),
                     KV("tOut", str(temp_out_x10)),
                 ])
-                
-                logger.debug("Weather command sent with msg_id=%d", msg_id)
-                
+
                 self.last_update = time.time()
                 return msg_id > 0
             else:

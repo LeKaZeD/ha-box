@@ -70,7 +70,17 @@ profile ha-box flags=(attach_disconnected,mediate_deleted) {
   
   # Allow reading App files (translations, etc.)
   /addon/** r,
-  
+
+  # Allow reading bundled ESP32 firmware (OTA updates)
+  /usr/share/ha-box/firmware/ r,
+  /usr/share/ha-box/firmware/** r,
+
+  # Allow access to GPIO chardev (OTA bootloader control: IO0 + EN pins)
+  /dev/gpiochip* rw,
+
+  # Allow access to SPI devices (CC1101 433MHz module)
+  /dev/spidev* rw,
+
   # Allow reading App options
   /data/options.json r,
 

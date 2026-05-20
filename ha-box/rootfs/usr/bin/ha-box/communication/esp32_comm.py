@@ -7,13 +7,15 @@ deduplication.
 """
 
 import logging
-import re
+import re as _re
 import serial
 import serial.tools.list_ports
 import threading
 import time
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Tuple
+
+from core.logger import TRACE
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,14 @@ DEDUPE_WINDOW = 8
 DEFAULT_BAUDRATE = 115200
 DEFAULT_TIMEOUT = 1.0
 DEFAULT_DEVICE_PATTERNS = ["/dev/serial0", "/dev/ttyAMA0", "/dev/ttyUSB0"]
+
+# ESP32 ROM boot-error patterns (appear when no valid firmware is present).
+_BOOT_FAILURE_PATTERNS = (
+    "No bootable app partitions",
+    "is not bootable",
+    "invalid segment length",
+    "invalid magic byte",
+)
 
 
 @dataclass
@@ -130,6 +140,11 @@ class ESP32Comm:
         # Line buffer
         self._line_buffer = bytearray()
 
+        # Boot failure detection: counts how many times ROM boot-error patterns
+        # have been seen since the last reset_boot_failure_count() call.
+        # Incremented from the polling thread; read from the main thread.
+        self.boot_failure_count: int = 0
+
         logger.info(
             "ESP32Comm initialized: device=%s, baudrate=%d",
             self._device,
@@ -225,6 +240,14 @@ class ESP32Comm:
             self._serial.close()
             logger.info("Serial port closed")
 
+    def reset_boot_failure_count(self) -> None:
+        """Reset the boot failure counter (call after a successful OTA or connection)."""
+        self.boot_failure_count = 0
+
+    def get_boot_failure_count(self) -> int:
+        """Return the current boot failure counter value."""
+        return self.boot_failure_count
+
     def last_seen_ms(self) -> float:
         """
         Get time since last valid message (in seconds).
@@ -301,39 +324,50 @@ class ESP32Comm:
         Returns:
             Message ID of the sent command.
         """
+        msg_id = self.next_id()
+        return self._send_command_with_id(msg_id, verb, kv, kv_count)
+
+    def _send_command_with_id(
+        self,
+        msg_id: int,
+        verb: str,
+        kv: Optional[List[KV]] = None,
+        kv_count: Optional[int] = None,
+    ) -> int:
+        """
+        Send a command with a pre-allocated message ID.
+
+        Used internally by send_with_ack() so the ACK event can be registered
+        before the message is sent, closing the window where an early ACK would
+        be missed.
+
+        Returns:
+            msg_id on success, 0 on failure.
+        """
         if not self._serial or not self._serial.is_open:
             logger.error("Serial port not open")
             return 0
 
-        msg_id = self.next_id()
         kv = kv or []
         kv_count = kv_count if kv_count is not None else len(kv)
 
         # Build message line: <id> <VERB> [key=value]...
         parts = [str(msg_id), verb]
-        logger.debug("Building command: verb=%s, kv_count=%d, kv=%s", verb, kv_count, kv)
-        
         for i in range(min(kv_count, len(kv))):
             if kv[i].key:
                 parts.append(f"{kv[i].key}={kv[i].val}")
-                logger.debug("  Added KV: %s=%s", kv[i].key, kv[i].val)
 
         line = " ".join(parts)
-        logger.debug("Command line built: '%s' (length=%d)", line, len(line))
-        
+
         if len(line) > MAX_LINE:
             logger.warning("Message too long, truncating: %d bytes", len(line))
             line = line[: MAX_LINE - 1]
 
         try:
             data = (line + "\n").encode("ascii")
-            logger.debug("Sending command: line='%s', encoded=%s, length=%d bytes", 
-                        line, data.hex(), len(data))
             self._serial.write(data)
             self._serial.flush()  # Ensure data is sent immediately
-            logger.info("TX: %s", line)
-            logger.debug("UART TX raw bytes: %s", data.hex())
-            logger.debug("Command sent successfully, msg_id=%d", msg_id)
+            logger.log(TRACE, "TX: %s", line)
         except Exception as e:
             logger.error("Failed to send command: %s", e, exc_info=True)
             return 0
@@ -362,15 +396,19 @@ class ESP32Comm:
             Tuple of (success, Ack or None).
         """
         for attempt in range(retry_count + 1):
-            msg_id = self.send_command(verb, kv, kv_count)
-            if msg_id == 0:
-                continue
-
-            # Create event for this ACK
+            # Allocate the ID and register the ACK event BEFORE sending so that
+            # an ACK arriving immediately after the write is never missed.
+            msg_id = self.next_id()
             event = threading.Event()
             with self._lock:
                 self._ack_events[msg_id] = event
                 self._waiting_ack[msg_id] = None
+
+            if self._send_command_with_id(msg_id, verb, kv, kv_count) == 0:
+                with self._lock:
+                    self._ack_events.pop(msg_id, None)
+                    self._waiting_ack.pop(msg_id, None)
+                continue
 
             # Wait for ACK
             timeout_sec = ack_timeout_ms / 1000.0
@@ -388,10 +426,8 @@ class ESP32Comm:
             else:
                 # Timeout
                 with self._lock:
-                    if msg_id in self._waiting_ack:
-                        del self._waiting_ack[msg_id]
-                    if msg_id in self._ack_events:
-                        del self._ack_events[msg_id]
+                    self._ack_events.pop(msg_id, None)
+                    self._waiting_ack.pop(msg_id, None)
                 logger.debug("ACK timeout, retrying")
 
         return False, None
@@ -439,22 +475,37 @@ class ESP32Comm:
 
     def _poll_loop(self) -> None:
         """Main polling loop (runs in background thread)."""
+        consecutive_errors = 0
         while self._running:
             try:
                 if self._serial and self._serial.is_open:
                     # Read available data
                     if self._serial.in_waiting > 0:
-                        bytes_waiting = self._serial.in_waiting
-                        data = self._serial.read(bytes_waiting)
-                        logger.debug("Serial in_waiting=%d, read %d bytes", bytes_waiting, len(data))
+                        data = self._serial.read(self._serial.in_waiting)
                         self._process_data(data)
                     else:
                         # No data available, sleep to avoid busy-wait
                         time.sleep(0.01)  # 10ms polling interval
                 else:
-                    time.sleep(0.01)  # Reduced from 0.1 to 0.01 for faster polling
+                    time.sleep(0.01)
+                consecutive_errors = 0
             except Exception as e:
-                logger.error("Error in poll loop: %s", e, exc_info=True)
+                consecutive_errors += 1
+                # Log every error for the first 5, then only at milestones to avoid log spam
+                # on a permanently-lost serial port.
+                if consecutive_errors <= 5 or consecutive_errors % 100 == 0:
+                    logger.error(
+                        "Error in poll loop (consecutive=%d): %s",
+                        consecutive_errors, e, exc_info=(consecutive_errors <= 5),
+                    )
+                # Discard any partial line in the buffer: a UART glitch may have
+                # dropped bytes mid-message, making the buffered data unrecoverable.
+                if self._line_buffer:
+                    logger.debug(
+                        "Clearing line buffer (%d bytes) after poll error",
+                        len(self._line_buffer),
+                    )
+                    self._line_buffer.clear()
                 time.sleep(0.1)
 
     def _process_data(self, data: bytes) -> None:
@@ -464,9 +515,7 @@ class ESP32Comm:
         Args:
             data: Raw bytes from serial port.
         """
-        # Log raw received data for debugging (only in debug mode)
-        logger.debug("UART RX raw bytes (%d): %s", len(data), data.hex())
-        
+        logger.log(TRACE, "RX raw: %r", data)
         for byte in data:
             if byte == ord("\r"):
                 continue  # Ignore CR
@@ -499,8 +548,7 @@ class ESP32Comm:
         Args:
             line: Complete line string (without newline).
         """
-        # Log received line
-        logger.info("RX: %s", line)
+        logger.log(TRACE, "RX: %s", line)
         
         # Try to parse as ACK first
         ack = self._parse_ack(line)
@@ -544,7 +592,39 @@ class ESP32Comm:
                     logger.error("Error in message callback: %s", e)
             return
 
-        # Invalid line: ignored
+        # Invalid line: attempt to salvage a partial VERSION response.
+        # A UART glitch may drop the leading bytes (e.g. "16 VERSIO") while
+        # the tail ("N ver=0.1.0\n") arrives intact. Extract ver= if present.
+        m = _re.search(r'\bver=(\S+)', line)
+        if m:
+            logger.warning(
+                "Partial VERSION line salvaged from corrupted UART data: %r", line
+            )
+            synthetic = Message(
+                id=0,  # unknown ID — no ACK sent
+                verb="VERSION",
+                kv=[KV(key="ver", val=m.group(1))],
+            )
+            if self._message_callback:
+                try:
+                    self._message_callback(synthetic)
+                except Exception as e:
+                    logger.error("Error in message callback (partial VERSION): %s", e)
+            return
+
+        # Boot failure detection: look for ROM bootloader error patterns.
+        # These appear when the ESP32 has no valid firmware and loops on reset.
+        # We do a simple substring search rather than strict parsing because the
+        # lines often arrive fragmented (mixed with other boot output).
+        if any(p in line for p in _BOOT_FAILURE_PATTERNS):
+            with self._lock:
+                self.boot_failure_count += 1
+                count = self.boot_failure_count
+            logger.warning(
+                "ESP32 boot failure detected (count=%d): %s",
+                count, line,
+            )
+
         logger.debug("Invalid line ignored: %s", line)
 
     def _parse_ack(self, line: str) -> Optional[Ack]:

@@ -1,0 +1,12 @@
+{
+  "typeCheckingMode": "standard",
+  "reportMissingModuleSource": "none",
+  "reportMissingImports": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownArgumentType": "none",
+  "reportUnknownParameterType": "none",
+  "reportUnusedImport": "warning",
+  "reportReturnType": "error",
+  "reportOptionalMemberAccess": "error"
+}

@@ -13,10 +13,10 @@ Detection strategy per add-on type:
 import logging
 from typing import Dict, Any, Optional, FrozenSet, List, Tuple
 import requests
-from urllib3.exceptions import InsecureRequestWarning
+import urllib3
 from api.ha_api import HomeAssistantAPI, DEFAULT_EXPOSED_ADDON_SLUGS
 
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 

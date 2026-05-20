@@ -7,8 +7,15 @@ PyYAML>=6.0
 # Serial communication (ESP32 via UART)
 pyserial>=3.5
 
-# Note: Other dependencies will be added when corresponding features are implemented:
-# - smbus2, spidev, RPi.GPIO: for I2C/SPI/GPIO hardware access
-# - adafruit-circuitpython-bme280, adafruit-circuitpython-pn7160: for sensors (BME280/NFC on ESP32)
-# - Pillow: for E-Paper display graphics
-# - python-dateutil: for advanced date/time handling
+# GPIO control (Pi 5 compatible, uses Linux chardev interface)
+# Pre-built wheels available on PyPI for aarch64 — no build tools needed
+gpiod>=2.0
+
+# ESP32 OTA firmware flashing via UART bootloader
+esptool>=4.0
+
+# CC1101 433MHz module via SPI (RF433 feature)
+spidev>=3.5
+
+# WebSocket client (for HA APIs only available via WebSocket, e.g. persistent_notification/get)
+websocket-client>=1.6.0

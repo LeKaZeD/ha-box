@@ -14,10 +14,9 @@ Welcome! This document describes the rules and process for contributing to the H
 ### Recommended Hardware
 
 - Raspberry Pi 4 or 5 with Home Assistant OS
-- Compatible SPI display (model to be defined)
-- I2C touch controller
-- I2C NFC sensor (e.g. PN7161 on ESP32)
-- I2C temperature sensor (BME280)
+- haboxesp PCB with ESP32-WROOM-32
+- GDEY037T03-FT21 E-Paper display (with FT6336U touch)
+- BME280 sensor (on ESP32 I2C bus)
 - 5V PWM fan
 
 ### Development Environment
@@ -55,6 +54,8 @@ Welcome! This document describes the rules and process for contributing to the H
 
 ### Commit Messages
 
+**All commit messages must be written in English.**
+
 Format: `type(scope): description`
 
 Types:
@@ -68,7 +69,7 @@ Types:
 Examples:
 ```
 feat(display): add ILI9341 display support
-fix(i2c): fix NFC read timeout
+fix(uart): fix SENS read timeout
 docs(readme): update installation
 ```
 
@@ -88,7 +89,7 @@ docs(readme): update installation
 - Style: PEP 8
 - Use `black` for formatting
 - Use `pylint` or `flake8` for validation
-- Type hints recommended
+- Type hints required for public functions and classes
 
 ### YAML
 
@@ -109,8 +110,10 @@ docs(readme): update installation
 In `config.yaml`, explicitly declare:
 ```yaml
 devices:
-  - /dev/i2c-1
-  - /dev/spidev0.0
+  - /dev/ttyAMA0
+  - /dev/serial0
+  - /dev/gpiochip0
+gpio: true
 ```
 
 ### Protection Mode
@@ -133,7 +136,7 @@ devices:
 - [ ] Documentation updated
 - [ ] Tested on hardware (if applicable)
 - [ ] No credentials/secrets in code
-- [ ] CHANGELOG.md updated
+- [ ] `ha-box/CHANGELOG.md` updated (if observable behavior changed)
 
 ## Documentation
 
@@ -142,11 +145,11 @@ devices:
 | File | Content |
 |------|---------|
 | `README.md` | Project overview |
-| `docs/PROJECT.md` | Vision and objectives |
-| `docs/FEATURES.md` | Features specification |
+| `ROADMAP.md` | Current status and planned work |
+| `docs/FEATURES_STATUS.md` | Feature status and timing (code-aligned) |
 | `docs/ARCHITECTURE.md` | Technical architecture |
 | `CONTRIBUTING.md` | This file |
-| `CHANGELOG.md` | Version history |
+| `ha-box/CHANGELOG.md` | App version history |
 
 ### Documentation Standards
 
@@ -166,7 +169,7 @@ Use the issue template with:
 
 ## Proposing a Feature
 
-1. Verify it doesn't already exist in `docs/FEATURES.md`
+1. Verify it doesn't already exist in `ROADMAP.md` or `docs/FEATURES_STATUS.md`
 2. Create an issue with "Feature Request" template
 3. Wait for validation before starting development
 

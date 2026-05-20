@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/apps/configuration
 name: HA Box
-version: "0.1.45"
+version: "0.2.0"
 slug: ha-box
 description: Physical interface for Home Assistant with E-Paper display, sensors and controllers
 url: "https://github.com/LeKaZeD/ha-box"
@@ -15,73 +15,96 @@ hassio_role: manager
 homeassistant_api: true
 map:
   - share:rw
-# Only UART devices needed for ESP32 communication
-# I2C, SPI, GPIO will be added when those features are implemented
+# UART for ESP32 communication (UART0 = Pi communication + bootloader flashing)
 devices:
   - /dev/ttyAMA0
   - /dev/serial0
-#gpio: false
+  - /dev/gpiochip0
+  - /dev/spidev0.0
+ports:
+  5557/tcp: 5557
+ports_description:
+  5557/tcp: RFLink 433MHz RF server
+gpio: true
 #kernel_modules: false
 options:
-  home_assistant:
+  # Box / ESP32: language, weather for display, sensors, fan, OTA. Restart the add-on to apply.
+  general:
+    log_level: "info"
+    lang: auto
+  weather:
     weather_entity: "weather.forecast_home"
     update_interval: 300
-  # E-Paper display configuration
-  display:
+  bme280:
     enabled: true
-    rotation: 0
-    refresh_mode: "full"
-    front_light:
-      enabled: true
-      brightness: 50
-  
-  # Sensors configuration
-  sensors:
-    bme280:
-      enabled: true
-      address: "auto"
-      update_interval: 30
-    nfc:
-      enabled: true
-      address: "0x24"
-      polling_interval: 1
-    touch:
-      enabled: true
-  
-  # ESP32 configuration – sent on add-on startup, persisted on the ESP32.
-  # Restart the add-on to apply changes.
-  esp32:
-    fan:
-      enabled: false
-      min_temp: 28
-      max_temp: 60
+    address: "auto"
+    update_interval: 30
+  fan:
+    enabled: true
+    min_temp: 28
+    max_temp: 60
+  ota:
+    io0_gpio: 23
+    en_gpio: 24
+    force_flash: false
+  daynight:
+    update_interval: 60
+  clock:
+    update_interval: 60
+  status:
+    update_interval: 30
+    exposed_addon_slugs: []
+  uart:
+    device: "auto"
+  connection:
+    connected_timeout: 120
+    reconnecting_timeout: 60
+  rf433:
+    enabled: false
+    tcp_port: 5557
+    spi_bus: 0
+    spi_device: 0
+    gdo0_pin: 17
+    gdo2_pin: 27
 
 schema:
-  home_assistant:
+  general:
+    log_level: "list(trace|debug|info|warning|error|critical)?"
+    lang: "list(auto|fr|en)?"
+  weather:
     weather_entity: "str?"
     update_interval: "int(10,300)?"
-  display:
+  bme280:
     enabled: "bool"
-    rotation: "int(0,3)?"
-    refresh_mode: "list(full|partial)?"
-    front_light:
-      enabled: "bool"
-      brightness: "int(0,100)?"
-  sensors:
-    bme280:
-      enabled: "bool"
-      address: "match(^(auto|0x76|0x77)$)?"
-      update_interval: "int(10,300)?"
-    nfc:
-      enabled: "bool"
-      address: "match(^(0x24|0x48)$)?"
-      polling_interval: "int(1,10)?"
-    touch:
-      enabled: "bool"
-  esp32:
-    fan:
-      enabled: "bool"
-      min_temp: "int(0,100)?"
-      max_temp: "int(0,100)?"
+    address: "list(auto|0x76|0x77)?"
+    update_interval: "int(10,300)?"
+  fan:
+    enabled: "bool"
+    min_temp: "int(0,100)?"
+    max_temp: "int(0,100)?"
+  ota:
+    io0_gpio: "int?"
+    en_gpio: "int?"
+    force_flash: "bool?"
+  daynight:
+    update_interval: "int(10,3600)?"
+  clock:
+    update_interval: "int(10,3600)?"
+  status:
+    update_interval: "int(10,300)?"
+    exposed_addon_slugs:
+      - "str"
+  uart:
+    device: "list(auto|/dev/serial0|/dev/ttyAMA0|/dev/ttyUSB0)?"
+  connection:
+    connected_timeout: "int(30,600)?"
+    reconnecting_timeout: "int(10,300)?"
+  rf433:
+    enabled: "bool"
+    tcp_port: "int(1024,65535)?"
+    spi_bus: "int?"
+    spi_device: "int?"
+    gdo0_pin: "int?"
+    gdo2_pin: "int?"
 
 #image: "ghcr.io/lekazed/{arch}-addon-ha-box"

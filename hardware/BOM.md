@@ -40,14 +40,12 @@ purchase (link coming soon).
 | ESP32 module | ESP32-WROOM-32 (38-pin) | 1 | ~€10 | — |
 | E-Paper display | GDEY037T03-FT21 (3.7", 240×416, integrated FT6336U touch) | 1 | €19 | [buyepaper.com](https://buyepaper.com/products/gdey037t03-ft21) |
 | Environmental sensor | BME280 (temperature, humidity, pressure) | 1 | ~€3 | [Amazon](https://www.amazon.fr/dp/B0BJF3L9CS/) |
-| NFC module | PN7161 (NXP, I2C) | 1 | TBD | TBD – link to be updated |
 | Fan | Noctua NF-A6x15 5V PWM | 1 | €17 | [Amazon](https://www.amazon.fr/dp/B0DJP3987K/) |
 | Push button | 4-pin tact switch (momentary) | 1 | ~€2 | [Amazon](https://www.amazon.fr/dp/B09WYRHPDL/) |
 
 **Notes:**
-- The **haboxesp PCB** includes the buzzer (HYT-1205), TMP102 case temperature sensor, FPC connectors for the display and front-light, I2C connectors for BME280 and NFC, and all passive components. No additional PCB components need to be sourced separately.
+- The **haboxesp PCB** includes the buzzer (HYT-1205), TMP102 case temperature sensor, FPC connectors for the display and front-light, I2C connectors for BME280, and all passive components. No additional PCB components need to be sourced separately.
 - The **BME280** module must include humidity support. Do not substitute with BMP280 (no humidity).
-- The **PN7161** is the NXP NFC controller selected for this project (successor to PN532, better protocol support). Link to be updated when a sourced module is identified.
 - The **LED strip** (WS2812B) was evaluated but is **not used in V0.1**. The haboxesp PCB retains the connector for future use.
 
 **Subtotal: ~€51 + PCB price TBD**
@@ -59,11 +57,11 @@ purchase (link coming soon).
 | Component | Model / Reference | Qty | Unit price | Link |
 |-----------|-------------------|-----|-----------|------|
 | Zigbee + Thread coordinator | Sonoff ZigBee 3.0 USB Dongle Plus (EFR32MG21) | 1 | €23 | [Amazon](https://www.amazon.fr/dp/B09KXTCMSC/) |
-| 433 MHz transceiver | CC1101 module (SPI) | 1 | ~€5 | TBD – planned, not yet integrated |
+| 433 MHz transceiver | CC1101 module (SPI) | 1 | ~€5 | TBD – driver experimental (SPI + RFLink TCP server implemented) |
 
 **Notes:**
 - The **Sonoff dongle** is plugged into the internal USB port provided by the Waveshare USB adapter, keeping it inside the enclosure.
-- The **CC1101** module will connect to the Pi 5 via SPI. Integration is planned but not yet implemented.
+- The **CC1101** module connects to the Pi 5 via SPI. The SPI driver and RFLink-compatible TCP server are implemented (experimental); HA entity/event publishing is not yet done.
 
 **Subtotal: ~€28**
 
@@ -137,6 +135,5 @@ The wood panel and the plexiglass window are on the **same side** (left panel): 
 ## Not included
 
 - **WS2812B LED strip** – evaluated, not used in V0.1. Supported by haboxesp PCB connector for future use. [Amazon](https://www.amazon.fr/dp/B0D5CJK1YS/)
-- **CC1101 module** – 433 MHz support planned, not yet integrated.
-- **PN7161 NFC module** – link TBD; currently the item from the PN532 era ([Amazon B0FB95HMMC](https://www.amazon.fr/dp/B0FB95HMMC/)) is obsolete for this build.
+- **CC1101 module** – SPI driver + RFLink TCP server experimental; HA entity publishing not yet done.
 - Tools (soldering iron, screwdrivers, calipers, 3D printer).

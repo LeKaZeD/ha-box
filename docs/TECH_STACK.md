@@ -1,6 +1,6 @@
 # Technical Stack - HA Box
 
-This document details the technologies, languages, and libraries used in the project. The **Application** (Python) runs on the Raspberry Pi and talks to the **ESP32** over UART; the ESP32 runs the display, sensors, touch, NFC, fan, and power-button logic (see [docs/ARCHITECTURE.md](ARCHITECTURE.md)).
+This document details the technologies, languages, and libraries used in the project. The **Application** (Python) runs on the Raspberry Pi and talks to the **ESP32** over UART; the ESP32 runs the display, sensors, touch, fan, and power-button logic (see [docs/ARCHITECTURE.md](ARCHITECTURE.md)).
 
 ## Languages
 
@@ -21,11 +21,11 @@ This document details the technologies, languages, and libraries used in the pro
 
 ### C++ (Arduino / ESP-IDF)
 
-**Usage (ESP32 firmware):** Display driver (GxEPD2), touch (FT6336), BME280, NFC (PN7161 planned), fan PWM, power button, UART protocol (AsciiProto). See the `esp/ESPHOMEASSISTANT/` firmware and [docs/HARDWARE.md](HARDWARE.md).
+**Usage (ESP32 firmware):** Display driver (GxEPD2), touch (FT6336), BME280, fan PWM, power button, UART protocol (AsciiProto). See the `esp/ESPHOMEASSISTANT/` firmware and [docs/HARDWARE.md](HARDWARE.md).
 
 ### Bash 5.x
 
-**Usage:** s6-overlay startup/shutdown scripts in the add-on container.
+**Usage:** s6-overlay startup/shutdown scripts in the App container.
 
 **Standards:**
 - Shebang: `#!/usr/bin/with-contenv bashio`
@@ -34,10 +34,10 @@ This document details the technologies, languages, and libraries used in the pro
 
 ### YAML
 
-**Usage:** Add-on configuration, build, translations.
+**Usage:** App configuration, build, translations.
 
 **Files:**
-- `ha-box/config.yaml`: Add-on options and schema
+- `ha-box/config.yaml`: App options and schema
 - `ha-box/build.yaml`: Multi-arch build (if used)
 - `ha-box/translations/*.yaml`: UI translations (en, fr)
 
@@ -47,7 +47,7 @@ This document details the technologies, languages, and libraries used in the pro
 
 ### Docker
 
-**Usage**: Add-on containerization.
+**Usage**: App containerization.
 
 **Base image**: Official Home Assistant images
 - `ghcr.io/home-assistant/{arch}-base:3.15`
@@ -73,7 +73,7 @@ This document details the technologies, languages, and libraries used in the pro
 
 ---
 
-## Python libraries (add-on)
+## Python libraries (App)
 
 ### Communication
 
@@ -88,14 +88,18 @@ This document details the technologies, languages, and libraries used in the pro
 |---------|---------|-------|--------------|
 | `PyYAML` | >=6.0 | Load translation files (`core/i18n.py`) | `pip install PyYAML` |
 
-### Not used on the add-on
+### GPIO and OTA
 
-The add-on does **not** use I2C, SPI, or GPIO on the Pi. Display, BME280, touch, NFC (PN7161), and fan are on the **ESP32**. If future features require hardware on the Pi, the following could be added (and must go through a HAL if one is introduced):
+| Library | Version | Usage | Installation |
+|---------|---------|-------|--------------|
+| `gpiod` | >=2.0 | Pi GPIO control for OTA (IO0 + EN pins) via Linux chardev | `pip install gpiod` |
+| `esptool` | >=4.0 | ESP32 firmware flashing over UART0 | `pip install esptool` |
 
-- `smbus2` / `spidev` / `RPi.GPIO`: buses and GPIO
-- `adafruit-circuitpython-bme280`: BME280 (currently on ESP32)
-- `adafruit-circuitpython-pn7160` or equivalent: PN7161 (currently planned on ESP32)
-- `Pillow`: image rendering (currently on ESP32 via GxEPD2)
+`libgpiod` (C library) must also be present in the container image (`apk add libgpiod`). Pre-built Python wheels for `gpiod` are available on PyPI for aarch64; no build tools needed.
+
+### Not used on the App
+
+The App does **not** use I2C or SPI on the Pi. Display, BME280, TMP102, touch, and fan are entirely on the **ESP32**. If future features require additional Pi-side hardware, they should be added here.
 
 ---
 
@@ -106,11 +110,10 @@ The add-on does **not** use I2C, SPI, or GPIO on the Pi. Display, BME280, touch,
 - **pyserial**: Used for the ESP32 link; standard and well supported.
 - **Alternative**: Raw `open()` on `/dev/serial0` with termios; more work for framing and timeouts.
 
-### ESP32 firmware (E-Paper, NFC)
+### ESP32 firmware (E-Paper)
 
 - **E-Paper**: GxEPD2 driver for GDEY037T03; custom panel class in firmware.
-- **NFC**: PN7161 on ESP32 (I2C); driver to be integrated. Add-on only receives `NFC` messages over UART.
-- **BME280**: Implemented on ESP32 (e.g. BME280Min or similar); add-on receives `SENS` and pushes to HA.
+- **BME280**: Implemented on ESP32 (e.g. BME280Min or similar); App receives `SENS` and pushes to HA.
 
 ---
 
@@ -134,11 +137,11 @@ The add-on does **not** use I2C, SPI, or GPIO on the Pi. Display, BME280, touch,
 
 ---
 
-## Dependency structure (add-on)
+## Dependency structure (App)
 
 ### requirements.txt
 
-The add-on uses a minimal set of dependencies (see `ha-box/requirements.txt`):
+The App uses a minimal set of dependencies (see `ha-box/requirements.txt`):
 
 ```txt
 # Communication with Supervisor and Core API
@@ -147,8 +150,14 @@ requests>=2.31.0
 # Configuration and i18n (translation files)
 PyYAML>=6.0
 
-# Serial communication with ESP32 (UART)
+# Serial communication with ESP32 (UART0)
 pyserial>=3.5
+
+# GPIO control for OTA (IO0 + EN pins) — Pi 5, Linux chardev
+gpiod>=2.0
+
+# ESP32 firmware flashing via UART0 bootloader
+esptool>=4.0
 ```
 
 ### Installation in Dockerfile
@@ -192,9 +201,9 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 ### ESP32 (firmware)
 
 - **E-Paper**: Slow refresh; updates are optimized (full vs partial, dirty regions). Display logic and rendering are entirely on the ESP32.
-- **I2C**: Shared bus for touch, BME280, NFC (PN7161); addresses and timing are device-specific (see [docs/HARDWARE.md](HARDWARE.md)).
+- **I2C**: Shared bus for touch and BME280; addresses and timing are device-specific (see [docs/HARDWARE.md](HARDWARE.md)).
 - **UART**: 115200 8N1; ASCII protocol with optional ACK for critical commands (e.g. SHUTDOWN_REQUEST, SENS).
 
 ---
 
-*Last updated: 2026-02*
+*Last updated: 2026-03-31*

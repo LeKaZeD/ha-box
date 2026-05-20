@@ -5,6 +5,7 @@ This module manages the connection state machine and periodic messaging.
 """
 
 import logging
+import threading
 import time
 from enum import Enum
 from typing import Optional
@@ -42,7 +43,8 @@ class ConnectionManager:
         self.state = ConnectionState.CONNECTING
         self.connected_timeout = connected_timeout
         self.reconnecting_timeout = reconnecting_timeout
-        
+        self._state_lock = threading.Lock()
+
         # State machine intervals (seconds)
         self.state_intervals = {
             ConnectionState.CONNECTING: 5.0,
@@ -50,7 +52,7 @@ class ConnectionManager:
             ConnectionState.RECONNECTING: 5.0,
             ConnectionState.DISCONNECTED: 10.0,
         }
-        
+
         self.last_message_time = time.time()
     
     def update(self, last_message_time: float, current_time: float) -> None:
@@ -67,42 +69,37 @@ class ConnectionManager:
         else:
             # Never seen ESP32
             time_since_last_seen = 999999.0
-        
-        logger.debug("ConnectionManager.update(): last_msg=%.1f, current=%.1f, time_since=%.1fs, state=%s",
-                    last_message_time, current_time, time_since_last_seen, self.state.value)
-        
-        old_state = self.state
-        
-        # State machine transitions
-        if self.state == ConnectionState.CONNECTING:
-            logger.debug("CONNECTING state: time_since_last_seen=%.1fs, threshold=30.0s", time_since_last_seen)
-            if time_since_last_seen < 30.0:
-                self.state = ConnectionState.CONNECTED
-                logger.info("ESP32 connection established (time_since=%.1fs < 30.0s)", time_since_last_seen)
-            else:
-                logger.debug("CONNECTING: Not transitioning yet (time_since=%.1fs >= 30.0s)", time_since_last_seen)
-        
-        elif self.state == ConnectionState.CONNECTED:
-            if time_since_last_seen > self.connected_timeout:
-                self.state = ConnectionState.RECONNECTING
-                logger.warning("ESP32 connection lost, attempting reconnection")
-        
-        elif self.state == ConnectionState.RECONNECTING:
-            if time_since_last_seen < 30.0:
-                self.state = ConnectionState.CONNECTED
-                logger.info("ESP32 connection restored")
-            elif time_since_last_seen > self.reconnecting_timeout:
-                self.state = ConnectionState.DISCONNECTED
-                logger.error("ESP32 disconnected")
-        
-        elif self.state == ConnectionState.DISCONNECTED:
-            if time_since_last_seen < 30.0:
-                self.state = ConnectionState.CONNECTED
-                logger.info("ESP32 reconnected")
-        
-        # Log state change
-        if old_state != self.state:
-            logger.info("Connection state: %s → %s", old_state.value, self.state.value)
+
+        with self._state_lock:
+            old_state = self.state
+
+            # State machine transitions
+            if self.state == ConnectionState.CONNECTING:
+                if time_since_last_seen < 30.0:
+                    self.state = ConnectionState.CONNECTED
+                    logger.info("ESP32 connection established")
+
+            elif self.state == ConnectionState.CONNECTED:
+                if time_since_last_seen > self.connected_timeout:
+                    self.state = ConnectionState.RECONNECTING
+                    logger.warning("ESP32 connection lost, attempting reconnection")
+
+            elif self.state == ConnectionState.RECONNECTING:
+                if time_since_last_seen < 30.0:
+                    self.state = ConnectionState.CONNECTED
+                    logger.info("ESP32 connection restored")
+                elif time_since_last_seen > self.reconnecting_timeout:
+                    self.state = ConnectionState.DISCONNECTED
+                    logger.warning("ESP32 disconnected (no message for %.0fs)", time_since_last_seen)
+
+            elif self.state == ConnectionState.DISCONNECTED:
+                if time_since_last_seen < 30.0:
+                    self.state = ConnectionState.CONNECTED
+                    logger.info("ESP32 reconnected")
+
+            # Log state change
+            if old_state != self.state:
+                logger.info("Connection state: %s → %s", old_state.value, self.state.value)
     
     def should_send_periodic_message(self, current_time: float) -> bool:
         """
@@ -124,26 +121,19 @@ class ConnectionManager:
         Args:
             current_time: Current timestamp.
         """
-        logger.debug("ConnectionManager.send_periodic_message() called: esp32_comm=%s, state=%s",
-                    self.esp32_comm is not None, self.state.value)
-        
         if not self.esp32_comm:
-            logger.debug("ConnectionManager.send_periodic_message() skipped: esp32_comm is None")
             return
-        
+
         if not self.should_send_periodic_message(current_time):
-            logger.debug("ConnectionManager.send_periodic_message() skipped: not time yet")
             return
-        
+
         try:
             if self.state == ConnectionState.CONNECTED:
                 # STATUS with optional KV is sent by StatusHandler; do not send here
-                logger.debug("CONNECTED: STATUS is sent by StatusHandler, skipping")
                 return
             # CONNECTING, RECONNECTING, DISCONNECTED: send READY
             logger.info("Sending READY to ESP32 (state: %s)", self.state.value)
-            msg_id = self.esp32_comm.send_command("READY")
-            logger.debug("READY command sent with msg_id=%d", msg_id)
+            self.esp32_comm.send_command("READY")
             self.last_message_time = current_time
         except Exception as e:
             logger.error("Failed to send periodic message: %s", e, exc_info=True)
@@ -151,8 +141,9 @@ class ConnectionManager:
     def is_connected(self) -> bool:
         """
         Check if currently connected.
-        
+
         Returns:
             True if connected, False otherwise.
         """
-        return self.state == ConnectionState.CONNECTED
+        with self._state_lock:
+            return self.state == ConnectionState.CONNECTED

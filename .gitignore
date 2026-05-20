@@ -69,3 +69,10 @@ coverage.xml
 
 
 TODO_GETTING_STARTED.md
+
+# Graphify knowledge graph (generated — large files, keep only the report)
+graphify-out/**
+!graphify-out/GRAPH_REPORT.md
+
+# VSCode local history
+**/.history/

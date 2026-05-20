@@ -18,12 +18,14 @@ This App is designed to achieve a **security rating of 6/6** (maximum security) 
 The App requires the following permissions for hardware access:
 
 #### Hardware Access
-- **GPIO**: Required for controlling LEDs, fan PWM, and display control pins
-- **Kernel Modules**: Required for I2C and SPI bus access
-- **Devices**: 
-  - `/dev/i2c-1`: I2C bus for sensors (BME280, NFC, touch)
-  - `/dev/spidev0.0`: SPI bus for E-Paper display
-  - `/dev/gpiomem`: GPIO memory access for pin control
+
+The Pi add-on communicates with the ESP32 over **UART** and uses **GPIO** for OTA flashing only. All sensors (BME280, TMP102, touch) are connected directly to the ESP32 — the Pi does not access I2C or any display hardware.
+
+- **GPIO**: Required for OTA flashing (IO0 and EN pins on the ESP32, via `gpiod` chardev — not legacy `/dev/gpiomem`)
+- **Devices**:
+  - `/dev/ttyAMA0` / `/dev/serial0`: UART for ESP32 communication and OTA flashing
+  - `/dev/gpiochip0`: GPIO chardev for OTA pin control (IO0, EN)
+  - `/dev/spidev0.0`: SPI for CC1101 433 MHz module (only active when RF433 is enabled in config)
 
 #### File System Access
 - **Read-only**: Configuration files, Python code
@@ -41,7 +43,7 @@ A custom AppArmor profile (`apparmor.txt`) restricts the App to:
 **Profile Details**:
 - Allows execution of s6-overlay init system (`/init`, `/run/s6/**`, `/usr/bin/s6-*`) - required for App startup
 - Allows execution of basic system binaries (`/bin/sh`, `/bin/bash`, `/usr/bin/with-contenv`) - required by s6-overlay
-- Allows I2C/SPI/GPIO device access (hardware requirement)
+- Allows UART, GPIO chardev, and SPI device access (hardware requirement)
 - Allows network access for Supervisor API communication
 - Allows reading and executing Python code from `/usr/bin/ha-box/**`
 - Allows reading and executing service scripts from `/etc/services.d/**`
@@ -52,8 +54,8 @@ A custom AppArmor profile (`apparmor.txt`) restricts the App to:
 ### Network Security
 
 - **No host network**: Add-on uses container networking
-- **No exposed ports**: Communication via Supervisor API only
-- **No ingress**: Currently no web interface (may be added in future)
+- **No exposed ports**: Communication via Supervisor API only (except RF433 TCP server on port 5557 when enabled)
+- **No ingress**: No web interface
 - **API authentication**: Uses Supervisor token (automatic, secure)
 
 ### Container Security
@@ -72,8 +74,8 @@ A custom AppArmor profile (`apparmor.txt`) restricts the App to:
    - **Risk**: Low - only hardware-specific devices accessible
 
 2. **Network Exposure**
-   - **Mitigation**: No exposed ports, no host network
-   - **Risk**: Low - communication via Supervisor API only
+   - **Mitigation**: No exposed ports by default; RF433 TCP server (port 5557) only active when explicitly enabled
+   - **Risk**: Low - RF433 server is LAN-local only
 
 3. **File System Access**
    - **Mitigation**: Read-only access to code, write only to logs
@@ -85,14 +87,14 @@ A custom AppArmor profile (`apparmor.txt`) restricts the App to:
 
 ### Known Limitations
 
-- **Hardware dependencies**: Requires GPIO/kernel modules (hardware App limitation)
-- **No ingress**: Currently no web interface (future enhancement)
+- **Hardware dependencies**: Requires UART device and GPIO chardev
+- **RF433 TCP server**: Port 5557 is exposed on the LAN when RF433 is enabled; no authentication (by design — matches RFLink protocol)
 - **Image signing**: Not yet implemented (planned for production releases)
 
 ## Security Best Practices for Users
 
 1. **Keep App updated**: Regular updates include security patches
-2. **Review configuration**: Only enable features you need
+2. **Review configuration**: Only enable RF433 if you have the CC1101 hardware
 3. **Monitor logs**: Check logs for unusual activity
 4. **Hardware security**: Ensure physical access to Raspberry Pi is secured
 
@@ -100,7 +102,7 @@ A custom AppArmor profile (`apparmor.txt`) restricts the App to:
 
 If you discover a security vulnerability, please:
 1. **Do NOT** create a public issue
-2. Email security concerns to: [Your security email]
+2. Open a private security advisory on the GitHub repository
 3. Include details of the vulnerability
 4. Allow time for fix before public disclosure
 
@@ -121,7 +123,6 @@ This App follows Home Assistant App security guidelines:
 - ✅ Container isolation
 - ✅ Presentation assets (icon, logo)
 - ⚠️ Image signing (planned for production)
-- ⚠️ Ingress (not applicable currently - no web UI)
 
 ## Security Rating Breakdown
 
@@ -139,10 +140,6 @@ This App follows Home Assistant App security guidelines:
 **Current Rating**: 6/6 (Maximum)  
 **Breakdown**: Base 5/6 + AppArmor profile (+1) = 6/6
 
-**Additional Security Features Available** (all result in 6/6):
-- Ingress: +2 points (if web UI added)
-- CodeNotary signing: +1 point (for production)
-
 ---
 
-*Last updated: 2026-01-20*
+*Last updated: 2026-04-17*

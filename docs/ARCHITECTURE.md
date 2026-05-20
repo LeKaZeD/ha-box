@@ -4,7 +4,7 @@ This document describes the technical architecture of the HA Box App and its lin
 
 ## Overview
 
-The HA Box App runs on Home Assistant OS (Raspberry Pi) inside a Supervisor-managed container. It does **not** drive display, sensors, or actuators directly on the Pi. Instead, it talks to an **ESP32** over **UART** (serial). The ESP32 runs the E-Paper display, touch, BME280, NFC (PN7161), fan, and power-button logic; the App provides Home Assistant integration (Supervisor/Core API), status aggregation, and data push/pull over the ASCII protocol.
+The HA Box App runs on Home Assistant OS (Raspberry Pi) inside a Supervisor-managed container. It does **not** drive display, sensors, or actuators directly on the Pi. Instead, it talks to an **ESP32** over **UART** (serial). The ESP32 runs the E-Paper display, touch, BME280, fan, and power-button logic; the App provides Home Assistant integration (Supervisor/Core API), status aggregation, and data push/pull over the ASCII protocol.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -43,8 +43,8 @@ The HA Box App runs on Home Assistant OS (Raspberry Pi) inside a Supervisor-mana
 │  └───────┬───────────────────────────────────────────────────────────────┘  │
 │          │                                                                  │
 │  ┌───────┴───────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌─────┐  ┌──────┐  │
-│  │ E-Paper (SPI) │  │ Touch  │  │ BME280 │  │ NFC    │  │ Fan │  │ J2   │  │
-│  │ GDEY037T03    │  │ FT6336 │  │ I2C    │  │ PN7161 │  │ PWM │  │Power │  │
+│  │ E-Paper (SPI) │  │ Touch  │  │ BME280 │  │ Fan │  │ J2   │  │
+│  │ GDEY037T03    │  │ FT6336 │  │ I2C    │  │ PWM │  │Power │  │
 │  └───────────────┘  └────────┘  └────────┘  └────────┘  └─────┘  └──────┘  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -69,13 +69,14 @@ Client for the Supervisor API and Home Assistant Core API.
 UART link to the ESP32.
 
 **Components:**
-- **esp32_comm**: Serial open/close, line framing, parsing of ASCII protocol (`<id> VERB [key=val ...]` and `ACK <id> OK|ERR`), send commands, optional send-with-ACK, background poll thread
-- **message_handler**: Routes incoming messages (READY, SENS, STATUS, TOUCH, NFC, ALL_OFF, SHUTDOWN_REQUEST) to handlers; authorizes incoming verbs; triggers host shutdown and sends SHUTDOWN_ACCEPTED when shutdown is accepted
+- **esp32_comm**: Serial open/close, line framing, parsing of ASCII protocol (`<id> VERB [key=val ...]` and `ACK <id> OK|ERR`), send commands, optional send-with-ACK, background poll thread; detects ROM boot failure patterns (`boot_failure_count`)
+- **message_handler**: Routes incoming messages (READY, VERSION, SENS, CASE, STATUS, TOUCH, ALL_OFF, SHUTDOWN_REQUEST); authorizes verbs; triggers host shutdown and sends SHUTDOWN_ACCEPTED; stores `esp32_firmware_version`
 - **connection_manager**: State machine (CONNECTING, CONNECTED, RECONNECTING, DISCONNECTED); periodic READY when not connected; relies on StatusHandler for STATUS when connected
+- **ota_manager**: Compares bundled firmware version (`ha-box/firmware/VERSION`) with ESP32 reported version; controls IO0/EN GPIOs via `gpiod`; invokes `esptool.main()` in-process to flash `0x10000`; handles blind-flash recovery on boot failure
 
 ### 3. Handlers (`handlers/`)
 
-**SensorHandler:** Receives SENS (tC, hum, pPa) from the ESP32 and updates Home Assistant sensors (or creates them via Core API).
+**SensorHandler:** Receives SENS (tC, hum, pPa) and CASE (tC) from the ESP32, fires `ha_box_sensors` and `ha_box_case_temp` events on the HA event bus. The HA Box integration listens to these events and updates entities in the device registry.
 
 **WeatherHandler:** Fetches weather entity from Core, sends WEATHER (code, tOut) to the ESP32 on a timer when connected.
 
@@ -83,13 +84,15 @@ UART link to the ESP32.
 
 **StatusHandler:** Uses status fetchers (core, supervisor, network, addons for Zigbee/Thread/Matter, etc.) to build a status dict and sends STATUS with key/values to the ESP32 on a timer when connected. Acts as the heartbeat in CONNECTED state.
 
+**DayNightHandler:** Polls sun.sun periodically and sends DAYMODE (mode=0/1) to the ESP32. Handles manual override when the user touches the day/night switch on the ESP32 (DAYMODE message from ESP32); the override is cleared on the next real sun event. Fires `ha_box_mode_changed` event on every mode change.
+
 ### 4. Core (`core/`)
 
-- **config**: Load options from `SUPERVISOR_OPTIONS` (e.g. `/data/options.json`), build `Config` (display, sensors, control, home_assistant)
+- **config**: Load options from `SUPERVISOR_OPTIONS` (e.g. `/data/options.json`), build `Config` with all `box.*` sections (weather, bme280, fan, ota, daynight, clock, status, uart, connection)
 - **i18n**: Translator; language from HA Core config when available, else env (LANG, SUPERVISOR_LANGUAGE), else default English
 - **logger**: Logging setup
 
-The add-on does **not** include a Hardware Abstraction Layer (HAL) for I2C/SPI/GPIO on the Pi. All display, touch, BME280, NFC, fan, and power-button handling run on the **ESP32**. Pin and bus details are in [docs/HARDWARE.md](HARDWARE.md) and the ESP32 firmware (e.g. `esp/ESPHOMEASSISTANT/`).
+The add-on does **not** include a Hardware Abstraction Layer (HAL) for I2C/SPI/GPIO on the Pi. All display, touch, BME280, fan, and power-button handling run on the **ESP32**. Pin and bus details are in [docs/HARDWARE.md](HARDWARE.md) and the ESP32 firmware (e.g. `esp/ESPHOMEASSISTANT/`).
 
 ## Communication with Home Assistant
 
@@ -114,7 +117,8 @@ The App communicates with the Supervisor and Home Assistant Core via HTTP/REST u
 | Endpoint | Usage |
 |----------|--------|
 | `/core/api/config` | Read Core config (e.g. language for i18n) |
-| `/core/api/states` | Read or write entity states (sensors, weather) |
+| `/core/api/states` | Read entity states (weather, sun.sun) |
+| `/core/api/events/<type>` | Fire events (`ha_box_sensors`, `ha_box_case_temp`, `ha_box_mode_changed`) |
 | `/core/api/services/light/turn_off` | Call services (e.g. all lights off) |
 | `/host/shutdown` | Request host shutdown (power button short press) |
 | `/supervisor/info` | Supervisor status |
@@ -160,15 +164,17 @@ ha-box/
                 │   └── ha_api.py        # Supervisor + Core API client
                 ├── communication/
                 │   ├── __init__.py
-                │   ├── esp32_comm.py    # UART, protocol, ACK
+                │   ├── esp32_comm.py    # UART, protocol, ACK, boot failure detection
                 │   ├── message_handler.py
-                │   └── connection_manager.py
+                │   ├── connection_manager.py
+                │   └── ota_manager.py   # OTA flash via esptool (GPIO + UART0)
                 └── handlers/
                     ├── __init__.py
                     ├── sensor_handler.py
                     ├── weather_handler.py
                     ├── clock_handler.py
                     ├── status_handler.py
+                    ├── daynight_handler.py
                     └── status_fetchers/
                         ├── __init__.py
                         ├── core.py
@@ -186,23 +192,15 @@ ha-box/
 
 The add-on uses only **UART** to talk to the ESP32. No I2C, SPI, or GPIO are required on the Pi for the App.
 
-Add to `/mnt/boot/config.txt`:
-
-```ini
-enable_uart=1
-dtoverlay=disable-bt
-```
-
-Then reboot. The serial device will appear as `/dev/serial0` or `/dev/ttyAMA0`. See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for wiring (Pi TXD/RXD to ESP32 RX2/TX2) and testing.
+Edit `/mnt/boot/config.txt` per [docs/HARDWARE.md](HARDWARE.md#pi-configtxt-haos), then reboot. The serial device will appear as `/dev/serial0` or `/dev/ttyAMA0`. See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for wiring and OTA GPIO pin details.
 
 ### ESP32 (firmware)
 
-Display (SPI), touch (I2C), BME280 (I2C), NFC PN7161 (I2C), fan (PWM), and power button (GPIO + J2) are on the **ESP32** side. Pin assignments, I2C addresses, and bus layout are documented in [docs/HARDWARE.md](HARDWARE.md). Summary:
+Display (SPI), touch (I2C), BME280 (I2C), fan (PWM), and power button (GPIO + J2) are on the **ESP32** side. Pin assignments, I2C addresses, and bus layout are documented in [docs/HARDWARE.md](HARDWARE.md). Summary:
 
 | Device | Interface | Address / pin (ESP32) | Notes |
 |--------|-----------|------------------------|-------|
 | Touch (FT6336U) | I2C | 0x38 | Integrated in GDEY037T03-FT21 |
-| NFC (PN7161) | I2C | 0x24 or 0x48 | Configurable in add-on options |
 | BME280 | I2C | 0x76 or 0x77 | Configurable in add-on options |
 | E-Paper | SPI | CS, DC, RST, BUSY, etc. | See HARDWARE.md and firmware |
 | Fan | PWM | Configurable (e.g. GPIO 18) | Local control on ESP32 |
@@ -229,11 +227,16 @@ Display (SPI), touch (I2C), BME280 (I2C), NFC PN7161 (I2C), fan (PWM), and power
 ├────────────────────────────────────────────────────────────────┤
 │ 8. Initialization loop: send READY periodically until           │
 │    connection_manager.is_connected() (recent message from ESP32) │
+│    — if ESP32 sends ROM boot errors (>= 3), trigger blind OTA   │
+│      flash (GPIO IO0/EN + esptool) without waiting for VERSION  │
 ├────────────────────────────────────────────────────────────────┤
-│ 9. Once connected: send LANG, force weather/clock/status update,  │
-│    start periodic timers for weather, clock, status             │
+│ 9. OTA check: query VERSION from ESP32 (up to 3 retries);       │
+│    if bundled version differs, flash via esptool; restart loop  │
 ├────────────────────────────────────────────────────────────────┤
-│10. Main loop: connection_manager.update(), send READY/STATUS   │
+│10. Once connected: send LANG + FAN config, force               │
+│    weather/clock/status update, start periodic timers          │
+├────────────────────────────────────────────────────────────────┤
+│11. Main loop: connection_manager.update(), send READY/STATUS   │
 │    as needed; sensor_handler.update_home_assistant() from SENS  │
 │    If connection lost, return to step 8                         │
 └────────────────────────────────────────────────────────────────┘
@@ -272,15 +275,17 @@ Levels:
 
 ### Permissions (current)
 
-The add-on uses only serial devices for the ESP32 link. Example from `config.yaml`:
+The add-on uses serial devices for the ESP32 link and GPIO for OTA:
 
 ```yaml
 devices:
   - /dev/ttyAMA0
   - /dev/serial0
+  - /dev/gpiochip0
+gpio: true
 ```
 
-No `gpio`, `kernel_modules`, or I2C/SPI devices are required on the Pi for the App. If AppArmor is enabled, the profile must allow access to the chosen serial device(s) and to Supervisor/network as used by the API client. See [ha-box/SECURITY.md](../ha-box/SECURITY.md) and [docs/HA_APPS_COMPLIANCE.md](HA_APPS_COMPLIANCE.md).
+`gpio: true` and `/dev/gpiochip0` are required for the OTA manager to control the IO0 and EN pins. I2C and SPI are not used on the Pi. If AppArmor is enabled, the profile must allow access to the chosen serial device(s) and to Supervisor/network as used by the API client. See [ha-box/SECURITY.md](../ha-box/SECURITY.md) and [docs/HA_APPS_COMPLIANCE.md](HA_APPS_COMPLIANCE.md).
 
 ---
 
@@ -292,14 +297,23 @@ No `gpio`, `kernel_modules`, or I2C/SPI devices are required on the Pi for the A
 
 See [docs/I18N.md](I18N.md) for full details if present.
 
+## HA Box integration (custom component)
+
+A companion HA integration (`ha-integration/custom_components/ha_box/`) listens to events fired by the add-on and exposes all entities under a single **HA Box** device in the HA device registry:
+
+| Event | Entities created |
+|-------|-----------------|
+| `ha_box_sensors` | Temperature, Humidity, Pressure |
+| `ha_box_case_temp` | Case Temperature |
+| `ha_box_mode_changed` | Mode (Jour / Nuit) |
+
+Install by copying `custom_components/ha_box/` to your HA config folder, restarting HA, then adding the integration via Settings → Devices & Services → Add Integration → HA Box.
+
 ## Future evolutions
 
-- Support for multiple display types or resolutions on the ESP32
-- NFC (PN7161) integration: full UID/NDEF handling and onboarding flows
-- Optional WebSocket or REST endpoint for real-time HA events to the ESP32
-- Simulation or test mode for development without hardware
+- Publish integration to HACS
 - Additional languages (e.g. DE, ES) in translations and LANG id mapping
 
 ---
 
-*Last updated: 2026-03-05*
+*Last updated: 2026-04-02*

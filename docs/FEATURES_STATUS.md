@@ -13,7 +13,7 @@ Update status when a feature changes: `done` | `partial` | `planned`
 |---------|--------|------|-------------|-----------|-------------------|
 | Display the time (clock, local auto-advance) | done | Continuous (~1 s local); synced on `CLOCK` receipt | `CLOCK hh mm ss` | — | Clock interval hardcoded to 60 s on Pi side |
 | Display indoor temperature | done | On BME280 read (every 5 s) | — | — | Read directly from sensor on ESP32 |
-| Display indoor humidity | done | On BME280 read (every 5 s) | — | — | Not yet shown on screen |
+| Display indoor humidity | done | On BME280 read (every 5 s) | — | — | Displayed on home page (humidity widget) |
 | Display indoor pressure | done | On BME280 read (every 5 s) | — | — | BME280 data present; widget not wired |
 | Monitor case temperature (TMP102) | done | Polled every 5 s (fan loop) | — | — | Drives fan PWM; always compiled in |
 | Send BME280 data to Pi | done | Every 30 s (`SENS_PERIOD_MS`) | — | `SENS tC hum pPa` | BME280 polled every 5 s; aggregated and sent every 30 s |
@@ -21,7 +21,7 @@ Update status when a feature changes: `done` | `partial` | `planned`
 | Fan control (temperature-based PWM) | done | Continuous (~100 ms loop) | `FAN en tOn tFull` | — | Curve configurable at runtime via FAN verb from Pi; defaults: off < tOn-3 °C, ramp tOn–tFull, full > tFull |
 | **Button: short click, Pi OFF** → start Pi | done | On event (120 ms – 2 s press) | — | — | `pulseJ2()` = 150 ms pulse on J2; `setPiState(ON)` |
 | **Button: short click, Pi ON** → request shutdown | done | On event | — | `SHUTDOWN_REQUEST` | Sets state SHUTDOWN_PENDING |
-| **Button: long press (≥ 5 s), Pi ON** → J2 pulse | done | On event | — | — | Calls `pulseJ2()` (150 ms). `resetJ2()` (5500 ms hard stop) exists but **never called**; if intent is forced shutdown, `resetJ2()` should be used here |
+| **Button: long press (≥ 5 s), Pi ON** → J2 hard stop | done | On event | — | — | Calls `resetJ2()` (5500 ms hold) for forced shutdown |
 | **Button: long press, Pi OFF** | partial | On event | — | — | No action (`handleLongPress()` has no `else` for Pi OFF). Intentional? |
 | Button locked during SHUTDOWN_PENDING | done | While state = SHUTDOWN_PENDING | — | — | Click and long press ignored until state changes |
 | Deep sleep on heartbeat timeout | done | 5 min after last UART activity | — | — | `hbTimeoutMs = 300 000` ms in `.ino`; default in `.h` is 5000 ms — discrepancy |
@@ -30,7 +30,7 @@ Update status when a feature changes: `done` | `partial` | `planned`
 | Wake from deep sleep on button press | done | On event (ext0, GPIO33) | — | — | GPIO33 is RTC-capable; verified in code |
 | Buzzer feedback | done | On event | — | — | 100 ms beep; exact trigger points [not reviewed] |
 | Switch language (FR / EN) | done | On `LANG` receipt | `LANG id=0/1` | — | Persisted in NVS; triggers UI rebuild |
-| Read NFC tags | planned | On event (tag detection) | — | `NFC uid=...` (planned) | PN7161 driver not written |
+| Report firmware version | done | Once at boot (after `READY`) + on `VERSION` query | `VERSION ver=X.Y.Z` (query) | `VERSION ver=X.Y.Z` | Sent proactively after READY; also responds to Pi query |
 
 ---
 
@@ -46,13 +46,17 @@ Update status when a feature changes: `done` | `partial` | `planned`
 | Detect Matter active | done | Every 30 s | — | — | Matter add-on slug or entities |
 | Detect external access – Cloudflare tunnel | done | Every 30 s | — | — | Trusts Supervisor state (started = tunnel up); no outbound HTTP |
 | Detect external access – DuckDNS | done | Every 30 s | — | — | Add-on started + URL reachability check |
-| Expose BME280 temperature to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | `sensor.ha_box_temperature` |
-| Expose BME280 humidity to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | `sensor.ha_box_humidity` |
-| Expose BME280 pressure to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | `sensor.ha_box_pressure` (hPa) |
-| Expose case temperature (TMP102) to HA | done | On `CASE` receipt (~30 s) | `CASE tC` | — | `sensor.ha_box_case_temperature` |
-| Forward NFC tag UID to HA | planned | On event | `NFC uid=...` (planned) | — | Depends on NFC ESP32 feature |
+| Expose BME280 temperature to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | fires `ha_box_sensors` event → HA Box integration entity |
+| Expose BME280 humidity to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | fires `ha_box_sensors` event → HA Box integration entity |
+| Expose BME280 pressure to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | fires `ha_box_sensors` event → HA Box integration entity (hPa) |
+| Expose case temperature (TMP102) to HA | done | On `CASE` receipt (~30 s) | `CASE tC` | — | fires `ha_box_case_temp` event → HA Box integration entity |
+| Day/Night mode sync | done | On sun.sun poll + ESP32 touch | `DAYMODE mode=0/1` | `DAYMODE mode=0/1` | fires `ha_box_mode_changed` event; manual override from ESP32 touch cleared on next sun event |
+| OTA firmware update notice | done | Before esptool flash | — | `OTA` | Pi sends `OTA` before flashing so ESP32 can display the firmware-update loading screen |
+| CC1101 RF433 reception | partial | On frame received | — | — | CC1101 SPI driver + RFLink TCP server on port 5557 implemented (experimental); fires `ha_box_rf433_received` event with `{raw, protocol, pulse_count}`; no HA entity yet |
 | Shut down host on SHUTDOWN_REQUEST | done | On event | `SHUTDOWN_REQUEST` | `SHUTDOWN_ACCEPTED` | Calls Supervisor /host/shutdown |
 | Auto-detect HA language | done | Once at add-on startup | — | — | GET /core/api/config → language field |
+| OTA firmware update | done | Once on connection (version mismatch) | — | — | Queries ESP32 version via `VERSION`; flashes via esptool over UART0 if bundled version differs; up to 3 VERSION query retries |
+| Boot failure recovery (blind OTA) | done | During init, on repeated boot errors | — | — | Detects ROM boot error patterns on UART0 (≥ 3 occurrences); triggers blind flash without VERSION handshake; up to 3 attempts |
 
 ---
 
@@ -66,7 +70,7 @@ Update status when a feature changes: `done` | `partial` | `planned`
 | Apply display language from HA config | done | Once on connection | Language sent via `LANG id=0/1` on first connect; re-sent on reconnect |
 | Apply fan config from HA add-on options | done | Once on connection (re-sent on reconnect) | `FAN en=0/1 tOn=X tFull=Y` sent after LANG; persisted in ESP32 NVS so values survive deep sleep |
 | Shut down Pi from button (soft) | done | On event | Short click → SHUTDOWN_REQUEST → Pi → /host/shutdown → SHUTDOWN_ACCEPTED → deep sleep |
-| Force-stop Pi from button (hard J2 hold) | partial | On event (long press) | `resetJ2()` (5500 ms) exists but never called; `pulseJ2()` (150 ms) used instead |
+| Force-stop Pi from button (hard J2 hold) | done | On event (long press, Pi ON) | `resetJ2()` (5500 ms hold) called on long press when Pi is ON |
 | Wake Pi from button | done | On event (short click, Pi OFF) | pulseJ2 on boot and on button press when Pi is OFF |
 | Notify ESP32 when Pi is ready | done | Once on Pi startup / reconnect | |
 | Notify ESP32 when Pi is halting | done | On event (system halt) | |
@@ -75,21 +79,33 @@ Update status when a feature changes: `done` | `partial` | `planned`
 
 ## Configuration – App (add-on)
 
-Config key path is relative to `options:` in `config.yaml`.
+Config keys are top-level in `options.json` (add-on UI / YAML). `general` groups `log_level` and `lang`; all other sections are top-level keys.
 Language is auto-detected from Home Assistant Core at startup (not a user option).
 
 | Option | Config key | Default | Notes |
 |--------|-----------|---------|-------|
-| Weather entity | `home_assistant.weather_entity` | `weather.forecast_home` | HA entity for weather + outdoor temperature |
-| Weather update interval | `home_assistant.update_interval` | 300 s | 10–300 s |
-| Display rotation | `display.rotation` | 0 | 0–3; used by ESP32 display driver |
-| **Fan enabled** | `esp32.fan.enabled` | false | Sent to ESP32 as `FAN en=0/1`; persisted in ESP32 NVS |
-| **Fan min temperature** | `esp32.fan.min_temp` | 28 °C | `tOn`: fan starts; sent as `FAN tOn=X`; persisted in NVS |
-| **Fan max temperature** | `esp32.fan.max_temp` | 60 °C | `tFull`: fan at full speed; sent as `FAN tFull=Y`; persisted in NVS |
+| Log level | `general.log_level` | `info` | debug / info / warning / error / critical |
+| Language | `general.lang` | `auto` | auto / fr / en |
+| Weather entity | `weather.weather_entity` | `weather.forecast_home` | HA entity for weather + outdoor temperature |
+| Weather update interval | `weather.update_interval` | 300 s | 10–3600 s |
+| BME280 enabled | `bme280.enabled` | true | |
+| BME280 address | `bme280.address` | `auto` | auto / 0x76 / 0x77 |
+| BME280 update interval | `bme280.update_interval` | 30 s | |
+| Fan enabled | `fan.enabled` | false | Sent to ESP32 as `FAN en=0/1`; persisted in NVS |
+| Fan min temperature | `fan.min_temp` | 28 °C | `tOn`: fan starts; persisted in NVS |
+| Fan max temperature | `fan.max_temp` | 60 °C | `tFull`: fan at full speed; persisted in NVS |
+| OTA IO0 GPIO | `ota.io0_gpio` | null | Pi BCM GPIO → ESP32 IO0; null disables OTA |
+| OTA EN GPIO | `ota.en_gpio` | null | Pi BCM GPIO → ESP32 EN |
+| Day/Night update interval | `daynight.update_interval` | 60 s | sun.sun poll frequency (10–3600 s) |
+| Clock update interval | `clock.update_interval` | 60 s | 10–3600 s |
+| Status update interval | `status.update_interval` | 30 s | |
+| Exposed add-on slugs | `status.exposed_addon_slugs` | `[]` | Slugs that activate the "exposed" icon |
+| UART device | `uart.device` | `auto` | auto / /dev/serial0 / /dev/ttyAMA0 / /dev/ttyUSB0 |
+| Connected timeout | `connection.connected_timeout` | 120 s | Before switching to reconnecting |
+| Reconnecting timeout | `connection.reconnecting_timeout` | 60 s | Before switching to disconnected |
 
-> **Note:** `esp32.*` options are sent to the ESP32 once at add-on startup and persisted in NVS.
-> The ESP32 restores these values from NVS on every boot, even before the Pi reconnects.
-> To apply a change, restart the add-on.
+> Fan and OTA options are sent to the ESP32 once at add-on startup and persisted in NVS.
+> Restart the add-on to apply changes.
 
 ---
 
@@ -106,7 +122,7 @@ Compile-time constants in `config.h` or `.ino`. Require reflashing to change.
 | Fan on temperature (default) | 28 °C | Overridden at runtime by `FAN tOn=X` from Pi |
 | Fan full speed temperature (default) | 60 °C | Overridden at runtime by `FAN tFull=Y` from Pi |
 | J2 short pulse duration | 150 ms (`j2PulseMs`) | Used for wake + short-press soft stop |
-| J2 long pulse duration | 5500 ms (`j2ResetMs`) | Hard stop; `resetJ2()` exists but never called |
+| J2 long pulse duration | 5500 ms (`j2ResetMs`) | Hard stop; called by `handleLongPress()` when Pi is ON |
 | Heartbeat timeout (Pi ON) | 300 000 ms (5 min) | Set in `.ino`; default in `.h` is 5000 ms |
 | Shutdown pending timeout | 60 000 ms (60 s) | Fallback if SHUTDOWN_ACCEPTED not received |
 | Button short click range | 120 ms – 2 s | Presses between 2 s – 5 s are ignored |

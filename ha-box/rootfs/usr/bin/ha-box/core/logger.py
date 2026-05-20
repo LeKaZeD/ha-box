@@ -3,7 +3,25 @@
 import logging
 import sys
 
-def setup_logging(level: int = logging.DEBUG) -> logging.Logger:
+TRACE = 5
+logging.addLevelName(TRACE, "TRACE")
+
+_LEVEL_MAP = {
+    "trace": TRACE,
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+}
+
+
+def parse_log_level(level_str: str) -> int:
+    """Convert a level name string to a logging level int. Defaults to INFO."""
+    return _LEVEL_MAP.get(level_str.lower(), logging.INFO)
+
+
+def setup_logging(level: int = logging.INFO) -> logging.Logger:
     """
     Setup logging configuration.
     

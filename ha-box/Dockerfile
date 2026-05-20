@@ -13,11 +13,8 @@ RUN \
     apk add --no-cache \
         python3 \
         py3-pip \
-        py3-requests
-
-# Note: RPi.GPIO and i2c-tools not needed for UART communication only
-# Note: Build dependencies (gcc, python3-dev, image libraries) not needed for current minimal setup
-# They will be added back when GPIO/I2C/SPI/display features are implemented
+        py3-requests \
+        libgpiod
 
 # Install Python packages
 # Using --break-system-packages is safe in a container environment
@@ -28,6 +25,9 @@ RUN \
 
 # Copy translations (for Python i18n module)
 COPY translations /addon/translations
+
+# Bundle ESP32 firmware for OTA updates
+COPY firmware /usr/share/ha-box/firmware
 
 # Copy root filesystem
 COPY rootfs /

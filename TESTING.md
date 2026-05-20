@@ -63,7 +63,7 @@ This guide explains how to test the HA Box App on Home Assistant OS.
 
 ### Optional: Local Development on VM (amd64, No GPIO)
 
-When running on a Home Assistant OS VM without real GPIO/I2C/SPI hardware:
+When running on a Home Assistant OS VM without real hardware (no UART, no GPIO, no SPI):
 
 1. Edit `ha-box/config.yaml`:
    - Ensure architectures include both:
@@ -91,7 +91,7 @@ When running on a Home Assistant OS VM without real GPIO/I2C/SPI hardware:
 1. Create a GitHub repository
 2. Push your code:
    ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/ha-box.git
+   git remote add origin https://github.com/LeKaZeD/ha-box.git
    git push -u origin main
    ```
 
@@ -99,7 +99,7 @@ When running on a Home Assistant OS VM without real GPIO/I2C/SPI hardware:
 
 1. In Home Assistant, go to **Settings** → **Apps** → **App Store**
 2. Click the **⋮** menu → **Repositories**
-3. Add repository URL: `https://github.com/YOUR_USERNAME/ha-box`
+3. Add repository URL: `https://github.com/LeKaZeD/ha-box`
 4. Click **Add**
 5. Refresh the page
 
@@ -122,9 +122,9 @@ docker build -t ha-box:local --build-arg BUILD_ARCH=aarch64 .
 
 ```bash
 docker run --rm -it \
-  --device=/dev/i2c-1 \
-  --device=/dev/spidev0.0 \
-  --device=/dev/gpiomem \
+  --device=/dev/ttyAMA0 \
+  --device=/dev/serial0 \
+  --device=/dev/gpiochip0 \
   ha-box:local \
   python3 /usr/bin/ha-box/main.py
 ```
@@ -149,38 +149,23 @@ docker run --rm -it \
 
 - Check App logs: **HA Box** → **Logs** tab
 - Verify hardware permissions in `config.yaml`
-- Check that I2C/SPI are enabled in `/mnt/boot/config.txt`
+- If RF433 is enabled: verify SPI is enabled in `/mnt/boot/config.txt` (`dtparam=spi=on`)
 - Verify Python dependencies are installed correctly
 
-### Hardware Not Detected
+### ESP32 Not Detected / UART Not Working
 
-1. **Enable I2C and SPI** on Raspberry Pi:
+1. **Enable UART** on Raspberry Pi (HAOS):
+
+   `/mnt/boot/config.txt` cannot be edited via SSH or the web terminal. Edit it physically — connect a keyboard and screen to the Pi, or mount the SD card / NVMe on a computer. See [docs/HARDWARE.md](docs/HARDWARE.md#pi-configtxt-haos) for the exact lines to add (differs between Pi 4 and Pi 5).
+
+2. **Verify UART device exists**:
    ```bash
-   # SSH into Home Assistant
-   ssh root@homeassistant.local
-   
-   # Edit config.txt
-   nano /mnt/boot/config.txt
-   
-   # Add these lines:
-   dtparam=i2c_arm=on
-   dtparam=i2c1=on
-   dtparam=spi=on
-   
-   # Save and reboot
-   reboot
+   ls -l /dev/serial0 /dev/ttyAMA0
    ```
 
-2. **Verify devices exist**:
+3. **Verify GPIO chardev**:
    ```bash
-   ls -l /dev/i2c-1
-   ls -l /dev/spidev0.0
-   ls -l /dev/gpiomem
-   ```
-
-3. **Check I2C devices**:
-   ```bash
-   i2cdetect -y 1
+   ls -l /dev/gpiochip0
    ```
 
 ## Development Workflow
@@ -191,15 +176,35 @@ docker run --rm -it \
 4. **Check logs** for errors
 5. **Repeat** as needed
 
+## Initial ESP32 Firmware Flash
+
+The add-on bundles an ESP32 firmware binary and flashes it automatically via OTA when the version differs. However, for a **brand-new ESP32** (no firmware yet), you need to flash it manually once via USB.
+
+### Requirements
+
+- Arduino IDE 2.x with ESP32 board package installed
+- USB-to-Serial adapter (or direct USB connection if supported by your board)
+- GxEPD2 library installed via Library Manager
+- `gdey/` subfolder copied from the GxEPD2 library into `ESPHOMEASSISTANT/` (see `ha-box-esp-fw/README.md`)
+
+### Steps
+
+1. Open `ha-box-esp-fw/ESPHOMEASSISTANT/ESPHOMEASSISTANT.ino` in Arduino IDE
+2. Set board to `ESP32 Dev Module`, upload speed `115200`, partition scheme `Default 4MB with spiffs`
+3. Connect the ESP32 via USB and select the correct port
+4. Click **Upload**
+5. Once flashed, disconnect USB and reconnect the ESP32 to the Pi via UART
+
+From this point on, the add-on will handle firmware updates automatically (OTA via UART0 when the bundled version differs from what is running).
+
 ## Next Steps
 
 Once the App is running:
 
-1. Check logs to verify startup
-2. Test hardware detection (if hardware is connected)
-3. Verify Home Assistant API connection
-4. Test configuration changes
-5. Continue development on Phase 3 (hardware drivers)
+1. Check logs to verify startup and ESP32 connection (`READY` handshake)
+2. Verify sensor entities appear in Home Assistant (BME280 × 3, TMP102)
+3. Check OTA: if ESP32 firmware version differs from bundled, flash should trigger automatically
+4. Test configuration changes (fan curve, OTA GPIO pins)
 
 ---
 

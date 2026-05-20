@@ -14,6 +14,8 @@ from handlers.sensor_handler import SensorHandler
 if TYPE_CHECKING:
     from api.ha_api import HomeAssistantAPI
     from communication.esp32_comm import ESP32Comm
+    from handlers.daynight_handler import DayNightHandler
+    from handlers.status_handler import StatusHandler
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,8 @@ class MessageHandler:
         sensor_handler: Optional[SensorHandler] = None,
         ha_api: Optional["HomeAssistantAPI"] = None,
         esp32_comm: Optional["ESP32Comm"] = None,
+        daynight_handler: Optional["DayNightHandler"] = None,
+        status_handler: Optional["StatusHandler"] = None,
     ) -> None:
         """
         Initialize message handler.
@@ -38,7 +42,10 @@ class MessageHandler:
         self.sensor_handler = sensor_handler
         self.ha_api = ha_api
         self.esp32_comm = esp32_comm
+        self.daynight_handler = daynight_handler
+        self.status_handler = status_handler
         self.last_message_time = 0.0
+        self.esp32_firmware_version: Optional[str] = None
     
     def handle_message(self, msg: Message) -> None:
         """
@@ -52,17 +59,21 @@ class MessageHandler:
             logger.info("Received message from ESP32: verb=%s, id=%d, %s", msg.verb, msg.id, kv_str)
         else:
             logger.info("Received message from ESP32: verb=%s, id=%d", msg.verb, msg.id)
-        for i, kv in enumerate(msg.kv):
-            logger.debug("  kv[%d]: %s=%s", i, kv.key, kv.val)
-        
+
         # Update last message time
-        old_time = self.last_message_time
         self.last_message_time = time.time()
-        logger.debug("Updated last_message_time: %.1f → %.1f", old_time, self.last_message_time)
         
         # Route message to appropriate handler
         if msg.verb == "READY":
-            logger.info("ESP32 is ready")
+            logger.debug("ESP32 is ready")
+
+        elif msg.verb == "VERSION":
+            ver = msg.get("ver")
+            if ver:
+                self.esp32_firmware_version = ver
+                logger.info("ESP32 firmware version: %s", ver)
+            else:
+                logger.warning("VERSION message missing ver key")
         
         elif msg.verb == "SENS":
             if self.sensor_handler:
@@ -85,11 +96,6 @@ class MessageHandler:
             action = msg.get("action", "unknown")
             logger.info("Touch event: %s", action)
         
-        elif msg.verb == "NFC":
-            # Handle NFC events
-            uid = msg.get("uid", "unknown")
-            logger.info("NFC event: UID=%s", uid)
-        
         elif msg.verb == "SHUTDOWN_REQUEST":
             logger.info("ESP32 requested host shutdown (power button short press)")
             if self.ha_api:
@@ -97,11 +103,25 @@ class MessageHandler:
                     logger.info("Host shutdown initiated successfully")
                     if self.esp32_comm:
                         self.esp32_comm.send_command("SHUTDOWN_ACCEPTED")
-                        logger.debug("SHUTDOWN_ACCEPTED sent to ESP32 (immediate deep sleep)")
+                        logger.info("SHUTDOWN_ACCEPTED sent to ESP32")
+                    if self.status_handler:
+                        self.status_handler.accelerate(5.0)
+                        logger.info("Status heartbeat accelerated to 5s for shutdown detection")
                 else:
                     logger.warning("Host shutdown request failed (check add-on hassio_role)")
             else:
                 logger.warning("SHUTDOWN_REQUEST received but no HA API configured")
+
+        elif msg.verb == "DAYMODE":
+            mode_str = msg.get("mode") or "0"
+            try:
+                mode = int(mode_str)
+            except ValueError:
+                mode = 0
+            if self.daynight_handler:
+                self.daynight_handler.on_esp32_daymode(mode)
+            else:
+                logger.debug("DAYMODE received but no daynight handler configured")
 
         elif msg.verb == "ALL_OFF":
             logger.info("ESP32 requested all lights off")
@@ -129,11 +149,12 @@ class MessageHandler:
         # Whitelist of allowed commands
         allowed_verbs = [
             "READY",
+            "VERSION",
             "SENS",
             "CASE",
             "STATUS",
             "TOUCH",
-            "NFC",
+            "DAYMODE",
             "SHUTDOWN_REQUEST",
             "ALL_OFF",
         ]

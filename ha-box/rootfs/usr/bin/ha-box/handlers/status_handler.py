@@ -6,7 +6,7 @@ KV are optional: when available we send core/sup/net/lan/wifi/ext; otherwise hea
 import logging
 import threading
 import time
-from typing import Optional, Callable, FrozenSet
+from typing import Optional, Callable, FrozenSet, Tuple
 from communication.esp32_comm import ESP32Comm, KV
 from api.ha_api import HomeAssistantAPI
 from handlers.status_fetchers import get_all_status
@@ -24,6 +24,13 @@ STATUS_KEY_MAP = (
     ("zigbee", "zigbee_ok"),
     ("thread", "thread_ok"),
     ("matter", "matter_ok"),
+    ("mhz433", "rf433_ok"),
+)
+
+# Integer count keys (sent as numeric strings, not 0/1).
+INT_STATUS_KEY_MAP = (
+    ("warn", "warnings_count"),
+    ("err",  "errors_count"),
 )
 
 
@@ -36,6 +43,7 @@ class StatusHandler:
         ha_api: Optional[HomeAssistantAPI] = None,
         update_interval: float = 30.0,
         exposed_addon_slugs: Optional[FrozenSet[str]] = None,
+        rf433_spi: Optional[Tuple[int, int]] = None,
     ) -> None:
         """
         Initialize status handler.
@@ -45,11 +53,13 @@ class StatusHandler:
             ha_api: Home Assistant API client.
             update_interval: Interval in seconds between status sends (default 30).
             exposed_addon_slugs: Slugs for "exposed" add-ons; None = use default.
+            rf433_spi: (spi_bus, spi_device) tuple if CC1101 probe should run; None = skip.
         """
         self.esp32_comm = esp32_comm
         self.ha_api = ha_api
         self.update_interval = update_interval
         self.exposed_addon_slugs = exposed_addon_slugs
+        self.rf433_spi = rf433_spi
         self.last_update = 0.0
         self.timer: Optional[threading.Timer] = None
         self._is_connected_callback: Optional[Callable[[], bool]] = None
@@ -74,6 +84,14 @@ class StatusHandler:
             self.timer.cancel()
             self.timer = None
 
+    def accelerate(self, interval: float) -> None:
+        """Switch to a faster update interval (e.g. during shutdown)."""
+        logger.info("Status update interval accelerated to %.1fs", interval)
+        self.update_interval = interval
+        if self.timer:
+            self.timer.cancel()
+        self._schedule_next()
+
     def _schedule_next(self) -> None:
         """Schedule next status send."""
         if self.timer:
@@ -86,6 +104,7 @@ class StatusHandler:
         """Timer callback: send status if connected, then reschedule."""
         if self._is_connected_callback and not self._is_connected_callback():
             logger.debug("Status periodic update skipped: ESP32 not connected")
+            self._schedule_next()
             return
         self._send_status()
         self._schedule_next()
@@ -101,10 +120,13 @@ class StatusHandler:
         kv_list: list = []
         try:
             if self.ha_api:
-                status = get_all_status(self.ha_api, self.exposed_addon_slugs)
+                status = get_all_status(self.ha_api, self.exposed_addon_slugs, self.rf433_spi)
                 for esp32_key, status_key in STATUS_KEY_MAP:
                     if status_key in status:
                         kv_list.append(KV(esp32_key, "1" if status[status_key] else "0"))
+                for esp32_key, status_key in INT_STATUS_KEY_MAP:
+                    if status_key in status:
+                        kv_list.append(KV(esp32_key, str(int(status[status_key]))))
             if kv_list:
                 msg_id = self.esp32_comm.send_command("STATUS", kv_list)
                 payload = " ".join(f"{k.key}={k.val}" for k in kv_list)
