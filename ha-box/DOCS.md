@@ -32,7 +32,7 @@ After editing: `ha host reboot`
 
 ## Installation
 
-1. Add this repository to Home Assistant Apps (Settings → Add-ons → Add-on Store → ⋮ → Repositories)
+1. Add this repository to Home Assistant Apps (Settings → Apps → App Store → ⋮ → Repositories)
 2. Install **HA Box**
 3. Install the **HA Box custom integration**: copy `ha-integration/custom_components/ha_box/` to your HA `config/custom_components/` folder, then restart Home Assistant
 4. Configure options (see below)
@@ -76,7 +76,7 @@ clock:
 
 status:
   update_interval: 30     # seconds (10–300)
-  exposed_addon_slugs: [] # add-on slugs to show as "exposed" in status bar
+  exposed_addon_slugs: [] # App slugs to show as "exposed" in status bar
 
 uart:
   device: "auto"          # auto | /dev/serial0 | /dev/ttyAMA0 | /dev/ttyUSB0
@@ -126,8 +126,8 @@ CC1101 wiring (Pi GPIO header):
 
 ## Troubleshooting
 
-**UART not detected** — Check that `enable_uart=1` is in `config.txt` and the add-on option `uart.device` is set to `auto`.
+**UART not detected** — Check that `enable_uart=1` is in `config.txt` and the App option `uart.device` is set to `auto`.
 
-**ESP32 firmware not updating** — Verify `ota.io0_gpio` and `ota.en_gpio` match the wiring (default: GPIO23 / GPIO24). Check add-on logs for esptool output.
+**ESP32 firmware not updating** — Verify `ota.io0_gpio` and `ota.en_gpio` match the wiring (default: GPIO23 / GPIO24). Check App logs for esptool output.
 
 **No sensor entities in HA** — Ensure the `ha_box` custom integration is installed and Home Assistant was restarted after copying it.

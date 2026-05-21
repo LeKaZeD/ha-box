@@ -11,7 +11,7 @@ This document analyses how to fetch Home Assistant and system status on the Pi (
 | **HA Core** | Core is running and API responds | Supervisor or Core API |
 | **Supervisor** | Supervisor is healthy | Supervisor API |
 | **Internet** | Host has connectivity (LAN and/or WiFi) | Supervisor network/host APIs |
-| **Exposed** | Instance reachable from internet (Cloud, DuckDNS, tunnel, etc.) | Core config / integrations / Supervisor add-ons |
+| **Exposed** | Instance reachable from internet (Cloud, DuckDNS, tunnel, etc.) | Core config / integrations / Supervisor Apps |
 
 The ESP32 already has a **status icons** row (WiFi, BLE, Zigbee, Thread, IR, 433MHz, Matter). Today only **WiFi** is driven by the Pi (set to true on READY, false on HALTED). The others can be repurposed or extended for the new statuses (e.g. WiFi = internet, one icon = Core, one = Supervisor, one = Exposed), or we add a dedicated “HA status” payload.
 
@@ -33,7 +33,7 @@ The App runs in a container and talks to the Supervisor with `SUPERVISOR_TOKEN` 
 
 References:
 
-- [Supervisor API (Endpoints/Models)](https://developers.home-assistant.io/docs/api/supervisor/) – official docs; some links may be under “add-ons” or “apps”.
+- [Supervisor API (Endpoints/Models)](https://developers.home-assistant.io/docs/api/supervisor/) – official docs; some links may be under “Apps” or “apps”.
 - Supervisor source: [home-assistant/supervisor](https://github.com/home-assistant/supervisor) (REST handlers under `supervisor/api/`).
 
 **Derived logic:**
@@ -49,20 +49,20 @@ Core is reached via Supervisor proxy at `{base}/core/api/...`.
 | Endpoint | Purpose | Useful for |
 |----------|---------|------------|
 | **GET /core/api/config** | Core config | Version, location; not needed for “exposed” |
-| **GET /core/api/states** | States | Query specific entities (e.g. cloud/remote_ui or add-on states) |
+| **GET /core/api/states** | States | Query specific entities (e.g. cloud/remote_ui or App states) |
 
 **“Exposed on internet”:**
 
 - **Nabu Casa (HA Cloud)**: Often exposed as an integration; state may be in an entity or in config. No single standard REST endpoint; sometimes derived from `cloud` component or a “cloud” related entity.
-- **DuckDNS / Let’s Encrypt / Cloudflare tunnel**: Usually run as **Supervisor add-ons**. Their “state” (running, failed) can be obtained from the **Supervisor add-ons list** (e.g. `GET /addons` or `/store/addons` and filter by slug, then check state). If an add-on is “started” and its slug is one of `a0d7b954_duckdns`, `core_duckdns`, `cloudflare`, etc., we can consider “exposed” as true (optionally with which method).
-- **Alternative**: Expose a small config option in our App (e.g. “exposed” = cloud | duckdns | tunnel | none) and let the user set it, or try to infer from add-ons list.
+- **DuckDNS / Let’s Encrypt / Cloudflare tunnel**: Usually run as **Supervisor Apps**. Their “state” (running, failed) can be obtained from the **Supervisor Apps list** (e.g. `GET /addons` or `/store/addons` and filter by slug, then check state). If an App is “started” and its slug is one of `a0d7b954_duckdns`, `core_duckdns`, `cloudflare`, etc., we can consider “exposed” as true (optionally with which method).
+- **Alternative**: Expose a small config option in our App (e.g. “exposed” = cloud | duckdns | tunnel | none) and let the user set it, or try to infer from Apps list.
 
 So:
 
 - **Core status**: Supervisor + Core API (already in place).
 - **Supervisor status**: Supervisor `/supervisor/info`.
 - **Internet (LAN/WiFi)**: Supervisor `/network/info` (or list interfaces).
-- **Exposed**: Prefer Supervisor add-ons list; optionally Core entities if we standardise on specific entity_ids for “remote access” or “cloud”.
+- **Exposed**: Prefer Supervisor Apps list; optionally Core entities if we standardise on specific entity_ids for “remote access” or “cloud”.
 
 ---
 
@@ -85,7 +85,7 @@ So:
   - **Core** (existing + optional):
     - Keep `_check_core_available()` for “Core OK”.
   - **Exposed** (optional for v1):
-    - `get_addons_list()` → GET `{base}/addons` or similar → filter by slugs (e.g. DuckDNS, Cloudflare); “exposed” = at least one such add-on is “started”. If the endpoint is not available or restricted, fall back to config option or skip for first version.
+    - `get_addons_list()` → GET `{base}/addons` or similar → filter by slugs (e.g. DuckDNS, Cloudflare); “exposed” = at least one such App is “started”. If the endpoint is not available or restricted, fall back to config option or skip for first version.
 
 - **Caching / rate limiting**: These calls should be done at a fixed interval (e.g. every 30–60 s), not on every loop. Reuse the same pattern as weather/clock (e.g. a small “status” service or a method called from the main loop with a timer).
 
@@ -100,26 +100,26 @@ So:
 - **Protocol**: Keep **STATUS** in `authorizeIncoming`. In `onMsg`, when verb is STATUS and `msg.kvCount > 0`, parse KVs, e.g.:
   - `core` (0/1), `sup` (0/1), `net` (0/1), `lan` (0/1), `wifi` (0/1), `ext` (0/1).
   - `zigbee` (0/1), `thread` (0/1), `matter` (0/1) → Zigbee/Thread/Matter status (icons in status bar).
-- **Model**: Reuse existing booleans; Zigbee/Thread/Matter are driven by the Pi from add-ons and Core integrations (see 4.5).
+- **Model**: Reuse existing booleans; Zigbee/Thread/Matter are driven by the Pi from Apps and Core integrations (see 4.5).
 
 ### 4.5 Zigbee, Thread, Matter (incl. multipan)
 
 Detection works in all common setups:
 
 - **Zigbee**
-  - **ZHA** (Zigbee Home Automation): Core integration only (no add-on). Detected via Core entities `zha.*`.
-  - **Zigbee2MQTT**: Add-on whose slug contains `zigbee2mqtt` (any repo), or Core entities `zigbee2mqtt.*`.
+  - **ZHA** (Zigbee Home Automation): Core integration only (no App). Detected via Core entities `zha.*`.
+  - **Zigbee2MQTT**: App whose slug contains `zigbee2mqtt` (any repo), or Core entities `zigbee2mqtt.*`.
 - **Thread**
-  - **OpenThread Border Router (OTBR)**: Add-on whose slug contains `openthread` or `otbr` (e.g. `core_openthread_border_router`), or Core entities `otbr.*`.
-  - **Silabs Multiprotocol**: Add-on whose slug contains `silabs` (multipan Zigbee+Thread on one stick).
-  - Any other Thread add-on: slug contains `thread`.
-- **Matter**: Add-on whose slug contains `matter`, or Core entities `matter.*`.
+  - **OpenThread Border Router (OTBR)**: App whose slug contains `openthread` or `otbr` (e.g. `core_openthread_border_router`), or Core entities `otbr.*`.
+  - **Silabs Multiprotocol**: App whose slug contains `silabs` (multipan Zigbee+Thread on one stick).
+  - Any other Thread App: slug contains `thread`.
+- **Matter**: App whose slug contains `matter`, or Core entities `matter.*`.
 
-With a **multipan** stick (e.g. Silabs Multiprotocol), Zigbee and Thread can both be active: Zigbee via Zigbee2MQTT or ZHA, Thread via the same add-on or OTBR. Each protocol is detected independently (add-on list + Core entity list). No user config required; slugs are matched by substring so any repo (core_*, community repo id_*) is supported.
+With a **multipan** stick (e.g. Silabs Multiprotocol), Zigbee and Thread can both be active: Zigbee via Zigbee2MQTT or ZHA, Thread via the same App or OTBR. Each protocol is detected independently (App list + Core entity list). No user config required; slugs are matched by substring so any repo (core_*, community repo id_*) is supported.
 
 ### 4.4 Summary of Steps
 
-1. **App – Supervisor API**: Implement `get_supervisor_info()`, `get_network_info()`, and add-ons list (see section 7) in `ha_api.py` or a dedicated module; timeouts and error handling; no Core dependency for Supervisor/network/addons.
+1. **App – Supervisor API**: Implement `get_supervisor_info()`, `get_network_info()`, and Apps list (see section 7) in `ha_api.py` or a dedicated module; timeouts and error handling; no Core dependency for Supervisor/network/addons.
 2. **App – Status aggregation**: A **StatusHandler** (see section 5) that at a fixed interval builds core_ok, supervisor_ok, internet_ok, lan_ok, wifi_ok, exposed_ok and sends **STATUS** with KVs via `esp32_comm.send_command("STATUS", [KV("core", "1"), ...])`.
 3. **Connection manager**: Either (a) keep sending a lightweight STATUS (no KVs) as heartbeat from connection_manager and have StatusHandler send a separate “rich” STATUS with KVs on its own timer, or (b) have the single periodic message sent by StatusHandler (STATUS with KVs) and remove the bare STATUS from connection_manager so one message does both. Option (b) is simpler: one STATUS with KVs every 30 s = heartbeat + status bundle.
 4. **ESP32**: In `onMsg` for STATUS, parse KVs and update model + dirty flags; wire icons to booleans.
@@ -175,7 +175,7 @@ Recommendation: **Option A** (extend `ha_api.py`) for now; if the file grows too
 
 ### 6.2 Supervisor WebSocket
 
-- The **Supervisor** does **not** expose a public WebSocket API for add-ons. All Supervisor data (info, network, addons) is obtained via **REST**. So we only poll Supervisor endpoints at our chosen interval.
+- The **Supervisor** does **not** expose a public WebSocket API for Apps. All Supervisor data (info, network, addons) is obtained via **REST**. So we only poll Supervisor endpoints at our chosen interval.
 
 ---
 
@@ -183,24 +183,24 @@ Recommendation: **Option A** (extend `ha_api.py`) for now; if the file grows too
 
 ### 7.1 How to List Other Apps
 
-- **Supervisor API**: The Supervisor exposes REST endpoints to list add-ons. The exact path may be one of:
-  - `GET /addons` – list of installed add-ons (to be confirmed in Supervisor source or [python-supervisor-client](https://github.com/home-assistant-libs/python-supervisor-client)).
-  - `GET /store/addons` – store listing (all available); we need **installed** add-ons and their **state**.
-- **Self-info**: `GET /addons/self/info` is documented for the current add-on; it returns our own slug, version, state, etc.
+- **Supervisor API**: The Supervisor exposes REST endpoints to list Apps. The exact path may be one of:
+  - `GET /addons` – list of installed Apps (to be confirmed in Supervisor source or [python-supervisor-client](https://github.com/home-assistant-libs/python-supervisor-client)).
+  - `GET /store/addons` – store listing (all available); we need **installed** Apps and their **state**.
+- **Self-info**: `GET /addons/self/info` is documented for the current App; it returns our own slug, version, state, etc.
 - **Discovery**: In the Supervisor GitHub repo, look under `supervisor/api/` for routes like `addons`, `addons/list`, or `store`. The [Addon model](https://developers.home-assistant.io/docs/api/supervisor/models) includes: **name**, **slug**, **version**, **version_latest**, **state** (e.g. "started", "stopped"), **installed**, **available**, and optionally **description**, **icon**, **update_available**, **system_managed**.
 
 ### 7.2 What We Need for “Exposed” and General Use
 
-- **Exposed on internet**: Filter the add-ons list by **slug** (e.g. `a0d7b954_duckdns`, `core_duckdns`, `a0d7b954_cloudflare`, or slugs for Nabu Casa / Cloudflare tunnel add-ons). If any of these has **state == "started"**, set `ext=1` in STATUS. Slugs can be configured in our App (e.g. a list of “exposed” add-on slugs) so we do not hardcode.
+- **Exposed on internet**: Filter the Apps list by **slug** (e.g. `a0d7b954_duckdns`, `core_duckdns`, `a0d7b954_cloudflare`, or slugs for Nabu Casa / Cloudflare tunnel Apps). If any of these has **state == "started"**, set `ext=1` in STATUS. Slugs can be configured in our App (e.g. a list of “exposed” App slugs) so we do not hardcode.
 - **Other useful info** (optional for display or logic):
-  - **Update available**: `update_available` per add-on; we could show a “updates available” icon on the ESP32 if any critical add-on has an update.
-  - **State of specific Apps**: e.g. Zigbee2MQTT, Mosquitto – if we want to drive Zigbee/Matter icons from actual add-on state, we can map slug → icon (zigbee_ok = True if addon slug X is started). That requires a small mapping (slug → our model flag) in config or code.
+  - **Update available**: `update_available` per App; we could show a “updates available” icon on the ESP32 if any critical App has an update.
+  - **State of specific Apps**: e.g. Zigbee2MQTT, Mosquitto – if we want to drive Zigbee/Matter icons from actual App state, we can map slug → icon (zigbee_ok = True if addon slug X is started). That requires a small mapping (slug → our model flag) in config or code.
 
 ### 7.3 Access Control (403 on GET /addons)
 
-- The Supervisor may return **403 Forbidden** for `GET /addons` depending on the add-on's API role. With the default role (`hassio_api: true`), listing all add-ons is often not allowed.
-- **Current behaviour**: The app treats 403 on `/addons` as "add-ons list unavailable": it logs a **WARNING** (not ERROR), returns no list, and status shows **ext=0**. Core, Supervisor, network and LAN/WiFi status are unchanged.
-- **If you need ext=1 (exposed)**: Ensure the add-on has Supervisor API access; check Supervisor/docs for the role required to list add-ons. Alternatively, rely on user config or `GET /addons/self/info` only.
+- The Supervisor may return **403 Forbidden** for `GET /addons` depending on the App's API role. With the default role (`hassio_api: true`), listing all Apps is often not allowed.
+- **Current behaviour**: The app treats 403 on `/addons` as "Apps list unavailable": it logs a **WARNING** (not ERROR), returns no list, and status shows **ext=0**. Core, Supervisor, network and LAN/WiFi status are unchanged.
+- **If you need ext=1 (exposed)**: Ensure the App has Supervisor API access; check Supervisor/docs for the role required to list Apps. Alternatively, rely on user config or `GET /addons/self/info` only.
 
 ---
 

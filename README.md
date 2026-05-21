@@ -26,7 +26,7 @@ HA Box is composed of four independent layers that work together:
 |  |    (433 MHz, SPI)         |   |  - Power button + J2    |  |
 |  |                           |   |                         |  |
 |  |  [ Home Assistant OS ]    |   |                         |  |
-|  |  [ HA Box add-on (py) ]<--+---+--> UART                 |  |
+|  |  [ HA Box App (py) ]   <--+---+--> UART                 |  |
 |  +---------------------------+   +-------------------------+  |
 +---------------------------------------------------------------+
 ```
@@ -36,7 +36,7 @@ HA Box is composed of four independent layers that work together:
 | **Hardware** | Pi 5 stack, haboxesp PCB, Sonoff dongle, connectors | `hardware/` |
 | **3D enclosure** | Modular, printable enclosure for all components | `hardware/3D plan/` |
 | **ESP32 firmware** | Drives display, sensors, touch, fan, buzzer | `ha-box-esp/` |
-| **HA add-on** | Python app: UART bridge to HA API and Supervisor | `ha-box/` |
+| **HA App** | Python app: UART bridge to HA API and Supervisor | `ha-box/` |
 | **HA integration** | Custom component: groups all HA Box entities in the device registry | `ha-integration/` |
 
 ---
@@ -94,17 +94,17 @@ The ESP32 firmware (`ha-box-esp-fw/`) is a C++ application that:
 - controls the fan (PWM, temperature-based)
 - manages the power button (wake from deep sleep, shutdown request)
 - controls the buzzer for haptic feedback
-- communicates with the Pi add-on over UART using a line-based ASCII protocol
+- communicates with the Pi App over UART using a line-based ASCII protocol
 
 See [ha-box-esp-fw/ESPHOMEASSISTANT/ARCHITECTURE.md](ha-box-esp-fw/ESPHOMEASSISTANT/ARCHITECTURE.md) and [docs/ESP32_RASP_COM.md](docs/ESP32_RASP_COM.md) for the firmware architecture and UART protocol.
 
 ---
 
-## HA add-on
+## HA App
 
-The HA Box add-on (`ha-box/`) is a Home Assistant OS Supervisor App written in Python. It runs inside a Docker container on the Pi and acts as a bridge between the ESP32 (UART) and Home Assistant (HTTP API + Supervisor API).
+The HA Box App (`ha-box/`) is a Home Assistant OS Supervisor App written in Python. It runs inside a Docker container on the Pi and acts as a bridge between the ESP32 (UART) and Home Assistant (HTTP API + Supervisor API).
 
-It does not access display, sensors, or actuators directly. All peripherals are on the ESP32 side; the add-on communicates over UART0 and controls two Pi GPIOs (IO0 + EN) for OTA firmware updates.
+It does not access display, sensors, or actuators directly. All peripherals are on the ESP32 side; the App communicates over UART0 and controls two Pi GPIOs (IO0 + EN) for OTA firmware updates.
 
 ### Raspberry Pi configuration (UART)
 
@@ -116,16 +116,16 @@ Edit `/mnt/boot/config.txt` physically (keyboard + screen on the Pi, or SD card 
 
    [![Add repository](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FLeKaZeD%2Fha-box)
 
-   Or manually: **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories** → add the URL.
+   Or manually: **Settings** → **App** → **App Store** → **⋮** → **Repositories** → add the URL.
 
 2. Install **HA Box**.
 3. Install the **HA Box custom integration**: copy `ha-integration/custom_components/ha_box/` to your HA `config/custom_components/` folder, then restart Home Assistant. This creates the HA Box device in the device registry.
 4. Configure options according to your hardware (see below).
-5. Start the add-on.
+5. Start the App.
 
 ### Configuration
 
-Configure options in the add-on UI or directly in YAML. Restart the add-on to apply changes.
+Configure options in the App UI or directly in YAML. Restart the App to apply changes.
 
 ```yaml
 general:
@@ -170,7 +170,7 @@ connection:
 
 Language is auto-detected from the Home Assistant Core configuration (`/api/config` → `language`), with fallback to the container environment (`LANG`) and then English.
 
-Fan and OTA options are sent to the ESP32 on every add-on startup and persisted in NVS — restart the add-on to apply changes.
+Fan and OTA options are sent to the ESP32 on every App startup and persisted in NVS — restart the App to apply changes.
 
 ---
 
@@ -210,10 +210,10 @@ ha-box/
 │   ├── haboxesp/          KiCad PCB project (haboxesp V0.1)
 │   ├── 3D plan/           Fusion 360 enclosure + STL parts
 │   └── cm5/               Compute Module carrier board (early stage)
-├── ha-box-esp-fw/         ESP32 firmware (C++)
-├── ha-box/                HA add-on (Python)
-│   ├── rootfs/            Add-on runtime files
-│   ├── config.yaml        Add-on manifest
+├── ha-box-esp/         ESP32 firmware (C++)
+├── ha-box/                HA App (Python)
+│   ├── rootfs/            App runtime files
+│   ├── config.yaml        App manifest
 │   └── translations/      UI translations (en, fr)
 ├── ha-integration/        HA custom integration (device registry, grouped entities)
 │   └── custom_components/
@@ -228,7 +228,7 @@ ha-box/
 
 | Document | Description |
 |----------|-------------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Add-on technical architecture |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | App technical architecture |
 | [docs/HARDWARE.md](docs/HARDWARE.md) | Hardware specifications (haboxesp PCB + ESP32) |
 | [docs/ESP32_RASP_COM.md](docs/ESP32_RASP_COM.md) | UART protocol (Pi ↔ ESP32) |
 | [docs/FEATURES_STATUS.md](docs/FEATURES_STATUS.md) | Feature status and timing reference |

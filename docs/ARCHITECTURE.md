@@ -12,7 +12,7 @@ The HA Box App runs on Home Assistant OS (Raspberry Pi) inside a Supervisor-mana
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │                         Supervisor                                │  │
 │  │  ┌─────────────────────────────────────────────────────────────┐  │  │
-│  │  │              HA Box Add-on (Container)                       │  │  │
+│  │  │              HA Box App.  (Container)                       │  │  │
 │  │  │                                                              │  │  │
 │  │  │  ┌─────────────┐  ┌──────────────────────────────────────┐  │  │  │
 │  │  │  │   Handlers  │  │  Communication (UART)                │  │  │  │
@@ -51,7 +51,7 @@ The HA Box App runs on Home Assistant OS (Raspberry Pi) inside a Supervisor-mana
 
 See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for the UART protocol and responsibilities split between Pi and ESP32.
 
-## Main Components (Add-on)
+## Main Components (App)
 
 ### 1. API Layer (`api/ha_api.py`)
 
@@ -60,7 +60,7 @@ Client for the Supervisor API and Home Assistant Core API.
 **Responsibilities:**
 - Supervisor: info, network, addons list/info, host shutdown
 - Core: config (e.g. language), entity states, services (e.g. `light.turn_off`)
-- Aggregation of system status (core, supervisor, network, Zigbee/Thread/Matter via add-ons and Core entities) for the STATUS message to the ESP32
+- Aggregation of system status (core, supervisor, network, Zigbee/Thread/Matter via Apps and Core entities) for the STATUS message to the ESP32
 
 **Authentication:** `SUPERVISOR_TOKEN` and `SUPERVISOR_URL` from the environment.
 
@@ -92,7 +92,7 @@ UART link to the ESP32.
 - **i18n**: Translator; language from HA Core config when available, else env (LANG, SUPERVISOR_LANGUAGE), else default English
 - **logger**: Logging setup
 
-The add-on does **not** include a Hardware Abstraction Layer (HAL) for I2C/SPI/GPIO on the Pi. All display, touch, BME280, fan, and power-button handling run on the **ESP32**. Pin and bus details are in [docs/HARDWARE.md](HARDWARE.md) and the ESP32 firmware (e.g. `esp/ESPHOMEASSISTANT/`).
+The App does **not** include a Hardware Abstraction Layer (HAL) for I2C/SPI/GPIO on the Pi. All display, touch, BME280, fan, and power-button handling run on the **ESP32**. Pin and bus details are in [docs/HARDWARE.md](HARDWARE.md) and the ESP32 firmware (e.g. `esp/ESPHOMEASSISTANT/`).
 
 ## Communication with Home Assistant
 
@@ -103,7 +103,7 @@ The App communicates with the Supervisor and Home Assistant Core via HTTP/REST u
 ```
 ┌─────────────┐     HTTP/REST      ┌─────────────┐
 │   HA Box    │ ◄────────────────► │  Supervisor │
-│   Add-on    │   SUPERVISOR_TOKEN  │     API     │
+│    App      │  SUPERVISOR_TOKEN  │     API     │
 └─────────────┘                    └──────┬──────┘
                                            │
                                     ┌──────┴──────┐
@@ -123,17 +123,17 @@ The App communicates with the Supervisor and Home Assistant Core via HTTP/REST u
 | `/host/shutdown` | Request host shutdown (power button short press) |
 | `/supervisor/info` | Supervisor status |
 | `/network/info` | Network interfaces |
-| `/addons`, `/addons/<slug>/info` | Add-on list and options (status, Zigbee/Thread/Matter detection) |
+| `/addons`, `/addons/<slug>/info` | App list and options (status, Zigbee/Thread/Matter detection) |
 
 ### UART link to ESP32
 
-The add-on talks to the ESP32 over a serial device (`/dev/serial0` or `/dev/ttyAMA0`) at 115200 8N1. Protocol: ASCII lines `<id> VERB [key=value ...]` with ACK lines `ACK <id> OK|ERR <code>`. See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for the verb list and responsibilities.
+The App talks to the ESP32 over a serial device (`/dev/serial0` or `/dev/ttyAMA0`) at 115200 8N1. Protocol: ASCII lines `<id> VERB [key=value ...]` with ACK lines `ACK <id> OK|ERR <code>`. See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for the verb list and responsibilities.
 
-## File structure (add-on)
+## File structure (App)
 
 ```
 ha-box/
-├── config.yaml           # Add-on configuration (options, schema, devices)
+├── config.yaml           # App configuration (options, schema, devices)
 ├── build.yaml            # Build configuration (if used)
 ├── Dockerfile            # Docker image
 ├── apparmor.txt          # AppArmor profile (when enabled)
@@ -190,7 +190,7 @@ ha-box/
 
 ### Raspberry Pi (HAOS)
 
-The add-on uses only **UART** to talk to the ESP32. No I2C, SPI, or GPIO are required on the Pi for the App.
+The App uses only **UART** to talk to the ESP32. No I2C, SPI, or GPIO are required on the Pi for the App.
 
 Edit `/mnt/boot/config.txt` per [docs/HARDWARE.md](HARDWARE.md#pi-configtxt-haos), then reboot. The serial device will appear as `/dev/serial0` or `/dev/ttyAMA0`. See [docs/ESP32_RASP_COM.md](ESP32_RASP_COM.md) for wiring and OTA GPIO pin details.
 
@@ -201,7 +201,7 @@ Display (SPI), touch (I2C), BME280 (I2C), fan (PWM), and power button (GPIO + J2
 | Device | Interface | Address / pin (ESP32) | Notes |
 |--------|-----------|------------------------|-------|
 | Touch (FT6336U) | I2C | 0x38 | Integrated in GDEY037T03-FT21 |
-| BME280 | I2C | 0x76 or 0x77 | Configurable in add-on options |
+| BME280 | I2C | 0x76 or 0x77 | Configurable in App options |
 | E-Paper | SPI | CS, DC, RST, BUSY, etc. | See HARDWARE.md and firmware |
 | Fan | PWM | Configurable (e.g. GPIO 18) | Local control on ESP32 |
 | Power button | GPIO | e.g. GPIO 33 | ext0 wake; J2 pulse (e.g. GPIO 26) for Pi power |
@@ -275,7 +275,7 @@ Levels:
 
 ### Permissions (current)
 
-The add-on uses serial devices for the ESP32 link and GPIO for OTA:
+The App uses serial devices for the ESP32 link and GPIO for OTA:
 
 ```yaml
 devices:
@@ -299,7 +299,7 @@ See [docs/I18N.md](I18N.md) for full details if present.
 
 ## HA Box integration (custom component)
 
-A companion HA integration (`ha-integration/custom_components/ha_box/`) listens to events fired by the add-on and exposes all entities under a single **HA Box** device in the HA device registry:
+A companion HA integration (`ha-integration/custom_components/ha_box/`) listens to events fired by the App and exposes all entities under a single **HA Box** device in the HA device registry:
 
 | Event | Entities created |
 |-------|-----------------|

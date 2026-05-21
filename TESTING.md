@@ -178,7 +178,7 @@ docker run --rm -it \
 
 ## Initial ESP32 Firmware Flash
 
-The add-on bundles an ESP32 firmware binary and flashes it automatically via OTA when the version differs. However, for a **brand-new ESP32** (no firmware yet), you need to flash it manually once via USB.
+The App bundles an ESP32 firmware binary and flashes it automatically via OTA when the version differs. However, for a **brand-new ESP32** (no firmware yet), you need to flash it manually once via USB.
 
 ### Requirements
 
@@ -195,7 +195,7 @@ The add-on bundles an ESP32 firmware binary and flashes it automatically via OTA
 4. Click **Upload**
 5. Once flashed, disconnect USB and reconnect the ESP32 to the Pi via UART
 
-From this point on, the add-on will handle firmware updates automatically (OTA via UART0 when the bundled version differs from what is running).
+From this point on, the App will handle firmware updates automatically (OTA via UART0 when the bundled version differs from what is running).
 
 ## Next Steps
 

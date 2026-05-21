@@ -4,8 +4,8 @@ This document compares the HA Box implementation to the official Home Assistant 
 
 References:
 - [Home Assistant Developer Docs](https://developers.home-assistant.io/)
-- [Add-on configuration](https://developers.home-assistant.io/docs/add-ons/configuration/)
-- [Add-on security](https://developers.home-assistant.io/docs/add-ons/security/)
+- [App configuration](https://developers.home-assistant.io/docs/apps/configuration/)
+- [App security](https://developers.home-assistant.io/docs/apps/security/)
 - [Example app repository](https://github.com/home-assistant/addons-example)
 
 ---

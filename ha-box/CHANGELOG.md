@@ -31,15 +31,15 @@
 
 ### Added
 
-- Fan control configurable from add-on options (`esp32.fan.enabled`, `esp32.fan.min_temp`, `esp32.fan.max_temp`): values are sent to the ESP32 on every connection via the new `FAN` UART verb and persisted in ESP32 NVS so they survive deep sleep
-- Case temperature sensor: ESP32 forwards TMP102 readings to the add-on every 30 s via the new `CASE` UART verb; exposed in Home Assistant as `sensor.ha_box_case_temperature`
+- Fan control configurable from App options (`esp32.fan.enabled`, `esp32.fan.min_temp`, `esp32.fan.max_temp`): values are sent to the ESP32 on every connection via the new `FAN` UART verb and persisted in ESP32 NVS so they survive deep sleep
+- Case temperature sensor: ESP32 forwards TMP102 readings to the App every 30 s via the new `CASE` UART verb; exposed in Home Assistant as `sensor.ha_box_case_temperature`
 
 ### Changed
 
 - Config section `control` renamed to `esp32` to clearly identify options that are pushed to the ESP32 firmware
 - `esp32.fan`: removed unused `pin` and `auto_control` fields; default `min_temp` aligned to 28 °C (matches ESP32 firmware default)
-- External access detection: Cloudflare tunnel add-ons now trust the Supervisor running state instead of attempting an outbound HTTP check (which failed inside the container with Zero Trust enabled)
-- Added Cloudflare add-on slug `9b69fd20_cloudflared` (brenner-tobias) to the default exposed add-on list
+- External access detection: Cloudflare tunnel Apps now trust the Supervisor running state instead of attempting an outbound HTTP check (which failed inside the container with Zero Trust enabled)
+- Added Cloudflare App slug `9b69fd20_cloudflared` (brenner-tobias) to the default exposed App list
 
 ---
 <!-- Versions 0.1.1 – 0.1.44 not yet documented. -->

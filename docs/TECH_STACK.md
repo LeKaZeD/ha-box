@@ -192,7 +192,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 ## Performance and constraints
 
-### Add-on (Pi)
+### App (Pi)
 
 - **API calls**: Timeouts and bounded retries on all Supervisor/Core requests (see `api/ha_api.py`). Core availability is cached for a short interval to avoid excessive checks.
 - **Serial**: Polling thread reads UART in a loop; line-based protocol keeps parsing simple. No blocking on single-byte reads for long periods.

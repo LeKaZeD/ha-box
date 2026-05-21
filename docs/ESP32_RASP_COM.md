@@ -61,11 +61,11 @@ The protocol is ASCII-based, with one message per line:
 ### Verbs from ESP32 -> Pi
 
 - `READY` - ESP32 booted and is ready. Sent once after boot (after a 1 s settling delay).
-- `VERSION ver=X.Y.Z` - Firmware version. Sent proactively after `READY`; also sent in reply to a Pi `VERSION` query. Used by the add-on for OTA version comparison.
+- `VERSION ver=X.Y.Z` - Firmware version. Sent proactively after `READY`; also sent in reply to a Pi `VERSION` query. Used by the App for OTA version comparison.
 - `SENS` - BME280 ambient sensor: `tC`, `hum`, `pPa`. Sent every 30 s.
 - `CASE` - TMP102 case temperature: `tC`. Sent every 30 s. Published as `sensor.ha_box_case_temperature`.
 - `STATUS` - Heartbeat when App does not send `STATUS` (legacy / degraded mode).
-- `DAYMODE` - Manual day/night override from the E-Paper touch switch: `mode=0` (day) or `mode=1` (night). The add-on applies the override and clears it on the next real sun event.
+- `DAYMODE` - Manual day/night override from the E-Paper touch switch: `mode=0` (day) or `mode=1` (night). The App applies the override and clears it on the next real sun event.
 - `TOUCH` - Touch / button actions (e.g. navigation, All Off).
 - `ALL_OFF` - User pressed All Off on E-Paper UI; App calls `light.turn_off` on HA.
 - `SHUTDOWN_REQUEST` - User short-pressed the physical power button; App triggers host shutdown.
@@ -134,7 +134,8 @@ void setup() {
 static void pumpPiToDebug() {
   while (Serial.available()) {
     char c = (char)Serial.read();
-    if (c == '') continue;
+    if (c == '
+') continue;
     if (c == '
 ') {
       if (uartLine.length() > 0) {
@@ -152,7 +153,8 @@ static void pumpPiToDebug() {
 static void pumpDebugToPi() {
   while (Serial2.available()) {
     char c = (char)Serial2.read();
-    if (c == '') continue;
+    if (c == '
+') continue;
     if (c == '
 ') {
       if (debugLine.length() > 0) {

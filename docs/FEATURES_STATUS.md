@@ -34,18 +34,18 @@ Update status when a feature changes: `done` | `partial` | `planned`
 
 ---
 
-## Pi (add-on) only
+## Pi (App) only
 
 | Feature | Status | When | UART from ESP32 | UART to ESP32 | Notes / to review |
 |---------|--------|------|----------------|--------------|-------------------|
 | Detect HA Core health | done | Every 30 s | — | — | GET /core/api |
 | Detect Supervisor health | done | Every 30 s | — | — | GET /supervisor/info |
 | Detect LAN / WiFi / internet connectivity | done | Every 30 s | — | — | Derived from network interfaces |
-| Detect Zigbee active | done | Every 30 s | — | — | ZHA entities or Zigbee2MQTT add-on slug |
-| Detect Thread active | done | Every 30 s | — | — | OTBR / OpenThread add-on slug |
-| Detect Matter active | done | Every 30 s | — | — | Matter add-on slug or entities |
+| Detect Zigbee active | done | Every 30 s | — | — | ZHA entities or Zigbee2MQTT App slug |
+| Detect Thread active | done | Every 30 s | — | — | OTBR / OpenThread App slug |
+| Detect Matter active | done | Every 30 s | — | — | Matter App slug or entities |
 | Detect external access – Cloudflare tunnel | done | Every 30 s | — | — | Trusts Supervisor state (started = tunnel up); no outbound HTTP |
-| Detect external access – DuckDNS | done | Every 30 s | — | — | Add-on started + URL reachability check |
+| Detect external access – DuckDNS | done | Every 30 s | — | — | App started + URL reachability check |
 | Expose BME280 temperature to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | fires `ha_box_sensors` event → HA Box integration entity |
 | Expose BME280 humidity to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | fires `ha_box_sensors` event → HA Box integration entity |
 | Expose BME280 pressure to HA | done | On `SENS` receipt (~30 s) | `SENS tC hum pPa` | — | fires `ha_box_sensors` event → HA Box integration entity (hPa) |
@@ -54,7 +54,7 @@ Update status when a feature changes: `done` | `partial` | `planned`
 | OTA firmware update notice | done | Before esptool flash | — | `OTA` | Pi sends `OTA` before flashing so ESP32 can display the firmware-update loading screen |
 | CC1101 RF433 reception | partial | On frame received | — | — | CC1101 SPI driver + RFLink TCP server on port 5557 implemented (experimental); fires `ha_box_rf433_received` event with `{raw, protocol, pulse_count}`; no HA entity yet |
 | Shut down host on SHUTDOWN_REQUEST | done | On event | `SHUTDOWN_REQUEST` | `SHUTDOWN_ACCEPTED` | Calls Supervisor /host/shutdown |
-| Auto-detect HA language | done | Once at add-on startup | — | — | GET /core/api/config → language field |
+| Auto-detect HA language | done | Once at App startup | — | — | GET /core/api/config → language field |
 | OTA firmware update | done | Once on connection (version mismatch) | — | — | Queries ESP32 version via `VERSION`; flashes via esptool over UART0 if bundled version differs; up to 3 VERSION query retries |
 | Boot failure recovery (blind OTA) | done | During init, on repeated boot errors | — | — | Detects ROM boot error patterns on UART0 (≥ 3 occurrences); triggers blind flash without VERSION handshake; up to 3 attempts |
 
@@ -68,7 +68,7 @@ Update status when a feature changes: `done` | `partial` | `planned`
 | Display weather + outdoor temperature | done | Once on connection + every 300 s | Interval configurable (10–300 s) |
 | Display HA status icons (9 icons) | done | Once on connection + every 30 s | STATUS interval hardcoded to 30 s in `main.py` |
 | Apply display language from HA config | done | Once on connection | Language sent via `LANG id=0/1` on first connect; re-sent on reconnect |
-| Apply fan config from HA add-on options | done | Once on connection (re-sent on reconnect) | `FAN en=0/1 tOn=X tFull=Y` sent after LANG; persisted in ESP32 NVS so values survive deep sleep |
+| Apply fan config from HA App options | done | Once on connection (re-sent on reconnect) | `FAN en=0/1 tOn=X tFull=Y` sent after LANG; persisted in ESP32 NVS so values survive deep sleep |
 | Shut down Pi from button (soft) | done | On event | Short click → SHUTDOWN_REQUEST → Pi → /host/shutdown → SHUTDOWN_ACCEPTED → deep sleep |
 | Force-stop Pi from button (hard J2 hold) | done | On event (long press, Pi ON) | `resetJ2()` (5500 ms hold) called on long press when Pi is ON |
 | Wake Pi from button | done | On event (short click, Pi OFF) | pulseJ2 on boot and on button press when Pi is OFF |
@@ -79,7 +79,7 @@ Update status when a feature changes: `done` | `partial` | `planned`
 
 ## Configuration – App (add-on)
 
-Config keys are top-level in `options.json` (add-on UI / YAML). `general` groups `log_level` and `lang`; all other sections are top-level keys.
+Config keys are top-level in `options.json` (App UI / YAML). `general` groups `log_level` and `lang`; all other sections are top-level keys.
 Language is auto-detected from Home Assistant Core at startup (not a user option).
 
 | Option | Config key | Default | Notes |
@@ -99,13 +99,13 @@ Language is auto-detected from Home Assistant Core at startup (not a user option
 | Day/Night update interval | `daynight.update_interval` | 60 s | sun.sun poll frequency (10–3600 s) |
 | Clock update interval | `clock.update_interval` | 60 s | 10–3600 s |
 | Status update interval | `status.update_interval` | 30 s | |
-| Exposed add-on slugs | `status.exposed_addon_slugs` | `[]` | Slugs that activate the "exposed" icon |
+| Exposed App slugs | `status.exposed_addon_slugs` | `[]` | Slugs that activate the "exposed" icon |
 | UART device | `uart.device` | `auto` | auto / /dev/serial0 / /dev/ttyAMA0 / /dev/ttyUSB0 |
 | Connected timeout | `connection.connected_timeout` | 120 s | Before switching to reconnecting |
 | Reconnecting timeout | `connection.reconnecting_timeout` | 60 s | Before switching to disconnected |
 
-> Fan and OTA options are sent to the ESP32 once at add-on startup and persisted in NVS.
-> Restart the add-on to apply changes.
+> Fan and OTA options are sent to the ESP32 once at App startup and persisted in NVS.
+> Restart the App to apply changes.
 
 ---
 

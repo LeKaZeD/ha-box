@@ -1,4 +1,4 @@
-# Security Policy - HA Box Add-on
+# Security Policy - HA Box App
 
 ## Security Rating
 
@@ -19,7 +19,7 @@ The App requires the following permissions for hardware access:
 
 #### Hardware Access
 
-The Pi add-on communicates with the ESP32 over **UART** and uses **GPIO** for OTA flashing only. All sensors (BME280, TMP102, touch) are connected directly to the ESP32 — the Pi does not access I2C or any display hardware.
+The Pi App communicates with the ESP32 over **UART** and uses **GPIO** for OTA flashing only. All sensors (BME280, TMP102, touch) are connected directly to the ESP32 — the Pi does not access I2C or any display hardware.
 
 - **GPIO**: Required for OTA flashing (IO0 and EN pins on the ESP32, via `gpiod` chardev — not legacy `/dev/gpiomem`)
 - **Devices**:
@@ -30,7 +30,7 @@ The Pi add-on communicates with the ESP32 over **UART** and uses **GPIO** for OT
 #### File System Access
 - **Read-only**: Configuration files, Python code
 - **Read-write**: Logs only (`/var/log/**`)
-- **No host filesystem access**: Add-on is fully containerized
+- **No host filesystem access**: App is fully containerized
 
 ### AppArmor Profile
 
@@ -53,14 +53,14 @@ A custom AppArmor profile (`apparmor.txt`) restricts the App to:
 
 ### Network Security
 
-- **No host network**: Add-on uses container networking
+- **No host network**: App uses container networking
 - **No exposed ports**: Communication via Supervisor API only (except RF433 TCP server on port 5557 when enabled)
 - **No ingress**: No web interface
 - **API authentication**: Uses Supervisor token (automatic, secure)
 
 ### Container Security
 
-- **No privileged mode**: Add-on runs with standard user permissions
+- **No privileged mode**: App runs with standard user permissions
 - **No SYS_ADMIN**: No system administration capabilities
 - **Isolated filesystem**: Only mapped directories accessible
 - **Minimal base image**: Uses official Home Assistant base images

@@ -32,7 +32,7 @@ All user-facing peripherals (display, touch, sensors, fan, buzzer, power button)
 
 ### Pi config.txt (HAOS)
 
-Edit `/mnt/boot/config.txt` (boot partition — not accessible via SSH; use physical access or mount the SD card/NVMe on a computer). The UART must be freed from Bluetooth to expose `/dev/ttyAMA0` to the add-on.
+Edit `/mnt/boot/config.txt` (boot partition — not accessible via SSH; use physical access or mount the SD card/NVMe on a computer). The UART must be freed from Bluetooth to expose `/dev/ttyAMA0` to the App.
 
 **Raspberry Pi 4** — disables Bluetooth entirely:
 ```ini
@@ -151,7 +151,7 @@ Polled every 5 s by the fan controller; sent to Pi every 30 s via `CASE tC`.
 | VCC | 3.3 V (pin 1) |
 | GND | GND (pin 6) |
 
-The add-on exposes a **RFLink-compatible TCP server** on `:5557`.
+The App exposes a **RFLink-compatible TCP server** on `:5557`.
 Point the HA RFLink integration (or any RFLink-compatible client) at `localhost:5557`.
 
 **HA configuration (`configuration.yaml`)**:
@@ -161,7 +161,7 @@ rflink:
   port: 5557
 ```
 
-Enable in the add-on options:
+Enable in the App options:
 ```yaml
 box:
   rf433:
